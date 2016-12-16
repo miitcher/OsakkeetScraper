@@ -1,0 +1,68 @@
+HEADER;DICT_YRITYKSEN_TIEDOT;;;;;INFO:;Tiedot tallennetaan yrityksittain;;Tunnisteita:;ID;HEADER;ScrapedIDs;AllIDs;DATA
+ScrapedIDs;2048
+AllIDs;2048;1025;2050;1027;1028;1029;1030;2055;2056;2057;1035;1036;1038;1039;1040;1041;1042;2051;1046;1049;1050;1051;1052;1054;1055;1056;1058;1059;1202;1065;1066;1031;1068;1069;1070;1032;1074;1971;1076;1033;1080;1081;1083;1087;1088;1089;1091;1098;1102;1104;1105;1109;1110;1111;1112;1113;1114;1117;1119;1120;1121;1122;2025;1129;1964;1901;1902;1981;1905;1906;1907;1140;1141;1142;1143;1144;1173;1154;1003;1924;1158;1159;1946;1161;1930;1931;1932;1933;1166;1167;1169;1171;1006;1174;2045;1178;1135;1181;1182;1011;1184;1953;1156;1189;1190;1193;1194;1196;1197;1198;1200;1201;1970;1203;1205;1208;1211;1213;1218;1228;1996;1186;2040;2006;2011;2012;2014;2015;2016;2017;1043;2020;1934;2001;1000;1020;2026;2027;1004;2066;2030;2031;2033;2034;2035;1016;1017;2042;1023;2044;1021;2046;2047
+ID;2048;Talenom
+DATA;0;True
+Vuosi;Irtoaminen;Oikaistu euroina;Maara;Valuutta;Tuotto-%;Lisatieto
+2016;18.03.2016;0.0;0.0;EUR;0.0;None
+2016;18.03.2016;0.07;0.07;EUR;1.4;Pääomanpalautus
+DATA;1;True
+5.4
+DATA;2;True
+Yhtiöstä ei ole saatavilla kuvausta
+DATA;3;True
+Kaupank. val.;EUR
+Osakkeet (KPL);6812046
+Toimialaluokka;Teollisuushyödykkeet ja -palvelut
+ISIN-koodi;FI4000153580
+Toimiala;Teollisuustuotteet ja -palvelut
+Listattu;11.06.2015
+Porssi;OMX Helsinki First North
+Nimellisarvo;-
+Kaupankayntitunnus;TNOM
+DATA;4;False
+DATA;5;True
+VUOSI;12/15;12/14;12/13;-;-
+Liikevaihto;33.0;29.58;25.94;-;-
+Liikevaihdon muutos, %;11.6;14.0;-;-;-
+Ulkomaantoiminta, %;0.0;0.0;0.0;-;-
+Oikaistun taseen loppusumma;40.5;34.39;30.72;-;-
+Investoinnit;8.44;6.88;2.94;-;-
+Investointiaste, %;25.6;23.3;11.4;-;-
+Henkilosto keskimaarin;576.0;486.0;396.0;-;-
+DATA;6;True
+VUOSI;12/15;12/14;12/13;-;-
+Kayttokate;4.88;6.29;4.25;-;-
+Liiketulos;-1.32;1.54;0.29;-;-
+Nettotulos;-2.44;0.03;-0.96;-;-
+Kokonaistulos;-2.44;0.03;-0.96;-;-
+Sijoitetun paaoman tuotto, %;-4.0;5.9;-;-;-
+Oman paaoman tuotto, %;-45.9;4.4;-;-;-
+Kokonaispaaoman tuotto, %;-3.4;4.9;-;-;-
+DATA;7;True
+VUOSI;12/15;12/14;12/13;-;-
+Omavaraisuusaste, %;24.6;2.1;2.1;-;-
+Nettovelkaantumisaste, %;191.4;999.0;999.0;-;-
+Korollinen nettovelka;19.01;26.02;24.01;-;-
+Nettorah.kulut/liikevaihto, %;3.4;4.5;4.0;-;-
+Nettorah.kulut/kayttokate, %;23.4;21.0;24.3;-;-
+Vieraan paaoman tak.maksuaika;5.07;5.45;8.0;-;-
+DATA;8;True
+VUOSI;12/15;12/14;12/13;-;-
+Quick Ratio;1.31;0.9;0.83;-;-
+Current Ratio;1.29;0.88;0.81;-;-
+Likvidit varat;5.36;1.59;0.9;-;-
+DATA;9;True
+VUOSI;12/15;12/14;12/13;-;-
+Markkina-arvo (P);35.8;-;-;-;-
+Tasesubstanssi ilman vah.os. (B);9.93;0.72;0.65;-;-
+Yritysarvo (EV);54.81;-;-;-;-
+Tulos (E);-2.44;0.03;-0.96;-;-
+P/B-luku;3.61;-;-;-;-
+P/S-luku;1.09;-;-;-;-
+P/E-luku;-14.65;-;-;-;-
+EV/EBIT-luku;-41.63;-;-;-;-
+Tulos/osake (EPS), euroa;-0.4;0.01;0.0;-;-
+Tulorahoitus/osake (CPS), euroa;0.62;0.93;0.0;-;-
+Oma paaoma/osake, euroa;1.46;0.14;0.0;-;-
+Osinko/kokonaistulos, %;999.0;0.0;0.0;-;-
