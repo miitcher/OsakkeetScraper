@@ -9,7 +9,7 @@ from scrape_KL import *
 
 class Test_scraping(unittest.TestCase):
 
-    def test_scrape_company2(self):
+    def test_get_company_names_dict(self):
         self.assertEqual(3,3)
 
     def test_scrape_company4(self):

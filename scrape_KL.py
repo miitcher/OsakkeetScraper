@@ -1,10 +1,13 @@
+import logging
+
 from scraping import *
-#from storage import *
-#from console_display import *
 
-#import webbrowser
+logger = logging.getLogger('root')
+
+#import webbrowser # WHAT IS THIS/COULD BE USED FOR ???
 
 
+# TODO: remove from here, and have only in scraping.py
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
 osingot_url =               url_basic + "osingot/osinkohistoria.jsp"
 osingot_yritys_url =        url_basic + "osingot/osinkohistoria.jsp?klid={}"            #ID loppuun!
@@ -13,18 +16,27 @@ kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?kli
 
 
 def scrape_companies(storage_directory):
+    logger.info("Company names are scraped from Kauppalehti")
+    company_names = get_company_names_dict(osingot_url)
+
+    logger.info("Individual companies data is scraped from Kauppalehti")
+    companies_list = []
+    for ID in company_names:
+        logger.debug("ID:{}, Name:{}".format(ID, company_names[ID]))
+        company = Company(ID, company_names[ID])
+        companies_list.append(company)
+        break
+
+    #Tiedot=Scrape()
+    #Tiedot.set_from_scrape(DICT_YRITYKSEN_TIEDOT, scraped_IDs, company_names)
+
+    print("Hello2")
+    print(len(companies_list))
+    for i in companies_list:
+        print(i)
+    print("Hello3")
+
     csv_filename = None
-    """
-    DICT_yritys = scrape_yritys_dict()
-    DICT_YRITYKSEN_TIEDOT, scraped_IDs = scrape_DICT_YRITYKSEN_TIEDOT_AND_scraped_IDs(DICT_yritys)
-    
-    self.Tiedot=Tiedot_luokka()
-    self.Tiedot.set_from_scrape(DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys)
-    print("TIEDOT scraped from Kauppalehti.")
-    """
-    tie = Tiedot_luokka()
-    tie.hello()
-    
     return csv_filename
 
 def load_companies(filename):
@@ -66,8 +78,7 @@ def organize_companies(filename):
 
 
 def scrape_yritys_dict():
-    soup=get_raw_soup(osingot_url)
-    DICT_yritys=get_yritys_dict(soup)       #    DICT_yritys[ID] = "Yrityksen nimi"
+    DICT_yritys=get_company_names_dict(osingot_url)       #    DICT_yritys[ID] = "Yrityksen nimi"
     #dictionary_print(DICT_yritys)
     return DICT_yritys
 

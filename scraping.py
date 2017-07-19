@@ -6,27 +6,60 @@ import storage
 logger = logging.getLogger('root')
 
 
-class Tiedot_luokka():
+url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
+osingot_url =               url_basic + "osingot/osinkohistoria.jsp"
+osingot_yritys_url =        url_basic + "osingot/osinkohistoria.jsp?klid={}"            #ID loppuun!
+kurssi_url =                url_basic + "porssikurssit/osake/index.jsp?klid={}"         #ID loppuun!
+kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"   #ID loppuun!
+
+
+# TODO: Is this needed
+class Scrape():
     def __init__(self):
         pass
 
-    def hello(self):
-        logger.info("Hello there!!!")
+    def __repr__(self):
+        return __dict__
 
     def set_from_scrape(self, DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys):
         self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
         self.scraped_IDs = scraped_IDs
         self.DICT_yritys=DICT_yritys
-    
+
     def set_from_csv_file(self, filename):
         DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys = storage.DICT_YRITYKSEN_TIEDOT_csv_file_READ(filename)
-        
+
         self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
         self.scraped_IDs = scraped_IDs
         self.DICT_yritys = DICT_yritys
-    
+
     def save_to_csv_file(self):
         storage.DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(self.DICT_YRITYKSEN_TIEDOT, self.scraped_IDs, self.DICT_yritys)
+
+
+class Company():
+    def __init__(self, ID, name):
+        self.ID = ID
+        self.name = name
+
+        url = osingot_yritys_url.format(self.ID)
+        self.osingot = get_yrityksen_osingot(url)
+
+        url = kurssi_url.format(self.ID)
+        self.kurssi = get_kurssi(url)
+        self.kuvaus_yrityksesta = get_kuvaus_yrityksesta(url)
+        self.perustiedot_dict = get_perustiedot_dict(url)
+        self.tunnuslukuja_dict = get_tunnuslukuja_dict(url)
+
+        url = kurssi_tulostiedot_url.format(self.ID)
+        self.toiminnan_laajuus_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Toiminnan laajuus")
+        self.kannattavuus_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Kannattavuus")
+        self.vakavaraisuus_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Vakavaraisuus")
+        self.maksuvalmius_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Maksuvalmius")
+        self.sijoittajan_tunnuslukuja_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Sijoittajan tunnuslukuja")
+
+    def __repr__(self):
+        return "ID: {}, Name: {}".format(self.ID, self.name)
 
 
 class Yritys():
@@ -268,26 +301,29 @@ class Yritys():
 
 
 def get_raw_soup(link):
-    r=requests.get(link)
-    soup=BeautifulSoup(r.text, "html.parser")
+    r = requests.get(link)
+    soup = BeautifulSoup(r.text, "html.parser")
     return soup
 
-def get_yritys_dict(soup):
-    form_tags=soup.find_all('form')
-    option_tags=form_tags[2].find_all('option')
-    
-    yritys_dict={}
+def get_company_names_dict(link):
+    soup = get_raw_soup(link)
+
+    form_tags = soup.find_all('form')
+    option_tags = form_tags[2].find_all('option')
+
+    yritys_dict = {}
     for i in option_tags:
-        name= i.string
-        ID= i.attrs['value']
+        name = i.string
+        ID = i.attrs['value']
         try:
-            ID=int(ID)
-            yritys_dict[ID]=name
+            ID = int(ID)
+            yritys_dict[ID] = name
         except:
             pass
     return yritys_dict
 
-def get_yrityksen_osingot(soup):
+def get_yrityksen_osingot(url):
+    soup = get_raw_soup(url)
     yrityksen_osingot=["NOT REDY"]
     
     table_tags=soup.find_all('table')
@@ -325,7 +361,8 @@ def get_yrityksen_osingot(soup):
     yrityksen_osingot[0]=True
     return yrityksen_osingot
 
-def get_kurssi(soup, ID):
+def get_kurssi(url):
+    soup = get_raw_soup(url)
     try:
         table_tags=soup.find_all('table')
         
@@ -333,14 +370,15 @@ def get_kurssi(soup, ID):
         try:
             kurssi=float(kurssi)
         except:
-            logger.debug(ID + "float(kurssi)")
+            logger.debug("float(kurssi)")
         
     except:
-        logger.debug(ID + "kurssi")
+        logger.debug("kurssi")
         kurssi="FAIL"
     return kurssi
 
-def get_kuvaus_yrityksesta(soup, ID):
+def get_kuvaus_yrityksesta(url):
+    soup = get_raw_soup(url)
     try:
         class_padding_tags=soup.find_all(class_="paddings")
         
@@ -351,14 +389,15 @@ def get_kuvaus_yrityksesta(soup, ID):
                 kuvaus_yrityksesta = fix_str_noncompatible_chars_in_unicode(kuvaus_yrityksesta)
                 return kuvaus_yrityksesta
         
-        logger.debug(ID + "kuvaus_yrityksesta EI LOYTYNYT")
+        logger.debug("kuvaus_yrityksesta EI LOYTYNYT")
         kuvaus_yrityksesta="FAIL"
     except:
-        logger.debug(ID + "kuvaus_yrityksesta")
+        logger.debug("kuvaus_yrityksesta")
         kuvaus_yrityksesta="FAIL"
     return kuvaus_yrityksesta
 
-def get_osakkeen_perustiedot_table_TAG(soup, ID):
+def get_osakkeen_perustiedot_table_TAG(url):
+    soup = get_raw_soup(url)
     try:
         class_is_TSBD=soup.find_all(class_="table_stock_basic_details")
         
@@ -368,15 +407,15 @@ def get_osakkeen_perustiedot_table_TAG(soup, ID):
                     return tag
             except:
                 pass
-        logger.debug(ID + "osakkeen_perustiedot_table_TAG EI LOYTYNYT")
+        logger.debug("osakkeen_perustiedot_table_TAG EI LOYTYNYT")
     except:
-        logger.debug(ID + "osakkeen_perustiedot_table_TAG")
+        logger.debug("osakkeen_perustiedot_table_TAG")
     return -1
 
-def get_perustiedot_dict(soup, ID):
+def get_perustiedot_dict(url):
     perustiedot_dict={}
     try:
-        TAG=get_osakkeen_perustiedot_table_TAG(soup, ID)
+        TAG=get_osakkeen_perustiedot_table_TAG(url)
         
         if TAG == -1:
             perustiedot_dict[0]=False
@@ -409,17 +448,18 @@ def get_perustiedot_dict(soup, ID):
                     try:
                         val=int(val)
                     except:
-                        logger.debug(ID + "Osakkeet (KPL)")
+                        logger.debug("Osakkeet (KPL)")
                 
                 perustiedot_dict[fix_str(key)]=val
         
         perustiedot_dict[0]=True
     except:
-        logger.debug(ID + "perustiedot_dict")
+        logger.debug("perustiedot_dict")
         perustiedot_dict[0]=False
     return perustiedot_dict
 
-def get_tunnuslukuja_table_TAG(soup, ID):
+def get_tunnuslukuja_table_TAG(url):
+    soup = get_raw_soup(url)
     try:
         table_tags=soup.find_all('table')
         
@@ -429,15 +469,15 @@ def get_tunnuslukuja_table_TAG(soup, ID):
                     return tag
             except:
                 pass
-        logger.debug(ID + "tunnuslukuja_table_TAG EI LOYTYNYT")
+        logger.debug("tunnuslukuja_table_TAG EI LOYTYNYT")
     except:
-        logger.debug(ID + "tunnuslukuja_table_TAG")
+        logger.debug("tunnuslukuja_table_TAG")
     return -1
 
-def get_tunnuslukuja_dict(soup, ID):
+def get_tunnuslukuja_dict(url):
     tunnuslukuja_dict={}
     try:
-        TAG=get_tunnuslukuja_table_TAG(soup, ID)
+        TAG=get_tunnuslukuja_table_TAG(url)
         
         if TAG == -1:
             tunnuslukuja_dict[0]=False
@@ -460,7 +500,7 @@ def get_tunnuslukuja_dict(soup, ID):
                 try:
                     val=float(val)
                 except:
-                    logger.debug(ID + "float({})".format(key))
+                    logger.debug("float({})".format(key))
             elif c==5:
                 try:
                     parts=val.split()
@@ -468,27 +508,28 @@ def get_tunnuslukuja_dict(soup, ID):
                     k=parts[1].split(".")
                     key=key + " ({}. EUR)".format(k[0])
                 except:
-                    logger.debug(ID + "float({})".format(key))
+                    logger.debug("float({})".format(key))
             else:
                 try:
                     parts=val.split()
                     val=float(parts[0])
                     key=key + " (EUR)"
                 except:
-                    logger.debug(ID + "float({})".format(key))
+                    logger.debug("float({})".format(key))
             
             tunnuslukuja_dict[fix_str(key)]=val
             c+=1
         
         tunnuslukuja_dict[0]=True
     except:
-        logger.debug(ID + "tunnuslukuja_dict")
+        logger.debug("tunnuslukuja_dict")
         tunnuslukuja_dict[0]=False
     return tunnuslukuja_dict
 
 
 
-def get_KURSSI_TULOSTIEDOT_table_TAG(soup, ID, otsikko):
+def get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko):
+    soup = get_raw_soup(url)
     try:
         table_tags=soup.find_all(class_="table_stockexchange")
         
@@ -498,15 +539,15 @@ def get_KURSSI_TULOSTIEDOT_table_TAG(soup, ID, otsikko):
                     return tag
             except:
                 pass
-        logger.debug(ID + "Otsikko='{}' TAG EI LOYTYNYT".format(otsikko))
+        logger.debug("Otsikko='{}' TAG EI LOYTYNYT".format(otsikko))
     except:
-        logger.debug(ID + "Otsikko='{}'".format(otsikko))
+        logger.debug("Otsikko='{}'".format(otsikko))
     return -1
 
-def get_KURSSI_TULOSTIEDOT_mat(soup, ID, otsikko):
+def get_KURSSI_TULOSTIEDOT_mat(url, otsikko):
     matrix=["NOT REDY"]
     try:
-        TAG = get_KURSSI_TULOSTIEDOT_table_TAG(soup, ID, otsikko)
+        TAG = get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko)
         
         if TAG == -1:
             matrix[0]=False
@@ -527,14 +568,14 @@ def get_KURSSI_TULOSTIEDOT_mat(soup, ID, otsikko):
                     try:
                         val=float(val.replace("\xa0",""))
                     except:
-                        logger.debug(ID + "Otsikko='{}', float('{}')".format(otsikko, val))
+                        logger.debug("Otsikko='{}', float('{}')".format(otsikko, val))
                     rivi.append(val)
             
             matrix.append(rivi)
         
         matrix[0]=True
     except:
-        logger.debug(ID + "Otsikko='{}'".format(otsikko))
+        logger.debug("Otsikko='{}'".format(otsikko))
         matrix[0]=False
 
     return matrix
