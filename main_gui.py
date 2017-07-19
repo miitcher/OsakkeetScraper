@@ -56,8 +56,8 @@ class Window(QWidget):
         hbox1.addStretch(1)
         
         self.FileComboBox=QComboBox()
-        self.FileComboBox.addItem('CSV-files in "Files" folder')
-        SaveFiles = os.listdir("Files")
+        self.FileComboBox.addItem('CSV-files in "stored_scrapes" folder')
+        SaveFiles = os.listdir("stored_scrapes")
         self.FileComboBox.addItems(SaveFiles)
         
         self.RefreshButton=QPushButton("Refresh")
@@ -120,8 +120,8 @@ class Window(QWidget):
             self.FileComboBox.removeItem(0)
             i-=1
         
-        self.FileComboBox.addItem('CSV-files in "Files" folder')
-        SaveFiles = os.listdir("Files")
+        self.FileComboBox.addItem('CSV-files in "stored_scrapes" folder')
+        SaveFiles = os.listdir("stored_scrapes")
         self.FileComboBox.addItems(SaveFiles)
     
     def ButtonClicked(self):
@@ -136,10 +136,10 @@ class Window(QWidget):
             self.Tiedot.set_from_scrape(DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys)
             print("TIEDOT scraped from Kauppalehti.")
         elif sender.text() == "Load companies from csv-file":
-            if self.FileComboBox.currentText() == 'Files in "Files" folder':
+            if self.FileComboBox.currentText() == 'Files in "stored_scrapes" folder':
                 print("Nothing is choosen.")
             else:
-                filename = "Files\\" + self.FileComboBox.currentText()
+                filename = "stored_scrapes\\" + self.FileComboBox.currentText()
                 
                 self.Tiedot=Tiedot_luokka()
                 self.Tiedot.set_from_csv_file(filename)
@@ -180,10 +180,10 @@ class Window(QWidget):
 
 
 if __name__ == '__main__':
-    #Creates a "Files"-folder if one does not exist.
-    if not os.path.isdir("Files"):
-        os.makedirs("Files")
-        print('"Files" folder created')
+    #Creates a "stored_scrapes"-folder if one does not exist.
+    if not os.path.isdir("stored_scrapes"):
+        os.makedirs("stored_scrapes")
+        print('"stored_scrapes" folder created')
     
     app = QApplication(sys.argv)
     Window = Window()

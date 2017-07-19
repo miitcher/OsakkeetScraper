@@ -1,6 +1,6 @@
 import datetime
 
-"""HUOM
+"""
 csv-tiedotstot kirjoitetaan ';'-erottimella
 """
 
@@ -11,7 +11,7 @@ def get_dateNtime():
     return dateNtime
 
 def DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys):
-    filename = "Files\\" + "DICT_YRITYKSEN_TIEDOT-"+ get_dateNtime() + ".csv"
+    filename = "stored_scrapes\\" + "DICT_YRITYKSEN_TIEDOT-"+ get_dateNtime() + ".csv"
     
     f=open(filename, "w")
     f.write("HEADER;DICT_YRITYKSEN_TIEDOT;;;;;INFO:;Tiedot tallennetaan yrityksittain;;Tunnisteita:;ID;HEADER;ScrapedIDs;AllIDs;DATA")
