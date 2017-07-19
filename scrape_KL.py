@@ -1,4 +1,4 @@
-import webbrowser
+#import webbrowser
 
 from print_and_error_functions import *
 from scraping_functions import *

@@ -4,7 +4,7 @@ from PyQt5.QtGui import *
 import sys
 import os
 
-import webbrowser
+#import webbrowser
 
 from print_and_error_functions import *
 from scraping_functions import *
@@ -12,7 +12,7 @@ from manage_files import *
 from yritys_luokka import *
 
 from scrape_KL import *
-    
+
 
 
 class Window(QWidget):
