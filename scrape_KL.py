@@ -1,6 +1,6 @@
 from scraping import *
-from storage import *
-from console_display import *
+#from storage import *
+#from console_display import *
 
 #import webbrowser
 
@@ -22,6 +22,9 @@ def scrape_companies(storage_directory):
     self.Tiedot.set_from_scrape(DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys)
     print("TIEDOT scraped from Kauppalehti.")
     """
+    tie = Tiedot_luokka()
+    tie.hello()
+    
     return csv_filename
 
 def load_companies(filename):

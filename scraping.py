@@ -2,13 +2,17 @@ import requests, logging
 from bs4 import BeautifulSoup
 
 import storage
-from console_display import ERROR_LOG
+
+logger = logging.getLogger('root')
 
 
 class Tiedot_luokka():
     def __init__(self):
         pass
-    
+
+    def hello(self):
+        logger.info("Hello there!!!")
+
     def set_from_scrape(self, DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys):
         self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
         self.scraped_IDs = scraped_IDs
@@ -32,9 +36,6 @@ class Yritys():
         self.nimi=Tiedot_olio.DICT_yritys[ID]
         
         self.set_yritysksen_tiedot()
-    
-    def ERROR(self, f, description):
-        ERROR_LOG(self.ID, f, "Yritys-OLIO: {}".format(description))
     
     def tiedot_print(self):
         #print(": ", self.)
@@ -127,7 +128,6 @@ class Yritys():
         self.kiinnostavat_tunnusluvut_print()
     
     def set_osinko_tiedot(self):
-        f="set_osinko_tiedot"
         #osinkoa on tasaisesti jaettu viiden vuoden ajan (osinkotuotto >0% joka vuosi)
         self.on_jaettu_viisi_vuotta_osinkoa=None
         self.viime_osinko=None
@@ -140,14 +140,14 @@ class Yritys():
                         self.on_jaettu_viisi_vuotta_osinkoa=False
                         break
                 except:
-                    self.ERROR(f, "osinko")
+                    logger.debug("osinko")
                     self.on_jaettu_viisi_vuotta_osinkoa=False
                     break
             if c==2:
                 self.viime_osinko=i[3]
             if c==6:
                 if i[0]!=2012:
-                    self.ERROR(f, "osinko outoa")
+                    logger.debug("osinko outoa")
                     self.on_jaettu_viisi_vuotta_osinkoa=False
                     break
                 self.on_jaettu_viisi_vuotta_osinkoa=True
@@ -158,13 +158,12 @@ class Yritys():
             self.viime_osinko=False
     
     def set_kurssi_tiedot(self):
-        f="set_kurssi_tiedot"
         #nykyinen kurssi
         val=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][1]
         if type(val)==float:
             self.nykyinen_kurssi=val
         else:
-            self.ERROR(f, "nykyinen_kurssi")
+            logger.debug("nykyinen_kurssi")
             self.nykyinen_kurssi=False
         
         #Kuvaus
@@ -177,13 +176,12 @@ class Yritys():
             self.toimialaluokka=perus_dict["Toimialaluokka"]
             self.kpl_osakkeita=perus_dict["Osakkeet (KPL)"]
         else:
-            self.ERROR(f, "toimiala TAI toimialaluokka")
+            logger.debug("toimiala TAI toimialaluokka")
             self.toimiala=False
             self.toimialaluokka=False
             self.kpl_osakkeita=False
     
     def poimi_arvo_tuolostiedoista(self, matrix, header, rivi, sarake):
-        f="poimi_arvo_tuolostiedoista (tulostiedot)"
         if matrix[0]:
             vuodet=['VUOSI', '12/15', '12/14', '12/13', '12/12', '12/11']
             vuosi=matrix[1][sarake]
@@ -194,20 +192,19 @@ class Yritys():
                 if type(val)==float:
                     return val
                 else:
-                    self.ERROR(f, header)
+                    logger.debug(header)
                     return False
-        self.ERROR(f, header)
+        logger.debug(header)
         return False
     
     def set_kurssi_tulostiedot(self):
-        f="set_kurssi_tulostiedot"
         ##TOIMINNAN LAAJUUS
         """
         toim_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][5]
         if toim_mat[0]:
             pass
         else:
-            self.ERROR(f, "DICT_toiminnan_laajuus_mat PUUTTUU TAI ON VIALLINEN")
+            logger.debug("DICT_toiminnan_laajuus_mat PUUTTUU TAI ON VIALLINEN")
         """
         
         ##KANNATTAVUUS
@@ -222,7 +219,7 @@ class Yritys():
                 val=self.poimi_arvo_tuolostiedoista(kann_mat, "Nettotulos", 4, i)
                 self.nettotulokset.append(val)
         else:
-            self.ERROR(f, "DICT_kannattavuus_mat PUUTTUU TAI ON VIALLINEN")
+            logger.debug("DICT_kannattavuus_mat PUUTTUU TAI ON VIALLINEN")
             self.ROE=False
             self.nettotulokset=False
         
@@ -235,7 +232,7 @@ class Yritys():
             #Gearing (Nettovelkaantumisaste, %)
             self.gearing=self.poimi_arvo_tuolostiedoista(vaka_mat, 'Nettovelkaantumisaste, %', 3, 1)
         else:
-            self.ERROR(f, "DICT_vakavaraisuus_mat PUUTTUU TAI ON VIALLINEN")
+            logger.debug("DICT_vakavaraisuus_mat PUUTTUU TAI ON VIALLINEN")
             self.omavaraisuusaste=False
             self.gearing=False
         
@@ -245,7 +242,7 @@ class Yritys():
         if maksu_mat[0]:
             pass
         else:
-            self.ERROR(f, "DICT_maksuvalmius_mat PUUTTUU TAI ON VIALLINEN")
+            logger.debug("DICT_maksuvalmius_mat PUUTTUU TAI ON VIALLINEN")
         """
         
         ##SIJOITTAJAN TUNNUSLUKUJA
@@ -263,7 +260,7 @@ class Yritys():
             #Markkina-arvo (P)
             self.P_luku=self.poimi_arvo_tuolostiedoista(sijo_mat, 'Markkina-arvo (P)', 2, 1)
         else:
-            self.ERROR(f, "DICT_sijoittajan_tunnuslukuja_mat PUUTTUU TAI ON VIALLINEN")
+            logger.debug("DICT_sijoittajan_tunnuslukuja_mat PUUTTUU TAI ON VIALLINEN")
             self.PB_luku=False
             self.PE_luku=False
             self.E_luku=False
@@ -291,7 +288,6 @@ def get_yritys_dict(soup):
     return yritys_dict
 
 def get_yrityksen_osingot(soup):
-    f="get_yrityksen_osingot"
     yrityksen_osingot=["NOT REDY"]
     
     table_tags=soup.find_all('table')
@@ -316,12 +312,12 @@ def get_yrityksen_osingot(soup):
                     try:
                         val=int(val)
                     except:
-                        ERROR_LOG(0, f, "int('{}')".format(val), True)
+                        logger.debug("int('{}')".format(val))
                 elif i==2 or i==3 or i==5:
                     try:
                         val=float(val)
                     except:
-                        ERROR_LOG(0, f, "int('{}')".format(val), True)
+                        logger.debug("int('{}')".format(val))
                 OYV.append(val)
             
         yrityksen_osingot.append(OYV)
@@ -330,7 +326,6 @@ def get_yrityksen_osingot(soup):
     return yrityksen_osingot
 
 def get_kurssi(soup, ID):
-    f="get_kurssi"
     try:
         table_tags=soup.find_all('table')
         
@@ -338,15 +333,14 @@ def get_kurssi(soup, ID):
         try:
             kurssi=float(kurssi)
         except:
-            ERROR_LOG(ID, f, "float(kurssi)", True)
+            logger.debug(ID + "float(kurssi)")
         
     except:
-        ERROR_LOG(ID, f, "kurssi")
+        logger.debug(ID + "kurssi")
         kurssi="FAIL"
     return kurssi
 
 def get_kuvaus_yrityksesta(soup, ID):
-    f="get_kuvaus_yrityksesta"
     try:
         class_padding_tags=soup.find_all(class_="paddings")
         
@@ -357,15 +351,14 @@ def get_kuvaus_yrityksesta(soup, ID):
                 kuvaus_yrityksesta = fix_str_noncompatible_chars_in_unicode(kuvaus_yrityksesta)
                 return kuvaus_yrityksesta
         
-        ERROR_LOG(ID, f, "kuvaus_yrityksesta EI LOYTYNYT", True)
+        logger.debug(ID + "kuvaus_yrityksesta EI LOYTYNYT")
         kuvaus_yrityksesta="FAIL"
     except:
-        ERROR_LOG(ID, f, "kuvaus_yrityksesta")
+        logger.debug(ID + "kuvaus_yrityksesta")
         kuvaus_yrityksesta="FAIL"
     return kuvaus_yrityksesta
 
 def get_osakkeen_perustiedot_table_TAG(soup, ID):
-    f="get_osakkeen_perustiedot_table_TAG"
     try:
         class_is_TSBD=soup.find_all(class_="table_stock_basic_details")
         
@@ -375,13 +368,12 @@ def get_osakkeen_perustiedot_table_TAG(soup, ID):
                     return tag
             except:
                 pass
-        ERROR_LOG(ID, f, "osakkeen_perustiedot_table_TAG EI LOYTYNYT")
+        logger.debug(ID + "osakkeen_perustiedot_table_TAG EI LOYTYNYT")
     except:
-        ERROR_LOG(ID, f, "osakkeen_perustiedot_table_TAG")
+        logger.debug(ID + "osakkeen_perustiedot_table_TAG")
     return -1
 
 def get_perustiedot_dict(soup, ID):
-    f="get_perustiedot_dict"
     perustiedot_dict={}
     try:
         TAG=get_osakkeen_perustiedot_table_TAG(soup, ID)
@@ -417,18 +409,17 @@ def get_perustiedot_dict(soup, ID):
                     try:
                         val=int(val)
                     except:
-                        ERROR_LOG(ID, f, "Osakkeet (KPL)")
+                        logger.debug(ID + "Osakkeet (KPL)")
                 
                 perustiedot_dict[fix_str(key)]=val
         
         perustiedot_dict[0]=True
     except:
-        ERROR_LOG(ID, f, "perustiedot_dict")
+        logger.debug(ID + "perustiedot_dict")
         perustiedot_dict[0]=False
     return perustiedot_dict
 
 def get_tunnuslukuja_table_TAG(soup, ID):
-    f="get_tunnuslukuja_table_TAG"
     try:
         table_tags=soup.find_all('table')
         
@@ -438,13 +429,12 @@ def get_tunnuslukuja_table_TAG(soup, ID):
                     return tag
             except:
                 pass
-        ERROR_LOG(ID, f, "tunnuslukuja_table_TAG EI LOYTYNYT")
+        logger.debug(ID + "tunnuslukuja_table_TAG EI LOYTYNYT")
     except:
-        ERROR_LOG(ID, f, "tunnuslukuja_table_TAG")
+        logger.debug(ID + "tunnuslukuja_table_TAG")
     return -1
 
 def get_tunnuslukuja_dict(soup, ID):
-    f="get_tunnuslukuja_dict"
     tunnuslukuja_dict={}
     try:
         TAG=get_tunnuslukuja_table_TAG(soup, ID)
@@ -470,8 +460,7 @@ def get_tunnuslukuja_dict(soup, ID):
                 try:
                     val=float(val)
                 except:
-                    description="float({})".format(key)
-                    ERROR_LOG(ID, f, description, True)
+                    logger.debug(ID + "float({})".format(key))
             elif c==5:
                 try:
                     parts=val.split()
@@ -479,30 +468,27 @@ def get_tunnuslukuja_dict(soup, ID):
                     k=parts[1].split(".")
                     key=key + " ({}. EUR)".format(k[0])
                 except:
-                    description="float({})".format(key)
-                    ERROR_LOG(ID, f, description, True)
+                    logger.debug(ID + "float({})".format(key))
             else:
                 try:
                     parts=val.split()
                     val=float(parts[0])
                     key=key + " (EUR)"
                 except:
-                    description="float({})".format(key)
-                    ERROR_LOG(ID, f, description, True)
+                    logger.debug(ID + "float({})".format(key))
             
             tunnuslukuja_dict[fix_str(key)]=val
             c+=1
         
         tunnuslukuja_dict[0]=True
     except:
-        ERROR_LOG(ID, f, "tunnuslukuja_dict")
+        logger.debug(ID + "tunnuslukuja_dict")
         tunnuslukuja_dict[0]=False
     return tunnuslukuja_dict
 
 
 
 def get_KURSSI_TULOSTIEDOT_table_TAG(soup, ID, otsikko):
-    f="get_KURSSI_TULOSTIEDOT_table_TAG"
     try:
         table_tags=soup.find_all(class_="table_stockexchange")
         
@@ -512,13 +498,12 @@ def get_KURSSI_TULOSTIEDOT_table_TAG(soup, ID, otsikko):
                     return tag
             except:
                 pass
-        ERROR_LOG(ID, f, "Otsikko='{}' TAG EI LOYTYNYT".format(otsikko))
+        logger.debug(ID + "Otsikko='{}' TAG EI LOYTYNYT".format(otsikko))
     except:
-        ERROR_LOG(ID, f, "Otsikko='{}'".format(otsikko))
+        logger.debug(ID + "Otsikko='{}'".format(otsikko))
     return -1
 
 def get_KURSSI_TULOSTIEDOT_mat(soup, ID, otsikko):
-    f="get_KURSSI_TULOSTIEDOT_mat"
     matrix=["NOT REDY"]
     try:
         TAG = get_KURSSI_TULOSTIEDOT_table_TAG(soup, ID, otsikko)
@@ -542,15 +527,16 @@ def get_KURSSI_TULOSTIEDOT_mat(soup, ID, otsikko):
                     try:
                         val=float(val.replace("\xa0",""))
                     except:
-                        ERROR_LOG(ID, f, "Otsikko='{}', float('{}')".format(otsikko, val), True)
+                        logger.debug(ID + "Otsikko='{}', float('{}')".format(otsikko, val))
                     rivi.append(val)
             
             matrix.append(rivi)
         
         matrix[0]=True
     except:
-        ERROR_LOG(ID, f, "Otsikko='{}'".format(otsikko))
+        logger.debug(ID + "Otsikko='{}'".format(otsikko))
         matrix[0]=False
+
     return matrix
 
 def fix_str(string):

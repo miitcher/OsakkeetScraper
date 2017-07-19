@@ -122,7 +122,7 @@ class Window(QWidget):
         if sender.text() == "Scrape companies":
             new_csv_filename = scrape_KL.scrape_companies(self.scrapes_dir)
             if new_csv_filename:
-                # TODO: change selected csv_file
+                # TODO: change selected csv_filename to the returned filename
                 logger.debug("new_csv_filename: " + new_csv_filename)
             else:
                 logger.debug("Scraping failed.")
