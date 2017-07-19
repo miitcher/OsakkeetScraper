@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, logging
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -9,10 +9,7 @@ import scrape_KL
 class Window(QWidget):
     def __init__(self, src_dir):
         super().__init__()
-        print(src_dir)
         self.scrapes_dir = src_dir + '\scrapes'
-        print(self.scrapes_dir)
-
         self.setWindowTitle('Osakkeiden loytaminen Kauppalehdesta')
         self.setMinimumSize(700,350)
         self.setMaximumSize(950,450)
@@ -116,7 +113,6 @@ class Window(QWidget):
         self.FileComboBox.addItems(SaveFiles)
 
     def ButtonClicked(self):
-        print("+-+-+-+-+-+-+-+-+-+-+")
         sender=self.sender()
         if self.FileComboBox.currentText() == self.nullFile:
             self.csv_filename = None
@@ -127,19 +123,19 @@ class Window(QWidget):
             new_csv_filename = scrape_KL.scrape_companies(self.scrapes_dir)
             if new_csv_filename:
                 # TODO: change selected csv_file
-                print("new_csv_filename: " + new_csv_filename)
+                logger.debug("new_csv_filename: " + new_csv_filename)
             else:
-                print("Scraping failed.")
+                logger.debug("Scraping failed.")
         elif sender.text() == "Exit":
             self.close()
         else:
             if not self.csv_filename:
-                print("No csv-file.")
+                logger.info("No csv-file.")
             else:
                 if sender.text() == "Load companies from csv-file":
                     scrape_KL.load_companies(self.csv_filename)
                 elif sender.text() == "Save companies to csv-file":
-                    print("FEATURE WILL BE REMOVED: Companies will be automatically stored.")
+                    logger.debug("FEATURE WILL BE REMOVED: Companies will be automatically stored.")
                 elif sender.text() == "Filter companies":
                     scrape_KL.filter_companies(self.csv_filename)
                 elif sender.text() == "Organize companies":
@@ -151,16 +147,21 @@ class Window(QWidget):
                         company_ID = int(self.company_ID.text())
                         scrape_KL.print_company(self.csv_filename, company_ID)
                     except ValueError:
-                        print("The company-ID must be an integer.")
+                        logger.info("The company-ID must be an integer.")
                 else:
-                    print('Did not recognize "sender.text()": ' + sender.text())
+                    logger.debug('Did not recognize "sender.text()": ' + sender.text())
 
 
 if __name__ == '__main__':
+    logger = logging.getLogger('root')
+    logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
+    logger.setLevel(logging.DEBUG)
+    #logger.setLevel(logging.INFO)
+
     #Creates a "scrapes"-folder if one does not exist.
     if not os.path.isdir("scrapes"):
         os.makedirs("scrapes")
-        print('"scrapes" folder created')
+        logger.debug('"scrapes" folder created')
 
     app = QApplication(sys.argv)
     Window = Window(os.path.dirname(os.path.abspath(__file__)))

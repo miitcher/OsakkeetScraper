@@ -1,8 +1,8 @@
-import requests
+import requests, logging
 from bs4 import BeautifulSoup
 
-from storage import *
-from console_display import *
+import storage
+from console_display import ERROR_LOG
 
 
 class Tiedot_luokka():
@@ -15,14 +15,14 @@ class Tiedot_luokka():
         self.DICT_yritys=DICT_yritys
     
     def set_from_csv_file(self, filename):
-        DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys = DICT_YRITYKSEN_TIEDOT_csv_file_READ(filename)
+        DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys = storage.DICT_YRITYKSEN_TIEDOT_csv_file_READ(filename)
         
         self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
         self.scraped_IDs = scraped_IDs
         self.DICT_yritys = DICT_yritys
     
     def save_to_csv_file(self):
-        DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(self.DICT_YRITYKSEN_TIEDOT, self.scraped_IDs, self.DICT_yritys)
+        storage.DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(self.DICT_YRITYKSEN_TIEDOT, self.scraped_IDs, self.DICT_yritys)
 
 
 class Yritys():

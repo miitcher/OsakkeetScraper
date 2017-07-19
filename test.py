@@ -18,7 +18,7 @@ class Test_scraping(unittest.TestCase):
 
 class Test_scrape_KL(unittest.TestCase):
 
-    def test_scrape_KL(self):
+    def test_scrape_KL_placeholder(self):
         self.assertEqual(3,3)
 
 
