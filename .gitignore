@@ -5,7 +5,8 @@
 
 # ignore stored_scrapes files
 *stored_scrapes/*.csv
-# except these files, that are used as examples
+
+# except these stored_scrapes files, that are used as examples
 !DICT_YRITYKSEN_TIEDOT-2016_6_13--22_45_33_442982.csv
 !DICT_YRITYKSEN_TIEDOT-2016_6_17--20_17_22_289413.csv
 !DICT_YRITYKSEN_TIEDOT-2016_6_17--22_10_25_317054.csv
