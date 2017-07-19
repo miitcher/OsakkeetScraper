@@ -3,8 +3,8 @@
 *.project
 *.pydevproject
 
-# ignore stored_scrapes files
-*stored_scrapes/*.csv
+# ignore scrapes files
+*.csv
 
 # except these stored_scrapes files, that are used as examples
 !DICT_YRITYKSEN_TIEDOT-2016_6_13--22_45_33_442982.csv
