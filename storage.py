@@ -1,8 +1,7 @@
+""" csv-files separated by: ';' """
+
 import datetime
 
-"""
-csv-tiedotstot kirjoitetaan ';'-erottimella
-"""
 
 def get_dateNtime():
     dt=datetime.datetime.today()
@@ -234,13 +233,3 @@ def DICT_YRITYKSEN_TIEDOT_csv_file_READ(filename):
     f.close()
     
     return DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys
-
-
-
-
-
-
-
-
-
-

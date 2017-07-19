@@ -111,11 +111,3 @@ def errors_counts_print():
         for i in ERROR_catch_list:
             print(i)
         print("***")
-
-
-
-
-
-
-
-

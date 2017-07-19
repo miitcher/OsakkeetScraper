@@ -1,18 +1,64 @@
+from scraping import *
+from storage import *
+from console_display import *
+
 #import webbrowser
 
-from print_and_error_functions import *
-from scraping_functions import *
-from manage_files import *
-from yritys_luokka import *
+
+url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
+osingot_url =               url_basic + "osingot/osinkohistoria.jsp"
+osingot_yritys_url =        url_basic + "osingot/osinkohistoria.jsp?klid={}"            #ID loppuun!
+kurssi_url =                url_basic + "porssikurssit/osake/index.jsp?klid={}"         #ID loppuun!
+kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"   #ID loppuun!
 
 
+def scrape_companies(storage_directory):
+    csv_filename = None
+    """
+    DICT_yritys = scrape_yritys_dict()
+    DICT_YRITYKSEN_TIEDOT, scraped_IDs = scrape_DICT_YRITYKSEN_TIEDOT_AND_scraped_IDs(DICT_yritys)
+    
+    self.Tiedot=Tiedot_luokka()
+    self.Tiedot.set_from_scrape(DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys)
+    print("TIEDOT scraped from Kauppalehti.")
+    """
+    return csv_filename
 
-url_perus = "http://www.kauppalehti.fi/5/i/porssi/"
+def load_companies(filename):
+    """
+    self.Tiedot=Tiedot_luokka()
+    self.Tiedot.set_from_csv_file(filename)
+    print("TIEDOT has been loaded from the file: {}".format(filename))
+    """
+    pass
 
-osingot_url =               url_perus + "osingot/osinkohistoria.jsp"
-osingot_yritys_url =        url_perus + "osingot/osinkohistoria.jsp?klid={}"            #ID loppuun!
-kurssi_url =                url_perus + "porssikurssit/osake/index.jsp?klid={}"         #ID loppuun!
-kurssi_tulostiedot_url =    url_perus + "porssikurssit/osake/tulostiedot.jsp?klid={}"   #ID loppuun!
+def print_companies(filename):
+    """
+    if self.Tiedot:
+        for ID in self.Tiedot.scraped_IDs:
+            print("{} {}".format(ID, self.Tiedot.DICT_yritys[ID]))
+    else:
+        print("TIEDOT is missing")
+    """
+    pass
+
+def print_company(filename, ID):
+    """
+    if ID in self.Tiedot.scraped_IDs:
+        print("{} {}".format(ID, self.Tiedot.DICT_yritys[ID]))
+        matrix_print(self.Tiedot.DICT_YRITYKSEN_TIEDOT[ID][0])
+        kurssi_tiedot_print(self.Tiedot.DICT_YRITYKSEN_TIEDOT[ID])
+        kurssi_tulostiedot_print(self.Tiedot.DICT_YRITYKSEN_TIEDOT[ID])
+    else:
+        print("There is no company scraped with ID: {}".format(ID))
+    """
+    pass
+
+def filter_companies(filename):
+    pass
+
+def organize_companies(filename):
+    pass
 
 
 
@@ -86,17 +132,3 @@ def scrape_DICT_YRITYKSEN_TIEDOT_AND_scraped_IDs(DICT_yritys):
         #break   #GETS JUST ONE COMPPANY WITH BREAK
     
     return DICT_YRITYKSEN_TIEDOT, scraped_IDs
-
-
-
-
-
-
-
-
-
-
-
-
-
-
