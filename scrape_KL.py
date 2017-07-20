@@ -16,6 +16,7 @@ kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?kli
 
 
 def scrape_companies(storage_directory):
+    c = 1/0
     logger.info("Company names are scraped from Kauppalehti")
     company_names = get_company_names_dict(osingot_url)
 
@@ -32,8 +33,11 @@ def scrape_companies(storage_directory):
 
     print("Hello2")
     print(len(companies_list))
+    print(companies_list[0])
+    """
     for i in companies_list:
         print(i)
+    """
     print("Hello3")
 
     csv_filename = None
@@ -76,7 +80,7 @@ def organize_companies(filename):
     pass
 
 
-
+# TODO: Remove old scrape functions, that are written in scraping.py
 def scrape_yritys_dict():
     DICT_yritys=get_company_names_dict(osingot_url)       #    DICT_yritys[ID] = "Yrityksen nimi"
     #dictionary_print(DICT_yritys)

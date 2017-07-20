@@ -42,6 +42,11 @@ class Company():
         self.ID = ID
         self.name = name
 
+        self.scrape()
+        self.set_metrics()
+        self.set_representation()
+
+    def scrape(self):
         url = osingot_yritys_url.format(self.ID)
         self.osingot = get_yrityksen_osingot(url)
 
@@ -58,7 +63,84 @@ class Company():
         self.maksuvalmius_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Maksuvalmius")
         self.sijoittajan_tunnuslukuja_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Sijoittajan tunnuslukuja")
 
+    def set_metrics(self):
+        # TODO: get the metrics from scraped data into better format
+        pass
+    
+    @staticmethod
+    def add_list_to_str(str, list, name):
+        str = str + "\n{}:".format(name)
+        if list[0]:
+            for i in range(1, len(list)):
+                str = str + "\n\t" + "\t".join(list[i])
+        else:
+            str = str + " Empty"
+
+    def set_representation(self):
+        # Raw string
+        self.str_raw = "\tID: {}, Name: {}".format(self.ID, self.name) +\
+            "\nKurssi:\t{}\nKuvaus:\t{}".format(self.kurssi, self.kuvaus_yrityksesta)
+        print(self.str_raw)
+        
+        print(self.osingot)
+        a=0
+        b=1
+        c = a/b
+        d=b/a
+        
+        self.add_list_to_str(self.str_raw, self.osingot, "Osingot")
+        
+        
+        self.str_raw = self.str_raw + "\nOsingot:"
+        if self.osingot[0]:
+            c = 0
+            for i in self.osingot:
+                if c > 0:
+                    self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
+                c = 1
+        
+        print(self.perustiedot_dict)
+        self.str_raw = self.str_raw + "\nPerustiedot:"
+        for i in self.perustiedot_dict:
+            self.str_raw = self.str_raw + "\n\t" + i + ":\t" + self.perustiedot_dict[i]
+        
+        print(self.tunnuslukuja_dict)
+        self.str_raw = self.str_raw + "\nTunnuslukuja:"
+        for i in self.tunnuslukuja_dict:
+            self.str_raw = self.str_raw + "\n\t" + i + ":\t" + self.tunnuslukuja_dict[i]
+        
+        print(self.toiminnan_laajuus_mat)
+        self.str_raw = self.str_raw + "\nToiminnan laajuus:"
+        for i in self.toiminnan_laajuus_mat:
+            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
+        
+        print(self.kannattavuus_mat)
+        self.str_raw = self.str_raw + "\nKannattavuus:"
+        for i in self.kannattavuus_mat:
+            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
+        
+        print(self.vakavaraisuus_mat)
+        self.str_raw = self.str_raw + "\nVakavaraisuus:"
+        for i in self.vakavaraisuus_mat:
+            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
+        
+        print(self.maksuvalmius_mat)
+        self.str_raw = self.str_raw + "\nMaksuvalmius:"
+        for i in self.maksuvalmius_mat:
+            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
+        
+        print(self.sijoittajan_tunnuslukuja_mat)
+        self.str_raw = self.str_raw + "\nSijoittajan tunnuslukuja:"
+        for i in self.sijoittajan_tunnuslukuja_mat:
+            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
+        
+        print("+++++++++++++++")
+        print(self.str_raw)
+        
+        # TODO: Metrics string
+
     def __repr__(self):
+        
         return "ID: {}, Name: {}".format(self.ID, self.name)
 
 

@@ -120,6 +120,7 @@ class Window(QWidget):
             self.csv_filename = "scrapes\\" + self.FileComboBox.currentText()
 
         if sender.text() == "Scrape companies":
+            c = 1/0
             new_csv_filename = scrape_KL.scrape_companies(self.scrapes_dir)
             if new_csv_filename:
                 # TODO: change selected csv_filename to the returned filename
