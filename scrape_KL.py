@@ -16,9 +16,9 @@ kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?kli
 
 
 def scrape_companies(storage_directory):
-    c = 1/0
     logger.info("Company names are scraped from Kauppalehti")
-    company_names = get_company_names_dict(osingot_url)
+    #company_names = get_company_names_dict(osingot_url)
+    company_names = {2048:"Talenom"}
 
     logger.info("Individual companies data is scraped from Kauppalehti")
     companies_list = []

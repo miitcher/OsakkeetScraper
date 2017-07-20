@@ -66,82 +66,73 @@ class Company():
     def set_metrics(self):
         # TODO: get the metrics from scraped data into better format
         pass
-    
+
     @staticmethod
-    def add_list_to_str(str, list, name):
-        str = str + "\n{}:".format(name)
+    def list_to_str(list, name):
+        #print("name: " + name)
+        #print(list)
         if list[0]:
+            string = "\n{}:".format(name)
             for i in range(1, len(list)):
-                str = str + "\n\t" + "\t".join(list[i])
+                #print(i, list[i])
+                string = string + "\n"
+                for j in list[i]:
+                    # one tab is 8 spaces/characters
+                    string = string + "\t%-15.15s" % str(j)
         else:
-            str = str + " Empty"
+            string = "\n{}: Empty".format(name)
+        return string
+
+    @staticmethod
+    def dict_to_str(dict, name):
+        #print("name: " + name)
+        #print(dict)
+        if dict[0]:
+            string = "\n{}:".format(name)
+            for i in dict:
+                #print(i, dict[i])
+                # one tab is 8 spaces/characters
+                if i != 0:
+                    string = string + "\n\t%-23.23s:%s" % (i, str(dict[i]))
+        else:
+            string = "\n{}: Empty".format(name)
+        return string
 
     def set_representation(self):
-        # Raw string
-        self.str_raw = "\tID: {}, Name: {}".format(self.ID, self.name) +\
-            "\nKurssi:\t{}\nKuvaus:\t{}".format(self.kurssi, self.kuvaus_yrityksesta)
-        print(self.str_raw)
-        
+        """
+        print(self.ID)
+        print(self.name)
+        print(self.kurssi)
+        print(self.kuvaus_yrityksesta)
         print(self.osingot)
-        a=0
-        b=1
-        c = a/b
-        d=b/a
-        
-        self.add_list_to_str(self.str_raw, self.osingot, "Osingot")
-        
-        
-        self.str_raw = self.str_raw + "\nOsingot:"
-        if self.osingot[0]:
-            c = 0
-            for i in self.osingot:
-                if c > 0:
-                    self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
-                c = 1
-        
         print(self.perustiedot_dict)
-        self.str_raw = self.str_raw + "\nPerustiedot:"
-        for i in self.perustiedot_dict:
-            self.str_raw = self.str_raw + "\n\t" + i + ":\t" + self.perustiedot_dict[i]
-        
         print(self.tunnuslukuja_dict)
-        self.str_raw = self.str_raw + "\nTunnuslukuja:"
-        for i in self.tunnuslukuja_dict:
-            self.str_raw = self.str_raw + "\n\t" + i + ":\t" + self.tunnuslukuja_dict[i]
-        
         print(self.toiminnan_laajuus_mat)
-        self.str_raw = self.str_raw + "\nToiminnan laajuus:"
-        for i in self.toiminnan_laajuus_mat:
-            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
-        
         print(self.kannattavuus_mat)
-        self.str_raw = self.str_raw + "\nKannattavuus:"
-        for i in self.kannattavuus_mat:
-            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
-        
         print(self.vakavaraisuus_mat)
-        self.str_raw = self.str_raw + "\nVakavaraisuus:"
-        for i in self.vakavaraisuus_mat:
-            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
-        
         print(self.maksuvalmius_mat)
-        self.str_raw = self.str_raw + "\nMaksuvalmius:"
-        for i in self.maksuvalmius_mat:
-            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
-        
         print(self.sijoittajan_tunnuslukuja_mat)
-        self.str_raw = self.str_raw + "\nSijoittajan tunnuslukuja:"
-        for i in self.sijoittajan_tunnuslukuja_mat:
-            self.str_raw = self.str_raw + "\n\t" + "\t".join(i)
-        
-        print("+++++++++++++++")
-        print(self.str_raw)
-        
+        """
+        # Raw string
+        self.str_raw = "ID:\t{}\n\tName:\t{}".format(self.ID, self.name) +\
+            "\nKurssi:\t{}\nKuvaus:\t{}".format(self.kurssi, self.kuvaus_yrityksesta)
+        self.str_raw = self.str_raw + self.list_to_str(self.osingot,                        "Osingot")
+        self.str_raw = self.str_raw + self.dict_to_str(self.perustiedot_dict,               "Perustiedot")
+        self.str_raw = self.str_raw + self.dict_to_str(self.tunnuslukuja_dict,              "Tunnuslukuja")
+        self.str_raw = self.str_raw + self.list_to_str(self.toiminnan_laajuus_mat,          "Toiminnan laajuus")
+        self.str_raw = self.str_raw + self.list_to_str(self.kannattavuus_mat,               "Kannattavuus")
+        self.str_raw = self.str_raw + self.list_to_str(self.vakavaraisuus_mat,              "Vakavaraisuus")
+        self.str_raw = self.str_raw + self.list_to_str(self.maksuvalmius_mat,               "Maksuvalmius")
+        self.str_raw = self.str_raw + self.list_to_str(self.sijoittajan_tunnuslukuja_mat,   "Sijoittajan tunnuslukuja")
+
         # TODO: Metrics string
+        self.str_metrics = "Under work"
 
     def __repr__(self):
-        
-        return "ID: {}, Name: {}".format(self.ID, self.name)
+        return self.str_raw
+
+    def __str__(self):
+        return self.str_metrics
 
 
 class Yritys():
@@ -650,7 +641,8 @@ def get_KURSSI_TULOSTIEDOT_mat(url, otsikko):
                     try:
                         val=float(val.replace("\xa0",""))
                     except:
-                        logger.debug("Otsikko='{}', float('{}')".format(otsikko, val))
+                        pass
+                        # logger.debug("Otsikko='{}', float('{}')".format(otsikko, val))
                     rivi.append(val)
             
             matrix.append(rivi)

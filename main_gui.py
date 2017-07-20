@@ -1,9 +1,10 @@
-import os, sys, logging
+import os, sys, logging, traceback
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
 import scrape_KL
+from scrape_KL import scrape_companies
 
 
 class Window(QWidget):
@@ -113,44 +114,49 @@ class Window(QWidget):
         self.FileComboBox.addItems(SaveFiles)
 
     def ButtonClicked(self):
-        sender=self.sender()
-        if self.FileComboBox.currentText() == self.nullFile:
-            self.csv_filename = None
-        else:
-            self.csv_filename = "scrapes\\" + self.FileComboBox.currentText()
+        try:
+            sender=self.sender()
+            if self.FileComboBox.currentText() == self.nullFile:
+                self.csv_filename = None
+            else:
+                self.csv_filename = "scrapes\\" + self.FileComboBox.currentText()
 
-        if sender.text() == "Scrape companies":
-            c = 1/0
-            new_csv_filename = scrape_KL.scrape_companies(self.scrapes_dir)
-            if new_csv_filename:
-                # TODO: change selected csv_filename to the returned filename
-                logger.debug("new_csv_filename: " + new_csv_filename)
-            else:
-                logger.debug("Scraping failed.")
-        elif sender.text() == "Exit":
-            self.close()
-        else:
-            if not self.csv_filename:
-                logger.info("No csv-file.")
-            else:
-                if sender.text() == "Load companies from csv-file":
-                    scrape_KL.load_companies(self.csv_filename)
-                elif sender.text() == "Save companies to csv-file":
-                    logger.debug("FEATURE WILL BE REMOVED: Companies will be automatically stored.")
-                elif sender.text() == "Filter companies":
-                    scrape_KL.filter_companies(self.csv_filename)
-                elif sender.text() == "Organize companies":
-                    scrape_KL.organize_companies(self.csv_filename)
-                elif sender.text() == "Print companies":
-                    scrape_KL.print_companies(self.csv_filename)
-                elif sender.text() == "Print company info":
-                    try:
-                        company_ID = int(self.company_ID.text())
-                        scrape_KL.print_company(self.csv_filename, company_ID)
-                    except ValueError:
-                        logger.info("The company-ID must be an integer.")
+            if sender.text() == "Scrape companies":
+                new_csv_filename = scrape_KL.scrape_companies(self.scrapes_dir)
+                if new_csv_filename:
+                    # TODO: change selected csv_filename to the returned filename
+                    logger.debug("new_csv_filename: " + new_csv_filename)
                 else:
-                    logger.debug('Did not recognize "sender.text()": ' + sender.text())
+                    logger.debug("Scraping failed.")
+            elif sender.text() == "Exit":
+                self.close()
+            else:
+                if not self.csv_filename:
+                    logger.info("No csv-file.")
+                else:
+                    if sender.text() == "Load companies from csv-file":
+                        scrape_KL.load_companies(self.csv_filename)
+                    elif sender.text() == "Save companies to csv-file":
+                        logger.debug("FEATURE WILL BE REMOVED: Companies will be automatically stored.")
+                    elif sender.text() == "Filter companies":
+                        scrape_KL.filter_companies(self.csv_filename)
+                    elif sender.text() == "Organize companies":
+                        scrape_KL.organize_companies(self.csv_filename)
+                    elif sender.text() == "Print companies":
+                        scrape_KL.print_companies(self.csv_filename)
+                    elif sender.text() == "Print company info":
+                        try:
+                            company_ID = int(self.company_ID.text())
+                            scrape_KL.print_company(self.csv_filename, company_ID)
+                        except ValueError:
+                            logger.info("The company-ID must be an integer.")
+                    else:
+                        logger.debug('Did not recognize "sender.text()": ' + sender.text())
+        except Exception as e:
+            # The traceback does not work properly with the PyQt in LiClipse.
+            # There is no traceback on errors in LiClipse, but there is
+            # when running the program from the command line.
+            traceback.print_exc()
 
 
 if __name__ == '__main__':
