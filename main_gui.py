@@ -1,10 +1,7 @@
 import os, sys, logging, traceback
-from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
 
 import scrape_KL
-from scrape_KL import scrape_companies
 
 
 class Window(QWidget):

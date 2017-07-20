@@ -14,31 +14,37 @@ kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?kli
 
 
 class Company():
-    def __init__(self, ID, name):
-        self.ID = ID
+    def __init__(self, company_id, name="Unknown"):
+        self.company_id = company_id
         self.name = name
         self.metrics = {}
 
-        self.scrape()
+    def scrape(self):
+        url = osingot_yritys_url.format(self.company_id)
+        self.osingot = get_osingot(url)
+
+        url = kurssi_url.format(self.company_id)
+        self.kurssi = get_kurssi(url)
+        self.kuvaus_yrityksesta = get_kuvaus_yrityksesta(url)
+        self.perustiedot_dict = get_perustiedot(url)
+        self.tunnuslukuja_dict = get_tunnuslukuja(url)
+
+        url = kurssi_tulostiedot_url.format(self.company_id)
+        self.toiminnan_laajuus_mat = get_kurssi_tulostiedot(url, "Toiminnan laajuus")
+        self.kannattavuus_mat = get_kurssi_tulostiedot(url, "Kannattavuus")
+        self.vakavaraisuus_mat = get_kurssi_tulostiedot(url, "Vakavaraisuus")
+        self.maksuvalmius_mat = get_kurssi_tulostiedot(url, "Maksuvalmius")
+        self.sijoittajan_tunnuslukuja_mat = get_kurssi_tulostiedot(url, "Sijoittajan tunnuslukuja")
+
         self.set_metrics()
         self.set_representations()
 
-    def scrape(self):
-        url = osingot_yritys_url.format(self.ID)
-        self.osingot = get_yrityksen_osingot(url)
-
-        url = kurssi_url.format(self.ID)
-        self.kurssi = get_kurssi(url)
-        self.kuvaus_yrityksesta = get_kuvaus_yrityksesta(url)
-        self.perustiedot_dict = get_perustiedot_dict(url)
-        self.tunnuslukuja_dict = get_tunnuslukuja_dict(url)
-
-        url = kurssi_tulostiedot_url.format(self.ID)
-        self.toiminnan_laajuus_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Toiminnan laajuus")
-        self.kannattavuus_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Kannattavuus")
-        self.vakavaraisuus_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Vakavaraisuus")
-        self.maksuvalmius_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Maksuvalmius")
-        self.sijoittajan_tunnuslukuja_mat = get_KURSSI_TULOSTIEDOT_mat(url, "Sijoittajan tunnuslukuja")
+    @staticmethod
+    def load_from_file(filename):
+        stored_scrape, scrape_type = storage.get_stored_company_list(filename)
+        # TODO: unpacking of stored_scrape, depending on the scrape_type
+        company_list = []
+        return company_list
 
     def set_metrics(self):
         # TODO: get the metrics from scraped data into better format
@@ -48,9 +54,9 @@ class Company():
     def list_to_str(company_list, name, tsv=False):
         if company_list[0]:
             if tsv:
-                string = "\n# {}:".format(name)
+                string = "\n# {}".format(name)
             else:
-                string = "\n{}:".format(name)
+                string = "\n{}".format(name)
             for i in range(1, len(company_list)):
                 string = string + "\n"
                 for j in company_list[i]:
@@ -69,9 +75,9 @@ class Company():
     def dict_to_str(company_dict, name, tsv=False):
         if company_dict[0]:
             if tsv:
-                string = "\n# {}:".format(name)
+                string = "\n# {}".format(name)
             else:
-                string = "\n{}:".format(name)
+                string = "\n{}".format(name)
             for i in company_dict:
                 # one tab is 8 spaces/characters
                 if i != 0:
@@ -85,7 +91,7 @@ class Company():
 
     def set_representations(self):
         """
-        print(self.ID)
+        print(self.company_id)
         print(self.name)
         print(self.kurssi)
         print(self.kuvaus_yrityksesta)
@@ -99,27 +105,27 @@ class Company():
         print(self.sijoittajan_tunnuslukuja_mat)
         """
 
-        self.str_raw = "company_id:\t{}\nName:\t{}".format(self.ID, self.name) +\
+        self.str_raw = "company_id:\t{}\nName:\t{}".format(self.company_id, self.name) +\
             "\nKurssi:\t{}\nKuvaus:\t{}".format(self.kurssi, self.kuvaus_yrityksesta) +\
-            self.list_to_str(self.osingot,                        "Osingot") +\
-            self.dict_to_str(self.perustiedot_dict,               "Perustiedot") +\
-            self.dict_to_str(self.tunnuslukuja_dict,              "Tunnuslukuja") +\
-            self.list_to_str(self.toiminnan_laajuus_mat,          "Toiminnan laajuus") +\
-            self.list_to_str(self.kannattavuus_mat,               "Kannattavuus") +\
-            self.list_to_str(self.vakavaraisuus_mat,              "Vakavaraisuus") +\
-            self.list_to_str(self.maksuvalmius_mat,               "Maksuvalmius") +\
-            self.list_to_str(self.sijoittajan_tunnuslukuja_mat,   "Sijoittajan tunnuslukuja")
+            self.list_to_str(self.osingot,                        "osingot") +\
+            self.dict_to_str(self.perustiedot_dict,               "perustiedot") +\
+            self.dict_to_str(self.tunnuslukuja_dict,              "tunnuslukuja") +\
+            self.list_to_str(self.toiminnan_laajuus_mat,          "toiminnan_laajuus") +\
+            self.list_to_str(self.kannattavuus_mat,               "kannattavuus") +\
+            self.list_to_str(self.vakavaraisuus_mat,              "vakavaraisuus") +\
+            self.list_to_str(self.maksuvalmius_mat,               "maksuvalmius") +\
+            self.list_to_str(self.sijoittajan_tunnuslukuja_mat,   "sijoittajan_tunnuslukuja")
 
-        self.tsv_raw = "\n## company_id\t{}\nName\t{}".format(self.ID, self.name) +\
+        self.tsv_raw = "\n## company_id\t{}\nName\t{}".format(self.company_id, self.name) +\
             "\nKurssi\t{}\nKuvaus\t{}".format(self.kurssi, self.kuvaus_yrityksesta) +\
-            self.list_to_str(self.osingot,                        "Osingot",                    True) +\
-            self.dict_to_str(self.perustiedot_dict,               "Perustiedot",                True) +\
-            self.dict_to_str(self.tunnuslukuja_dict,              "Tunnuslukuja",               True) +\
-            self.list_to_str(self.toiminnan_laajuus_mat,          "Toiminnan laajuus",          True) +\
-            self.list_to_str(self.kannattavuus_mat,               "Kannattavuus",               True) +\
-            self.list_to_str(self.vakavaraisuus_mat,              "Vakavaraisuus",              True) +\
-            self.list_to_str(self.maksuvalmius_mat,               "Maksuvalmius",               True) +\
-            self.list_to_str(self.sijoittajan_tunnuslukuja_mat,   "Sijoittajan tunnuslukuja",   True)
+            self.list_to_str(self.osingot,                        "osingot",                    True) +\
+            self.dict_to_str(self.perustiedot_dict,               "perustiedot",                True) +\
+            self.dict_to_str(self.tunnuslukuja_dict,              "tunnuslukuja",               True) +\
+            self.list_to_str(self.toiminnan_laajuus_mat,          "toiminnan_laajuus",          True) +\
+            self.list_to_str(self.kannattavuus_mat,               "kannattavuus",               True) +\
+            self.list_to_str(self.vakavaraisuus_mat,              "vakavaraisuus",              True) +\
+            self.list_to_str(self.maksuvalmius_mat,               "maksuvalmius",               True) +\
+            self.list_to_str(self.sijoittajan_tunnuslukuja_mat,   "sijoittajan_tunnuslukuja",   True)
 
         # TODO: str metrics
         self.str_metrics = "Under work"
@@ -143,7 +149,7 @@ class Scrape():
         self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
         self.scraped_IDs = scraped_IDs
         self.DICT_yritys=DICT_yritys
-
+    """
     def set_from_csv_file(self, filename):
         DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys = storage.DICT_YRITYKSEN_TIEDOT_csv_file_READ(filename)
 
@@ -151,13 +157,13 @@ class Scrape():
         self.scraped_IDs = scraped_IDs
         self.DICT_yritys = DICT_yritys
 
-    #def save_to_csv_file(self):
-    #    storage.DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(self.DICT_YRITYKSEN_TIEDOT, self.scraped_IDs, self.DICT_yritys)
-
+    def save_to_csv_file(self):
+        storage.DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(self.DICT_YRITYKSEN_TIEDOT, self.scraped_IDs, self.DICT_yritys)
+    """
 
 class Yritys():
     def __init__(self, ID, Tiedot_olio):
-        self.ID=ID
+        self.company_id=ID
         self.Tiedot=Tiedot_olio
         self.nimi=Tiedot_olio.DICT_yritys[ID]
         
@@ -258,7 +264,7 @@ class Yritys():
         self.on_jaettu_viisi_vuotta_osinkoa=None
         self.viime_osinko=None
         c=0
-        for i in self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][0]:
+        for i in self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][0]:
             if c>1:
                 #print(i, i[3], i[5])
                 try:
@@ -285,7 +291,7 @@ class Yritys():
     
     def set_kurssi_tiedot(self):
         #nykyinen kurssi
-        val=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][1]
+        val=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][1]
         if type(val)==float:
             self.nykyinen_kurssi=val
         else:
@@ -293,10 +299,10 @@ class Yritys():
             self.nykyinen_kurssi=False
         
         #Kuvaus
-        self.kuvaus=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][2]
+        self.kuvaus=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][2]
         
         #Toimiala, Toimialaluokka, Kappaletta osakkeita
-        perus_dict=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][3]
+        perus_dict=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][3]
         if perus_dict[0]:
             self.toimiala=perus_dict["Toimiala"]
             self.toimialaluokka=perus_dict["Toimialaluokka"]
@@ -326,7 +332,7 @@ class Yritys():
     def set_kurssi_tulostiedot(self):
         ##TOIMINNAN LAAJUUS
         """
-        toim_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][5]
+        toim_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][5]
         if toim_mat[0]:
             pass
         else:
@@ -334,7 +340,7 @@ class Yritys():
         """
         
         ##KANNATTAVUUS
-        kann_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][6]
+        kann_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][6]
         if kann_mat[0]:
             #ROE (Oman paaoman tuotto, %)
             self.ROE=self.poimi_arvo_tuolostiedoista(kann_mat, "Oman paaoman tuotto, %", 7, 1)
@@ -350,7 +356,7 @@ class Yritys():
             self.nettotulokset=False
         
         ##VAKAVARAISUUS
-        vaka_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][7]
+        vaka_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][7]
         if vaka_mat[0]:
             #Omavaraisuusaste, %
             self.omavaraisuusaste=self.poimi_arvo_tuolostiedoista(vaka_mat, "Omavaraisuusaste, %", 2, 1)
@@ -364,7 +370,7 @@ class Yritys():
         
         ##MAKSUVALMIUS
         """
-        maksu_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][8]
+        maksu_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][8]
         if maksu_mat[0]:
             pass
         else:
@@ -372,7 +378,7 @@ class Yritys():
         """
         
         ##SIJOITTAJAN TUNNUSLUKUJA
-        sijo_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.ID][9]
+        sijo_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][9]
         if sijo_mat[0]:
             #P/B-luku
             self.PB_luku=self.poimi_arvo_tuolostiedoista(sijo_mat, 'P/B-luku', 6, 1)
@@ -398,8 +404,15 @@ def get_raw_soup(link):
     soup = BeautifulSoup(r.text, "html.parser")
     return soup
 
-def scrape_company_names(link):
-    soup = get_raw_soup(link)
+def fix_str(string):
+    # deals with scandinavian characters
+    return string.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
+
+def fix_str_noncompatible_chars_in_unicode(string):
+    return string.replace("\x9a","?").replace("\x96","?").replace("\x92","?")
+
+def scrape_company_names():
+    soup = get_raw_soup(osingot_url)
 
     form_tags = soup.find_all('form')
     option_tags = form_tags[2].find_all('option')
@@ -415,7 +428,7 @@ def scrape_company_names(link):
             pass
     return yritys_dict
 
-def get_yrityksen_osingot(url):
+def get_osingot(url):
     soup = get_raw_soup(url)
     yrityksen_osingot=["NOT REDY"]
     
@@ -505,7 +518,7 @@ def get_osakkeen_perustiedot_table_TAG(url):
         logger.debug("osakkeen_perustiedot_table_TAG")
     return -1
 
-def get_perustiedot_dict(url):
+def get_perustiedot(url):
     perustiedot_dict={}
     try:
         TAG=get_osakkeen_perustiedot_table_TAG(url)
@@ -567,7 +580,7 @@ def get_tunnuslukuja_table_TAG(url):
         logger.debug("tunnuslukuja_table_TAG")
     return -1
 
-def get_tunnuslukuja_dict(url):
+def get_tunnuslukuja(url):
     tunnuslukuja_dict={}
     try:
         TAG=get_tunnuslukuja_table_TAG(url)
@@ -637,7 +650,7 @@ def get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko):
         logger.debug("Otsikko='{}'".format(otsikko))
     return -1
 
-def get_KURSSI_TULOSTIEDOT_mat(url, otsikko):
+def get_kurssi_tulostiedot(url, otsikko):
     matrix=["NOT REDY"]
     try:
         TAG = get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko)
@@ -673,10 +686,3 @@ def get_KURSSI_TULOSTIEDOT_mat(url, otsikko):
         matrix[0]=False
 
     return matrix
-
-def fix_str(string):
-    #replace poistaa "skandi"-merkit
-    return string.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
-
-def fix_str_noncompatible_chars_in_unicode(string):
-    return string.replace("\x9a","?").replace("\x96","?").replace("\x92","?")
