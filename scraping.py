@@ -13,34 +13,11 @@ kurssi_url =                url_basic + "porssikurssit/osake/index.jsp?klid={}" 
 kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"   #ID loppuun!
 
 
-# TODO: Is this needed
-class Scrape():
-    def __init__(self):
-        pass
-
-    def __repr__(self):
-        return __dict__
-
-    def set_from_scrape(self, DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys):
-        self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
-        self.scraped_IDs = scraped_IDs
-        self.DICT_yritys=DICT_yritys
-
-    def set_from_csv_file(self, filename):
-        DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys = storage.DICT_YRITYKSEN_TIEDOT_csv_file_READ(filename)
-
-        self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
-        self.scraped_IDs = scraped_IDs
-        self.DICT_yritys = DICT_yritys
-
-    def save_to_csv_file(self):
-        storage.DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(self.DICT_YRITYKSEN_TIEDOT, self.scraped_IDs, self.DICT_yritys)
-
-
 class Company():
     def __init__(self, ID, name):
         self.ID = ID
         self.name = name
+        self.metrics = {}
 
         self.scrape()
         self.set_metrics()
@@ -101,7 +78,7 @@ class Company():
                     if tsv:
                         string = string + "\n{}\t{}".format(i, str(company_dict[i]))
                     else:
-                        string = string + "\n\t%-23.23s:%s" % (i, str(company_dict[i]))
+                        string = string + "\n\t%-31.31s:%s" % (i, str(company_dict[i]))
         else:
             string = "\n{}: Empty".format(name)
         return string
@@ -123,15 +100,15 @@ class Company():
         """
 
         self.str_raw = "company_id:\t{}\nName:\t{}".format(self.ID, self.name) +\
-            "\nKurssi:\t{}\nKuvaus:\t{}".format(self.kurssi, self.kuvaus_yrityksesta)
-        self.str_raw = self.str_raw + self.list_to_str(self.osingot,                        "Osingot")
-        self.str_raw = self.str_raw + self.dict_to_str(self.perustiedot_dict,               "Perustiedot")
-        self.str_raw = self.str_raw + self.dict_to_str(self.tunnuslukuja_dict,              "Tunnuslukuja")
-        self.str_raw = self.str_raw + self.list_to_str(self.toiminnan_laajuus_mat,          "Toiminnan laajuus")
-        self.str_raw = self.str_raw + self.list_to_str(self.kannattavuus_mat,               "Kannattavuus")
-        self.str_raw = self.str_raw + self.list_to_str(self.vakavaraisuus_mat,              "Vakavaraisuus")
-        self.str_raw = self.str_raw + self.list_to_str(self.maksuvalmius_mat,               "Maksuvalmius")
-        self.str_raw = self.str_raw + self.list_to_str(self.sijoittajan_tunnuslukuja_mat,   "Sijoittajan tunnuslukuja")
+            "\nKurssi:\t{}\nKuvaus:\t{}".format(self.kurssi, self.kuvaus_yrityksesta) +\
+            self.list_to_str(self.osingot,                        "Osingot") +\
+            self.dict_to_str(self.perustiedot_dict,               "Perustiedot") +\
+            self.dict_to_str(self.tunnuslukuja_dict,              "Tunnuslukuja") +\
+            self.list_to_str(self.toiminnan_laajuus_mat,          "Toiminnan laajuus") +\
+            self.list_to_str(self.kannattavuus_mat,               "Kannattavuus") +\
+            self.list_to_str(self.vakavaraisuus_mat,              "Vakavaraisuus") +\
+            self.list_to_str(self.maksuvalmius_mat,               "Maksuvalmius") +\
+            self.list_to_str(self.sijoittajan_tunnuslukuja_mat,   "Sijoittajan tunnuslukuja")
 
         self.tsv_raw = "\n## company_id\t{}\nName\t{}".format(self.ID, self.name) +\
             "\nKurssi\t{}\nKuvaus\t{}".format(self.kurssi, self.kuvaus_yrityksesta) +\
@@ -152,6 +129,30 @@ class Company():
 
     def __repr__(self):
         return self.str_metrics
+
+
+# TODO: Is this needed
+class Scrape():
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return __dict__
+
+    def set_from_scrape(self, DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys):
+        self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
+        self.scraped_IDs = scraped_IDs
+        self.DICT_yritys=DICT_yritys
+
+    def set_from_csv_file(self, filename):
+        DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys = storage.DICT_YRITYKSEN_TIEDOT_csv_file_READ(filename)
+
+        self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
+        self.scraped_IDs = scraped_IDs
+        self.DICT_yritys = DICT_yritys
+
+    #def save_to_csv_file(self):
+    #    storage.DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(self.DICT_YRITYKSEN_TIEDOT, self.scraped_IDs, self.DICT_yritys)
 
 
 class Yritys():
@@ -397,7 +398,7 @@ def get_raw_soup(link):
     soup = BeautifulSoup(r.text, "html.parser")
     return soup
 
-def get_company_names_dict(link):
+def scrape_company_names(link):
     soup = get_raw_soup(link)
 
     form_tags = soup.find_all('form')

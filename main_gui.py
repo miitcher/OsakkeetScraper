@@ -126,8 +126,14 @@ class Window(QWidget):
                 if tsv_filename_metrics:
                     # TODO: change selected (in PyQt) tsv_filename to the returned tsv_filename_metrics
                     logger.debug("new_csv_filename: " + tsv_filename_metrics)
+                    
+                    logger.info("Scraping done")
+                    if tsv_filename_raw:
+                        logger.info("Scraped and stored raw file: {}".format(tsv_filename_raw))
+                    if tsv_filename_metrics:
+                        logger.info("Scraped and stored metrics file: {}".format(tsv_filename_metrics))
                 else:
-                    logger.debug("Scraping failed.")
+                    logger.info("Scraping failed; no tsv_file scraped")
             elif sender.text() == "Exit":
                 self.close()
             else:

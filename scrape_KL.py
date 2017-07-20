@@ -1,6 +1,6 @@
 import logging
 
-from scraping import *
+import scraping
 import storage
 
 logger = logging.getLogger('root')
@@ -17,33 +17,37 @@ kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?kli
 
 
 def scrape_companies(storage_directory):
-    logger.info("Company names are scraped from Kauppalehti")
-    #company_names = get_company_names_dict(osingot_url)
-    company_names = {2048:"Talenom"}
+    logger.debug("Check if company_names is already fetched today")
+    company_names = storage.get_ready_company_names(storage_directory)
 
-    logger.info("Individual companies data is scraped from Kauppalehti")
+    if not company_names:
+        logger.debug("Company names are scraped from Kauppalehti")
+        company_names = scraping.scrape_company_names(osingot_url)
+        storage.store_company_names_list(company_names, storage_directory)
+
+    logger.debug("Individual companies data is scraped from Kauppalehti")
     company_list = []
     for ID in company_names:
         logger.debug("ID:{}, Name:{}".format(ID, company_names[ID]))
-        company = Company(ID, company_names[ID])
+        company = scraping.Company(ID, company_names[ID])
         company_list.append(company)
-        break
-
+        break # so just one company is scraped
     logger.debug("Number of companies scraped: {}".format(len(company_list)))
-
-    print("PRINT RAW:")
+    """
+    print("\nSTR RAW:")
     print(company_list[0].str_raw)
-    print("PRINT METRICS:")
-    print(company_list[0])
+    print("\nSTR METRICS:")
+    print(company_list[0]) # .str_metrics
     """
-    for i in companies_list:
-        print(i)
+    logger.debug("Scraped companies are stored")
+    tsv_filename_raw     = storage.store_company_list(company_list, storage_directory, "raw")
+    tsv_filename_metrics = storage.store_company_list(company_list, storage_directory)
     """
-
-    logger.info("Scraped companies are stored")
-    tsv_filename_raw     = storage.store_company_list_raw(company_list, storage_directory)
-    tsv_filename_metrics = storage.store_company_list_metrics(company_list, storage_directory)
-
+    print("\ntsv RAW:")
+    print(company_list[0].tsv_raw)
+    print("\ntsv METRICS:")
+    print(company_list[0].tsv_metrics)
+    """
     return tsv_filename_raw, tsv_filename_metrics
 
 def load_companies(filename):
@@ -84,8 +88,9 @@ def organize_companies(filename):
 
 
 # TODO: Remove old scrape functions, that are written in scraping.py
+'''
 def scrape_yritys_dict():
-    DICT_yritys=get_company_names_dict(osingot_url)       #    DICT_yritys[ID] = "Yrityksen nimi"
+    DICT_yritys=scraping.scrape_company_names(osingot_url)       #    DICT_yritys[ID] = "Yrityksen nimi"
     #dictionary_print(DICT_yritys)
     return DICT_yritys
 
@@ -153,3 +158,4 @@ def scrape_DICT_YRITYKSEN_TIEDOT_AND_scraped_IDs(DICT_yritys):
         #break   #GETS JUST ONE COMPPANY WITH BREAK
     
     return DICT_YRITYKSEN_TIEDOT, scraped_IDs
+'''
