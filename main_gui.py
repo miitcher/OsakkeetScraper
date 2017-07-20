@@ -123,17 +123,15 @@ class Window(QWidget):
 
             if sender.text() == "Scrape companies":
                 tsv_filename_raw, tsv_filename_metrics = scrape_KL.scrape_companies(self.scrapes_dir)
+                if tsv_filename_raw:
+                    logger.info("Scraped and stored raw file: {}".format(tsv_filename_raw))
                 if tsv_filename_metrics:
+                    logger.info("Scraped and stored metrics file: {}".format(tsv_filename_metrics))
+                if tsv_filename_metrics and tsv_filename_raw:
                     # TODO: change selected (in PyQt) tsv_filename to the returned tsv_filename_metrics
-                    logger.debug("new_csv_filename: " + tsv_filename_metrics)
-                    
                     logger.info("Scraping done")
-                    if tsv_filename_raw:
-                        logger.info("Scraped and stored raw file: {}".format(tsv_filename_raw))
-                    if tsv_filename_metrics:
-                        logger.info("Scraped and stored metrics file: {}".format(tsv_filename_metrics))
                 else:
-                    logger.info("Scraping failed; no tsv_file scraped")
+                    logger.info("Scraping failed")
             elif sender.text() == "Exit":
                 self.close()
             else:
@@ -158,7 +156,7 @@ class Window(QWidget):
                             logger.info("The company-ID must be an integer.")
                     else:
                         logger.debug('Did not recognize "sender.text()": ' + sender.text())
-        except Exception as e:
+        except:
             # The traceback does not work properly with the PyQt in LiClipse.
             # There is no traceback on errors in LiClipse, but there is
             # when running the program from the command line.

@@ -18,12 +18,12 @@ kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?kli
 
 def scrape_companies(storage_directory):
     logger.debug("Check if company_names is already fetched today")
-    company_names = storage.get_ready_company_names(storage_directory)
+    company_names = storage.get_today_stored_company_names(storage_directory)
 
     if not company_names:
         logger.debug("Company names are scraped from Kauppalehti")
         company_names = scraping.scrape_company_names(osingot_url)
-        storage.store_company_names_list(company_names, storage_directory)
+        storage.store_company_list(company_names, storage_directory, "names")
 
     logger.debug("Individual companies data is scraped from Kauppalehti")
     company_list = []
