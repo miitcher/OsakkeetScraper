@@ -44,7 +44,7 @@ class Company():
 
         self.scrape()
         self.set_metrics()
-        self.set_representation()
+        self.set_representations()
 
     def scrape(self):
         url = osingot_yritys_url.format(self.ID)
@@ -68,37 +68,45 @@ class Company():
         pass
 
     @staticmethod
-    def list_to_str(list, name):
-        #print("name: " + name)
-        #print(list)
-        if list[0]:
-            string = "\n{}:".format(name)
-            for i in range(1, len(list)):
-                #print(i, list[i])
+    def list_to_str(company_list, name, tsv=False):
+        if company_list[0]:
+            if tsv:
+                string = "\n# {}:".format(name)
+            else:
+                string = "\n{}:".format(name)
+            for i in range(1, len(company_list)):
                 string = string + "\n"
-                for j in list[i]:
+                for j in company_list[i]:
                     # one tab is 8 spaces/characters
-                    string = string + "\t%-15.15s" % str(j)
+                    if tsv:
+                        string = string + "{}\t".format(j)
+                    else:
+                        string = string + "\t%-15.15s" % str(j)
+                if tsv:
+                    string.rstrip()
         else:
             string = "\n{}: Empty".format(name)
         return string
 
     @staticmethod
-    def dict_to_str(dict, name):
-        #print("name: " + name)
-        #print(dict)
-        if dict[0]:
-            string = "\n{}:".format(name)
-            for i in dict:
-                #print(i, dict[i])
+    def dict_to_str(company_dict, name, tsv=False):
+        if company_dict[0]:
+            if tsv:
+                string = "\n# {}:".format(name)
+            else:
+                string = "\n{}:".format(name)
+            for i in company_dict:
                 # one tab is 8 spaces/characters
                 if i != 0:
-                    string = string + "\n\t%-23.23s:%s" % (i, str(dict[i]))
+                    if tsv:
+                        string = string + "\n{}\t{}".format(i, str(company_dict[i]))
+                    else:
+                        string = string + "\n\t%-23.23s:%s" % (i, str(company_dict[i]))
         else:
             string = "\n{}: Empty".format(name)
         return string
 
-    def set_representation(self):
+    def set_representations(self):
         """
         print(self.ID)
         print(self.name)
@@ -113,8 +121,8 @@ class Company():
         print(self.maksuvalmius_mat)
         print(self.sijoittajan_tunnuslukuja_mat)
         """
-        # Raw string
-        self.str_raw = "ID:\t{}\n\tName:\t{}".format(self.ID, self.name) +\
+
+        self.str_raw = "company_id:\t{}\nName:\t{}".format(self.ID, self.name) +\
             "\nKurssi:\t{}\nKuvaus:\t{}".format(self.kurssi, self.kuvaus_yrityksesta)
         self.str_raw = self.str_raw + self.list_to_str(self.osingot,                        "Osingot")
         self.str_raw = self.str_raw + self.dict_to_str(self.perustiedot_dict,               "Perustiedot")
@@ -125,13 +133,24 @@ class Company():
         self.str_raw = self.str_raw + self.list_to_str(self.maksuvalmius_mat,               "Maksuvalmius")
         self.str_raw = self.str_raw + self.list_to_str(self.sijoittajan_tunnuslukuja_mat,   "Sijoittajan tunnuslukuja")
 
-        # TODO: Metrics string
+        self.tsv_raw = "\n## company_id\t{}\nName\t{}".format(self.ID, self.name) +\
+            "\nKurssi\t{}\nKuvaus\t{}".format(self.kurssi, self.kuvaus_yrityksesta) +\
+            self.list_to_str(self.osingot,                        "Osingot",                    True) +\
+            self.dict_to_str(self.perustiedot_dict,               "Perustiedot",                True) +\
+            self.dict_to_str(self.tunnuslukuja_dict,              "Tunnuslukuja",               True) +\
+            self.list_to_str(self.toiminnan_laajuus_mat,          "Toiminnan laajuus",          True) +\
+            self.list_to_str(self.kannattavuus_mat,               "Kannattavuus",               True) +\
+            self.list_to_str(self.vakavaraisuus_mat,              "Vakavaraisuus",              True) +\
+            self.list_to_str(self.maksuvalmius_mat,               "Maksuvalmius",               True) +\
+            self.list_to_str(self.sijoittajan_tunnuslukuja_mat,   "Sijoittajan tunnuslukuja",   True)
+
+        # TODO: str metrics
         self.str_metrics = "Under work"
 
-    def __repr__(self):
-        return self.str_raw
+        # TODO: tsv metrics
+        self.tsv_metrics = "Under work"
 
-    def __str__(self):
+    def __repr__(self):
         return self.str_metrics
 
 

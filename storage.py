@@ -2,12 +2,39 @@
 
 import datetime
 
+import logging
+
+logger = logging.getLogger('root')
+
 
 def get_dateNtime():
-    dt=datetime.datetime.today()
-    dateNtime = str(dt.year) +"_"+ str(dt.month) +"_"+ str(dt.day) \
-    +"--"+ str(dt.hour) +"_"+ str(dt.minute) +"_"+ str(dt.second) +"_"+ str(dt.microsecond)
+    dt = datetime.datetime.today()
+    dateNtime = str(dt.year) + "_" + str(dt.month) + "_" + str(dt.day) \
+        +"--"+ str(dt.hour) +"_"+ str(dt.minute) +"_"+ str(dt.second) +"_"+ str(dt.microsecond)
     return dateNtime
+
+def store_company_list_raw(company_list, storage_directory):
+    dt = datetime.datetime.today()
+    # YY-MM-DD_HH-MM-SS
+    datetime_str = "{:2.2}-{:0>2.2}-{:0>2.2}_{:0>2.2}-{:0>2.2}-{:0>2.2}".format( \
+                    str(dt.year)[2:], str(dt.month), str(dt.day), \
+                    str(dt.hour), str(dt.minute), str(dt.second))
+    tsv_filename = storage_directory + "\\scrape_" + datetime_str + ".tsv"
+
+    with open(tsv_filename, "w") as f:
+        f.write("Companies scraped from Kauppalehti on: " + datetime_str + \
+                "\ncompany_list_raw")
+        for company in company_list:
+            f.write(company.tsv_raw)
+
+    logger.debug("Stored raw company_list into: " + tsv_filename)
+    return tsv_filename
+
+def store_company_list_metrics(company_list, storage_directory):
+    tsv_filename = "Nope"
+    logger.debug("Stored metrics company_list into: " + tsv_filename)
+    return tsv_filename
+
 
 def DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys):
     filename = "stored_scrapes\\" + "DICT_YRITYKSEN_TIEDOT-"+ get_dateNtime() + ".csv"

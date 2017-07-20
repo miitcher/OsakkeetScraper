@@ -1,6 +1,7 @@
 import logging
 
 from scraping import *
+import storage
 
 logger = logging.getLogger('root')
 
@@ -21,27 +22,29 @@ def scrape_companies(storage_directory):
     company_names = {2048:"Talenom"}
 
     logger.info("Individual companies data is scraped from Kauppalehti")
-    companies_list = []
+    company_list = []
     for ID in company_names:
         logger.debug("ID:{}, Name:{}".format(ID, company_names[ID]))
         company = Company(ID, company_names[ID])
-        companies_list.append(company)
+        company_list.append(company)
         break
 
-    #Tiedot=Scrape()
-    #Tiedot.set_from_scrape(DICT_YRITYKSEN_TIEDOT, scraped_IDs, company_names)
+    logger.debug("Number of companies scraped: {}".format(len(company_list)))
 
-    print("Hello2")
-    print(len(companies_list))
-    print(companies_list[0])
+    print("PRINT RAW:")
+    print(company_list[0].str_raw)
+    print("PRINT METRICS:")
+    print(company_list[0])
     """
     for i in companies_list:
         print(i)
     """
-    print("Hello3")
 
-    csv_filename = None
-    return csv_filename
+    logger.info("Scraped companies are stored")
+    tsv_filename_raw     = storage.store_company_list_raw(company_list, storage_directory)
+    tsv_filename_metrics = storage.store_company_list_metrics(company_list, storage_directory)
+
+    return tsv_filename_raw, tsv_filename_metrics
 
 def load_companies(filename):
     """

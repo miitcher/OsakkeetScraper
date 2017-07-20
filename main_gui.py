@@ -10,7 +10,7 @@ from scrape_KL import scrape_companies
 class Window(QWidget):
     def __init__(self, src_dir):
         super().__init__()
-        self.scrapes_dir = src_dir + '\scrapes'
+        self.scrapes_dir = src_dir + '\\scrapes'
         self.setWindowTitle('Osakkeiden loytaminen Kauppalehdesta')
         self.setMinimumSize(700,350)
         self.setMaximumSize(950,450)
@@ -117,37 +117,37 @@ class Window(QWidget):
         try:
             sender=self.sender()
             if self.FileComboBox.currentText() == self.nullFile:
-                self.csv_filename = None
+                self.tsv_filename = None
             else:
-                self.csv_filename = "scrapes\\" + self.FileComboBox.currentText()
+                self.tsv_filename = "scrapes\\" + self.FileComboBox.currentText()
 
             if sender.text() == "Scrape companies":
-                new_csv_filename = scrape_KL.scrape_companies(self.scrapes_dir)
-                if new_csv_filename:
-                    # TODO: change selected csv_filename to the returned filename
-                    logger.debug("new_csv_filename: " + new_csv_filename)
+                tsv_filename_raw, tsv_filename_metrics = scrape_KL.scrape_companies(self.scrapes_dir)
+                if tsv_filename_metrics:
+                    # TODO: change selected (in PyQt) tsv_filename to the returned tsv_filename_metrics
+                    logger.debug("new_csv_filename: " + tsv_filename_metrics)
                 else:
                     logger.debug("Scraping failed.")
             elif sender.text() == "Exit":
                 self.close()
             else:
-                if not self.csv_filename:
+                if not self.tsv_filename:
                     logger.info("No csv-file.")
                 else:
                     if sender.text() == "Load companies from csv-file":
-                        scrape_KL.load_companies(self.csv_filename)
+                        scrape_KL.load_companies(self.tsv_filename)
                     elif sender.text() == "Save companies to csv-file":
                         logger.debug("FEATURE WILL BE REMOVED: Companies will be automatically stored.")
                     elif sender.text() == "Filter companies":
-                        scrape_KL.filter_companies(self.csv_filename)
+                        scrape_KL.filter_companies(self.tsv_filename)
                     elif sender.text() == "Organize companies":
-                        scrape_KL.organize_companies(self.csv_filename)
+                        scrape_KL.organize_companies(self.tsv_filename)
                     elif sender.text() == "Print companies":
-                        scrape_KL.print_companies(self.csv_filename)
+                        scrape_KL.print_companies(self.tsv_filename)
                     elif sender.text() == "Print company info":
                         try:
                             company_ID = int(self.company_ID.text())
-                            scrape_KL.print_company(self.csv_filename, company_ID)
+                            scrape_KL.print_company(self.tsv_filename, company_ID)
                         except ValueError:
                             logger.info("The company-ID must be an integer.")
                     else:
