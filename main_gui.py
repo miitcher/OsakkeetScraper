@@ -119,8 +119,10 @@ class Window(QWidget):
                 self.tsv_filename = "scrapes\\" + self.FileComboBox.currentText()
 
             if sender.text() == "Scrape companies":
-                tsv_filename_raw, tsv_filename_metrics = scrape_KL.scrape_companies(self.scrapes_dir)
-                if tsv_filename_metrics and tsv_filename_raw:
+                #tsv_filename_raw, tsv_filename_metrics = scrape_KL.scrape_companies(self.scrapes_dir)
+                #if tsv_filename_metrics and tsv_filename_raw:
+                tsv_filename_list = scrape_KL.scrape_companies(self.scrapes_dir)
+                if tsv_filename_list:
                     # TODO: change selected (in PyQt) tsv_filename to the returned tsv_filename_metrics
                     logger.info("Scraping done")
                 else:

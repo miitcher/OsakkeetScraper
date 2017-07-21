@@ -16,14 +16,32 @@ kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?kli
 
 
 class Company():
-    def __init__(self, company_id, name="Unknown"):
+    def __init__(self, company_id=None, name="Unknown", raw_metrics=None, metrics=None):
         self.company_id = company_id
         self.name = name
         self.scrape_date = None # datetime.date Object
-        self.scrape_type = None
-        # scrape_type: raw (needs to be processed to metrics), metrics (ok), None (just scraped; will be processed)
-        self.raw_metrics = {}
-        self.metrics = {}
+        self.scrape_type = None # raw, raw_metrics, metrics, None
+
+        assert not (raw_metrics and metrics), "Both raw_metrics and metrics is given"
+
+        if raw_metrics:
+            self.raw_metrics = raw_metrics
+            self.company_id =  self.raw_metrics["company_id"]
+            self.name =        self.raw_metrics["name"]
+            self.scrape_type = self.raw_metrics["scrape_type"]
+            self.scrape_date = datetime.strptime(self.raw_metrics["scrape_date"], "%y-%m-%d")
+        else:
+            self.raw_metrics = {}
+        if metrics:
+            self.metrics = metrics
+            self.company_id =  self.metrics["company_id"]
+            self.name =        self.metrics["name"]
+            self.scrape_type = self.metrics["scrape_type"]
+            self.scrape_date = datetime.strptime(self.metrics["scrape_date"], "%y-%m-%d")
+        else:
+            self.metrics = {}
+
+        assert self.company_id, "Company has no id"
 
     def scrape(self):
         url = osingot_yritys_url.format(self.company_id)
@@ -42,7 +60,7 @@ class Company():
         self.maksuvalmius = get_kurssi_tulostiedot(url, "Maksuvalmius")
         self.sijoittajan_tunnuslukuja = get_kurssi_tulostiedot(url, "Sijoittajan tunnuslukuja")
 
-        self.scrape_date = datetime.now().date()
+        self.scrape_date = datetime.now().date() # YY-MM-DD
         self.scrape_type = "raw"
 
         self.set_raw_metrics()
@@ -60,10 +78,13 @@ class Company():
 
     @staticmethod
     def make_value_pretty(v):
+        """ # Seems None does not work with JSON
         if v == "-":
             return None
+        """
+        # TODO: turn all empty fields to "-"
         coeff = 1
-        if "milj.eur" in v:
+        if "milj.eur" in v: # TODO: handle other like miljard, etc.
             coeff = 1e6
             v = v.replace("milj.eur", "")
         try:
@@ -75,6 +96,7 @@ class Company():
                 v = int(v)
         except ValueError:
             pass
+        # TODO: handle dates
         return v
 
     @staticmethod
@@ -87,7 +109,7 @@ class Company():
                 k = str(head[j]).lower()
                 v = str(list_in[i][j]).lower()
                 sub_d[k] = Company.make_value_pretty(v)
-            d[i-2] = sub_d
+            d[str(i-2)] = sub_d
         return d
 
     @staticmethod
@@ -125,10 +147,11 @@ class Company():
     def set_raw_metrics(self):
         self.raw_metrics["company_id"] = self.company_id
         self.raw_metrics["name"] = self.name
+        self.raw_metrics["scrape_date"] = self.scrape_date.strftime("%y-%m-%d")
+        self.raw_metrics["scrape_type"] = self.scrape_type
+
         self.raw_metrics["kurssi"] = self.kurssi
         self.raw_metrics["kuvaus_yrityksesta"] = self.kuvaus_yrityksesta
-        self.raw_metrics["scrape_date"] = self.scrape_date
-        self.raw_metrics["scrape_type"] = self.scrape_type
 
         self.raw_metrics["osingot"] = self.list_to_pretty_dict(self.osingot)
 

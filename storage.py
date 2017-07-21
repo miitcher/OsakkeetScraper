@@ -40,7 +40,7 @@ def get_stored_company_data(filename):
     logger.debug("Reading from file: " + filename)
     company_list = []
     company = None          # Company Object
-    scrape_type = None      # name, raw, metrics
+    scrape_type = None      # name, raw, metrics, raw_metrics
     storage_datetime = None # datetime.datetime Object
     sub_header = None       # e.g. Osingot, Perustiedot
 
@@ -68,10 +68,9 @@ def get_stored_company_data(filename):
             elif body_lines and line:
                 # reading the files body
                 if scrape_type == "raw_metrics":
-                    logger.debug("raw_metrics dict_str: {}".format(line))
                     json_acceptable_string = line.replace("'", "\"")
-                    logger.debug("json_acceptable_string: [{}]".format(json_acceptable_string))
-                    company.raw_metrics = json.loads(json_acceptable_string)
+                    #logger.debug("json_acceptable_string: [{}]".format(json_acceptable_string))
+                    company_list.append(scraping.Company(raw_metrics = json.loads(json_acceptable_string)))
                 else:
                     try:
                         parts = line.strip().split("\t")
