@@ -15,30 +15,23 @@ def scrape_companies(storage_directory):
     if not company_names:
         logger.debug("Company names are scraped from Kauppalehti")
         company_names = scraping.scrape_company_names()
-        storage.store_company_list(company_names, storage_directory, "names")
+        storage.store_company_data(company_names, storage_directory, "names")
 
     logger.debug("Individual companies data is scraped from Kauppalehti")
     company_list = []
     for company_id in company_names:
         logger.debug("company_id:{}, Name:{}".format(company_id, company_names[company_id]))
-        company = scraping.Company(company_id, company_names[company_id])
+        company = scraping.Company(company_id, name=company_names[company_id])
         company.scrape()
         company_list.append(company)
         break # so just one company is scraped
     logger.debug("Number of companies scraped: {}".format(len(company_list)))
-    """
-    print("\nSTR RAW:")
-    print(company_list[0].str_raw)
-    print("\nSTR METRICS:")
-    print(company_list[0]) # .str_metrics
-    print("\ntsv RAW:")
-    print(company_list[0].tsv_raw)
-    print("\ntsv METRICS:")
-    print(company_list[0].tsv_metrics)
-    """
+
     logger.debug("Scraped companies are stored")
-    tsv_filename_raw     = storage.store_company_list(company_list, storage_directory, "raw")
-    tsv_filename_metrics = storage.store_company_list(company_list, storage_directory, "metrics")
+    tsv_filename_raw     = storage.store_company_data(company_list, storage_directory, "raw")
+    tsv_filename_metrics = storage.store_company_data(company_list, storage_directory, "metrics")
+    
+    storage.store_company_data(company_list, storage_directory, "raw_metrics")
 
     return tsv_filename_raw, tsv_filename_metrics
 

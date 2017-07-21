@@ -120,10 +120,6 @@ class Window(QWidget):
 
             if sender.text() == "Scrape companies":
                 tsv_filename_raw, tsv_filename_metrics = scrape_KL.scrape_companies(self.scrapes_dir)
-                if tsv_filename_raw:
-                    logger.info("Scraped and stored raw file: {}".format(tsv_filename_raw))
-                if tsv_filename_metrics:
-                    logger.info("Scraped and stored metrics file: {}".format(tsv_filename_metrics))
                 if tsv_filename_metrics and tsv_filename_raw:
                     # TODO: change selected (in PyQt) tsv_filename to the returned tsv_filename_metrics
                     logger.info("Scraping done")
