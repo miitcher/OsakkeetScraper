@@ -79,10 +79,6 @@ class Company():
 
     @staticmethod
     def list_to_pretty_dict(list_in):
-        for i in list_in:
-            print(i)
-        print("---")
-        
         d = {}
         head = list_in[1]
         for i in range(2, len(list_in)):
@@ -92,20 +88,10 @@ class Company():
                 v = str(list_in[i][j]).lower()
                 sub_d[k] = Company.make_value_pretty(v)
             d[i-2] = sub_d
-        
-        for i in d:
-            print("{} : {}".format(i, d[i]))
-        print("+++")
         return d
 
     @staticmethod
     def list_to_pretty_dict_pivot(list_in):
-        """
-        for i in list_in:
-            print(i)
-        print("---")
-        """
-        d = {}
         l = []
         head = list_in[1]
         first_col = str(head[0]).lower() # "vuosi"
@@ -116,40 +102,24 @@ class Company():
                 v = str(list_in[i][j]).lower()
                 sub_d[k] = Company.make_value_pretty(v)
             l.append(sub_d)
-        """
-        for i in l:
-            print(i)
-        print("-+-+-+")
-        """
+        d = {}
         for k in head:
             k = str(k).lower()
             if k != first_col and k != "-":
-                print(k)
                 sub_d = {}
                 for row_d in l:
                     sub_d[row_d[first_col]] = row_d[k]
                 d[k] = sub_d
-        print("###")
-        
-        for i in d:
-            print("{} : {}".format(i, d[i]))
-        print("+++")
         return d
 
     @staticmethod
     def dict_to_pretty_dict(dict_in):
         d = {}
         for i in dict_in:
-            print("{} : {}".format(i, dict_in[i]))
             if i != 0:
                 k = str(i).lower()
                 v = str(dict_in[i]).lower()
                 d[k] = Company.make_value_pretty(v)
-        print("---")
-        
-        for i in d:
-            print("{} : {}".format(i, d[i]))
-        print("+++")
         return d
 
     def set_raw_metrics(self):
@@ -159,40 +129,17 @@ class Company():
         self.raw_metrics["kuvaus_yrityksesta"] = self.kuvaus_yrityksesta
         self.raw_metrics["scrape_date"] = self.scrape_date
         self.raw_metrics["scrape_type"] = self.scrape_type
-        """
+
         self.raw_metrics["osingot"] = self.list_to_pretty_dict(self.osingot)
-        
+
         self.raw_metrics["perustiedot"] = self.dict_to_pretty_dict(self.perustiedot)
         self.raw_metrics["tunnuslukuja"] = self.dict_to_pretty_dict(self.perustiedot)
-        """
+
         self.raw_metrics["toiminnan_laajuus"] = self.list_to_pretty_dict_pivot(self.toiminnan_laajuus)
         self.raw_metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(self.kannattavuus)
         self.raw_metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(self.vakavaraisuus)
         self.raw_metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(self.maksuvalmius)
         self.raw_metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(self.sijoittajan_tunnuslukuja)
-        
-        
-        """
-        print(self.osingot)
-        print(self.perustiedot)
-        print(self.tunnuslukuja)
-        print(self.toiminnan_laajuus)
-        print(self.kannattavuus)
-        print(self.vakavaraisuus)
-        print(self.maksuvalmius)
-        print(self.sijoittajan_tunnuslukuja)
-        """
-        
-        """
-        self.raw_metrics["osingot"] = self.osingot
-        self.raw_metrics["perustiedot"] = self.perustiedot
-        self.raw_metrics["tunnuslukuja"] = self.tunnuslukuja
-        self.raw_metrics["toiminnan_laajuus"] = self.toiminnan_laajuus
-        self.raw_metrics["kannattavuus"] = self.kannattavuus
-        self.raw_metrics["vakavaraisuus"] = self.vakavaraisuus
-        self.raw_metrics["maksuvalmius"] = self.maksuvalmius
-        self.raw_metrics["sijoittajan_tunnuslukuja"] = self.sijoittajan_tunnuslukuja
-        """
 
     def set_metrics(self):
         # TODO: get the metrics from scraped data into better format
