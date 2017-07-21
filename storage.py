@@ -27,9 +27,6 @@ def store_company_data(company_list, storage_directory, scrape_type):
         elif scrape_type == "metrics":
             for company in company_list:
                 f.write(company.tsv_metrics)
-        elif scrape_type == "raw_metrics":
-            for company in company_list:
-                f.write(company.tsv_raw_metrics)
         else:
             logger.error("Not a valid scrape_type: [{}]".format(scrape_type))
 
@@ -40,7 +37,7 @@ def get_stored_company_data(filename):
     logger.debug("Reading from file: " + filename)
     company_list = []
     company = None          # Company Object
-    scrape_type = None      # name, raw, metrics, raw_metrics
+    scrape_type = None      # name, raw, metrics
     storage_datetime = None # datetime.datetime Object
     sub_header = None       # e.g. Osingot, Perustiedot
 
@@ -67,11 +64,12 @@ def get_stored_company_data(filename):
 
             elif body_lines and line:
                 # reading the files body
-                if scrape_type == "raw_metrics":
+                if scrape_type == "metrics":
                     json_acceptable_string = line.replace("'", "\"")
                     #logger.debug("json_acceptable_string: [{}]".format(json_acceptable_string))
-                    company_list.append(scraping.Company(raw_metrics = json.loads(json_acceptable_string)))
+                    company_list.append(scraping.Company(metrics = json.loads(json_acceptable_string)))
                 else:
+                    # reading raw body or names body
                     try:
                         parts = line.strip().split("\t")
                     except ValueError:

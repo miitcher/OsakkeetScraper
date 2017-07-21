@@ -16,22 +16,12 @@ kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?kli
 
 
 class Company():
-    def __init__(self, company_id=None, name="Unknown", raw_metrics=None, metrics=None):
+    def __init__(self, company_id=None, name="Unknown", metrics=None):
         self.company_id = company_id
         self.name = name
         self.scrape_date = None # datetime.date Object
-        self.scrape_type = None # raw, raw_metrics, metrics, None
+        self.scrape_type = None # raw, metrics, None
 
-        assert not (raw_metrics and metrics), "Both raw_metrics and metrics is given"
-
-        if raw_metrics:
-            self.raw_metrics = raw_metrics
-            self.company_id =  self.raw_metrics["company_id"]
-            self.name =        self.raw_metrics["name"]
-            self.scrape_type = self.raw_metrics["scrape_type"]
-            self.scrape_date = datetime.strptime(self.raw_metrics["scrape_date"], "%y-%m-%d")
-        else:
-            self.raw_metrics = {}
         if metrics:
             self.metrics = metrics
             self.company_id =  self.metrics["company_id"]
@@ -63,7 +53,6 @@ class Company():
         self.scrape_date = datetime.now().date() # YY-MM-DD
         self.scrape_type = "raw"
 
-        self.set_raw_metrics()
         self.set_metrics()
         self.set_representations()
 
@@ -144,30 +133,25 @@ class Company():
                 d[k] = Company.make_value_pretty(v)
         return d
 
-    def set_raw_metrics(self):
-        self.raw_metrics["company_id"] = self.company_id
-        self.raw_metrics["name"] = self.name
-        self.raw_metrics["scrape_date"] = self.scrape_date.strftime("%y-%m-%d")
-        self.raw_metrics["scrape_type"] = self.scrape_type
-
-        self.raw_metrics["kurssi"] = self.kurssi
-        self.raw_metrics["kuvaus_yrityksesta"] = self.kuvaus_yrityksesta
-
-        self.raw_metrics["osingot"] = self.list_to_pretty_dict(self.osingot)
-
-        self.raw_metrics["perustiedot"] = self.dict_to_pretty_dict(self.perustiedot)
-        self.raw_metrics["tunnuslukuja"] = self.dict_to_pretty_dict(self.perustiedot)
-
-        self.raw_metrics["toiminnan_laajuus"] = self.list_to_pretty_dict_pivot(self.toiminnan_laajuus)
-        self.raw_metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(self.kannattavuus)
-        self.raw_metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(self.vakavaraisuus)
-        self.raw_metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(self.maksuvalmius)
-        self.raw_metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(self.sijoittajan_tunnuslukuja)
-
     def set_metrics(self):
-        # TODO: get the metrics from scraped data into better format
-        #self.scrape_type = "metrics"
-        pass
+        self.metrics["company_id"] = self.company_id
+        self.metrics["name"] = self.name
+        self.metrics["scrape_date"] = self.scrape_date.strftime("%y-%m-%d")
+        self.metrics["scrape_type"] = self.scrape_type
+
+        self.metrics["kurssi"] = self.kurssi
+        self.metrics["kuvaus_yrityksesta"] = self.kuvaus_yrityksesta
+
+        self.metrics["osingot"] = self.list_to_pretty_dict(self.osingot)
+
+        self.metrics["perustiedot"] = self.dict_to_pretty_dict(self.perustiedot)
+        self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(self.perustiedot)
+
+        self.metrics["toiminnan_laajuus"] = self.list_to_pretty_dict_pivot(self.toiminnan_laajuus)
+        self.metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(self.kannattavuus)
+        self.metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(self.vakavaraisuus)
+        self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(self.maksuvalmius)
+        self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(self.sijoittajan_tunnuslukuja)
 
     @staticmethod
     def list_to_str(company_list, name, tsv=False):
@@ -250,13 +234,10 @@ class Company():
             self.list_to_str(self.maksuvalmius,             "maksuvalmius",               True) +\
             self.list_to_str(self.sijoittajan_tunnuslukuja, "sijoittajan_tunnuslukuja",   True)
 
-        self.tsv_raw_metrics = "\n{}".format(self.raw_metrics)
+        self.tsv_metrics = "\n{}".format(self.metrics)
 
         # TODO: str metrics
         self.str_metrics = "\nUnder work"
-
-        # TODO: tsv metrics
-        self.tsv_metrics = "\nUnder work"
 
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.name)
