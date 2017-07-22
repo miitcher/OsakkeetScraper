@@ -31,7 +31,7 @@ def scrape_companies(storage_directory):
     tsv_filename_raw         = storage.store_company_data(company_list, storage_directory, "raw")
     tsv_filename_metrics     = storage.store_company_data(company_list, storage_directory, "metrics")
 
-    return tsv_filename_raw, tsv_filename_metrics
+    return tsv_filename_metrics
 
 def load_companies(filename):
     # TODO: function can be removed
