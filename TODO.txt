@@ -1,5 +1,10 @@
-clear
-    yritys_luokka.py
-    console_display.py
-    scraping.py
+go trough old functions in Company-class in scraping.py
 implement funcions in scrape_KL
+implement reading of stored raw, or store it better
+
+
+    Maby useful:
+
+# Can maby use the ID:s below to something, in some form...
+KNOWN_MISSING_tunnuslukuja_table_tag_LIST=[2048,1025,2050,2055,2025,2045,1953,2040,2026,2027,2033,2034,2035,2042,2046]
+KNOWN_MISSING_KURSSI_TULOSTIEDOT_table_TAG=[1971,1083,1089,1104,1105,1970]  #Nama ovat pankkeja, ja niilla on erilaiset tunnusluvut.

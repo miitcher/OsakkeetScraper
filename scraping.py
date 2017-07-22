@@ -3,16 +3,15 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 import storage
-from django.conf.urls.static import static
 
 logger = logging.getLogger('root')
 
 
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
-osingot_url =               url_basic + "osingot/osinkohistoria.jsp"
-osingot_yritys_url =        url_basic + "osingot/osinkohistoria.jsp?klid={}"            #ID loppuun!
-kurssi_url =                url_basic + "porssikurssit/osake/index.jsp?klid={}"         #ID loppuun!
-kurssi_tulostiedot_url =    url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"   #ID loppuun!
+osingot_url             = url_basic + "osingot/osinkohistoria.jsp"
+osingot_yritys_url      = url_basic + "osingot/osinkohistoria.jsp?klid={}"            #ID loppuun!
+kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"         #ID loppuun!
+kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"   #ID loppuun!
 
 
 class Company():
@@ -24,14 +23,19 @@ class Company():
 
         if metrics:
             self.metrics = metrics
-            self.company_id =  self.metrics["company_id"]
-            self.name =        self.metrics["name"]
+            self.company_id  = self.metrics["company_id"]
+            self.name        = self.metrics["name"]
             self.scrape_type = self.metrics["scrape_type"]
             self.scrape_date = datetime.strptime(self.metrics["scrape_date"], "%y-%m-%d")
+
+            self.calculate_metrics()
         else:
             self.metrics = {}
 
         assert self.company_id, "Company has no id"
+
+    def __repr__(self):
+        return "Company({}, {})".format(self.company_id, self.name)
 
     def scrape(self):
         url = osingot_yritys_url.format(self.company_id)
@@ -193,6 +197,7 @@ class Company():
         return string
 
     def set_representations(self):
+        # TODO: Remove print later
         """
         print(self.company_id)
         print(self.name)
@@ -237,96 +242,14 @@ class Company():
         self.tsv_metrics = "\n{}".format(self.metrics)
 
         # TODO: str metrics
-        self.str_metrics = "\nUnder work"
+        self.str_metrics = "\n"
+        for k in self.metrics:
+            #print(k)
+            pass
 
-    def __repr__(self):
-        return "Company({}, {})".format(self.company_id, self.name)
+    # TODO: UNDER IS OLD FUNCTIONS: go troghe
 
-
-# TODO: Is this needed
-class Scrape():
-    def __init__(self):
-        pass
-
-    def __repr__(self):
-        return __dict__
-
-    def set_from_scrape(self, DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys):
-        self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
-        self.scraped_IDs = scraped_IDs
-        self.DICT_yritys=DICT_yritys
-    """
-    def set_from_csv_file(self, filename):
-        DICT_YRITYKSEN_TIEDOT, scraped_IDs, DICT_yritys = storage.DICT_YRITYKSEN_TIEDOT_csv_file_READ(filename)
-
-        self.DICT_YRITYKSEN_TIEDOT = DICT_YRITYKSEN_TIEDOT
-        self.scraped_IDs = scraped_IDs
-        self.DICT_yritys = DICT_yritys
-
-    def save_to_csv_file(self):
-        storage.DICT_YRITYKSEN_TIEDOT_csv_file_WRITE(self.DICT_YRITYKSEN_TIEDOT, self.scraped_IDs, self.DICT_yritys)
-    """
-
-class Yritys():
-    def __init__(self, ID, Tiedot_olio):
-        self.company_id=ID
-        self.Tiedot=Tiedot_olio
-        self.nimi=Tiedot_olio.DICT_yritys[ID]
-        
-        self.set_yritysksen_tiedot()
-    
-    def tiedot_print(self):
-        #print(": ", self.)
-        
-        print("\n\tPOIMITUT ARVOT:")
-        
-        print("nykyinen_kurssi: ", self.nykyinen_kurssi)
-        print("viime_osinko (EUR): ", self.viime_osinko)
-        print("on_jaettu_viisi_vuotta_osinkoa: ", self.on_jaettu_viisi_vuotta_osinkoa)
-        
-        print("\nomavaraisuusaste: ", self.omavaraisuusaste)
-        print("gearing: ", self.gearing)
-        print("kpl_osakkeita: ", self.kpl_osakkeita)
-        print("nettotulokset: ", self.nettotulokset)
-        
-        print("\nROE: ", self.ROE)
-        print("P_luku: ", self.P_luku)
-        print("E_luku: ", self.E_luku)
-        print("PB_luku: ", self.PB_luku)
-        print("PE_luku: ", self.PE_luku)
-        
-        print("\nToimiala: ", self.toimiala)
-        print("Toimialaluokka: ", self.toimialaluokka)
-        print("Kuvaus: ", self.kuvaus)
-        
-        
-        print("\n\tLASKETTUA:")
-        
-        print("nykyinen_osinkotuotto_PROCENT: ", self.nykyinen_osinkotuotto_PROCENT)
-        print("nykyinen_P_luku: ", self.nykyinen_P_luku)
-        print("P_muutos_kerroin: ", self.P_muutos_kerroin)
-        print("nykyinen_PB_luku: ", self.nykyinen_PB_luku)
-        print("nykyinen_PE_luku: ", self.nykyinen_PE_luku)
-    
-    def kiinnostavat_tunnusluvut_print(self):
-        print("\n\tKIINNOSTAVAT TUNNUSLUVUT:")
-        print("Nimi\t\tLuku\tVanha\n\tKarsinta:")
-        print("Gearing\t\t{}".format(self.gearing))
-        print("Omavaraisuusas.\t{}".format(self.omavaraisuusaste))
-        print("ROE\t\t{}".format(self.ROE))
-        print("Osinko jaettu\t{}".format(self.on_jaettu_viisi_vuotta_osinkoa))
-        vuodet=['VUOSI', '12/15', '12/14', '12/13', '12/12', '12/11']
-        c=1
-        for i in self.nettotulokset:
-            print("N.tulos ({})\t{}".format(vuodet[c], i))
-            c+=1
-        print("\tJarjestys:")
-        print("PB_luku\t\t{}\t{}".format(self.nykyinen_PB_luku, self.PB_luku))
-        print("PE_luku\t\t{}\t{}".format(self.nykyinen_PE_luku, self.PE_luku))
-        print("Osinkot. (%)\t{}".format(self.nykyinen_osinkotuotto_PROCENT))
-        print("ROE\t\t{}".format(self.ROE))
-    
-    def set_yritysksen_tiedot(self):
+    def calculate_metrics(self):
         #POIMI TIEDOT
         self.set_osinko_tiedot()
         self.set_kurssi_tiedot()
@@ -505,10 +428,65 @@ class Yritys():
             self.P_luku=False
 
 
+    def tiedot_print(self):
+        #print(": ", self.)
+        
+        print("\n\tPOIMITUT ARVOT:")
+        
+        print("nykyinen_kurssi: ", self.nykyinen_kurssi)
+        print("viime_osinko (EUR): ", self.viime_osinko)
+        print("on_jaettu_viisi_vuotta_osinkoa: ", self.on_jaettu_viisi_vuotta_osinkoa)
+        
+        print("\nomavaraisuusaste: ", self.omavaraisuusaste)
+        print("gearing: ", self.gearing)
+        print("kpl_osakkeita: ", self.kpl_osakkeita)
+        print("nettotulokset: ", self.nettotulokset)
+        
+        print("\nROE: ", self.ROE)
+        print("P_luku: ", self.P_luku)
+        print("E_luku: ", self.E_luku)
+        print("PB_luku: ", self.PB_luku)
+        print("PE_luku: ", self.PE_luku)
+        
+        print("\nToimiala: ", self.toimiala)
+        print("Toimialaluokka: ", self.toimialaluokka)
+        print("Kuvaus: ", self.kuvaus)
+        
+        
+        print("\n\tLASKETTUA:")
+        
+        print("nykyinen_osinkotuotto_PROCENT: ", self.nykyinen_osinkotuotto_PROCENT)
+        print("nykyinen_P_luku: ", self.nykyinen_P_luku)
+        print("P_muutos_kerroin: ", self.P_muutos_kerroin)
+        print("nykyinen_PB_luku: ", self.nykyinen_PB_luku)
+        print("nykyinen_PE_luku: ", self.nykyinen_PE_luku)
+
+    def kiinnostavat_tunnusluvut_print(self):
+        print("\n\tKIINNOSTAVAT TUNNUSLUVUT:")
+        print("Nimi\t\tLuku\tVanha\n\tKarsinta:")
+        print("Gearing\t\t{}".format(self.gearing))
+        print("Omavaraisuusas.\t{}".format(self.omavaraisuusaste))
+        print("ROE\t\t{}".format(self.ROE))
+        print("Osinko jaettu\t{}".format(self.on_jaettu_viisi_vuotta_osinkoa))
+        vuodet=['VUOSI', '12/15', '12/14', '12/13', '12/12', '12/11']
+        c=1
+        for i in self.nettotulokset:
+            print("N.tulos ({})\t{}".format(vuodet[c], i))
+            c+=1
+        print("\tJarjestys:")
+        print("PB_luku\t\t{}\t{}".format(self.nykyinen_PB_luku, self.PB_luku))
+        print("PE_luku\t\t{}\t{}".format(self.nykyinen_PE_luku, self.PE_luku))
+        print("Osinkot. (%)\t{}".format(self.nykyinen_osinkotuotto_PROCENT))
+        print("ROE\t\t{}".format(self.ROE))
+
+
+
 def get_raw_soup(link):
     r = requests.get(link)
     soup = BeautifulSoup(r.text, "html.parser")
     return soup
+
+# TODO: Go trough old functions here under and write tests for them
 
 def fix_str(string):
     # deals with scandinavian characters
@@ -544,7 +522,10 @@ def get_osingot(url):
     for i in table_row_tags:
         columns=i.find_all('td')
         
-        OYV=[]  #Osingot yritykselle yhdella rivilla        Vuosi, Irtoaminen, Oikaistu euroina, Maara, Valuutta, Tuotto-%, Lisatieto
+        OYV=[]
+        """Osingot yritykselle yhdella rivilla:
+            Vuosi, Irtoaminen, Oikaistu euroina,
+            Maara, Valuutta, Tuotto-%, Lisatieto"""
         if c==0:
             OYV.append("Vuosi")
             OYV.append("Irtoaminen")
