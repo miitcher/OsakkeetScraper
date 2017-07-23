@@ -26,7 +26,8 @@ class Company():
             self.company_name = self.metrics["company_name"]
             self.scrape_date = datetime.strptime(self.metrics["scrape_date"], "%y-%m-%d")
 
-            self.after_basic_metrics_is_set()
+            self.do_calculations()
+            self.set_representative_strings()
         else:
             self.metrics = {}
 
@@ -71,7 +72,7 @@ class Company():
         self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
         self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(sijoittajan_tunnuslukuja)
 
-        self.after_basic_metrics_is_set()
+        self.tsv_metrics = "\n{}".format(self.metrics) # for storage
 
     @staticmethod
     def make_value_pretty(v):
@@ -140,11 +141,6 @@ class Company():
                 d[k] = Company.make_value_pretty(v)
         return d
 
-    def after_basic_metrics_is_set(self):
-        if not "calculations" in self.metrics:
-            self.calculate_metrics()
-        self.set_representations()
-
     def add_dict_to_str(self, in_dict, in_str="", indent_str="", simple=False):
         max_key_len = 0
         for key in in_dict:
@@ -167,80 +163,19 @@ class Company():
                     in_str += "..."
         return in_str
 
-    def set_representations(self):
+    def set_representative_strings(self):
         assert self.metrics
-        self.tsv_metrics = "\n{}".format(self.metrics)
+        assert "calculations" in self.metrics
         self.str_metrics = self.add_dict_to_str(self.metrics)
         self.str_metrics_simple = self.add_dict_to_str(self.metrics, simple=True)
+        self.str_calculations = self.add_dict_to_str(self.metrics["calculations"])
 
-    # TODO: UNDER IS OLD FUNCTIONS: go troghe
-
-    def calculate_metrics(self):
+    def do_calculations(self):
         assert self.metrics
         self.metrics["calculations"] = {}
         self.calculate_osinko()
         self.collect_metrics()
-        
-        """
-        was nothing (maby was not yet implemented...)
-            toiminnan laajuus
-            maksuvalmius
-        
-        perustiedot
-            Toimiala
-            Toimialaluokka
-            Kappaletta osakkeita
-        kannattavuus
-            ROE: Oman paaoman tuotto, %
-            nettotulokset: Nettotulos
-        vakavaraisuus
-            omavaraisuusaste: Omavaraisuusaste, %
-            gearing: Nettovelkaantumisaste, %
-        sijoittajan_tunnuslukuja
-            PB_luku
-            PE_luku
-            E_luku: Tulos (E)
-            P_luku: Markkina-arvo (P)
-        """
-        
-        """
-        #POIMI TIEDOT
-        
-        
-        #LASKE NYKYISIA LUKUJA
-        if self.viime_osinko and self.nykyinen_kurssi:
-            self.nykyinen_osinkotuotto_PROCENT = round( 100* self.viime_osinko / self.nykyinen_kurssi, 2)
-        else:
-            self.nykyinen_osinkotuotto_PROCENT=False
-        
-        
-        if self.kpl_osakkeita and self.nykyinen_kurssi:
-            self.nykyinen_P_luku = round( self.kpl_osakkeita * self.nykyinen_kurssi /1000000, 4)
-        else:
-            self.nykyinen_P_luku=False
-        
-        if self.P_luku and self.nykyinen_P_luku:
-            self.P_muutos_kerroin = round( self.nykyinen_P_luku / self.P_luku, 4)
-        else:
-            self.P_muutos_kerroin=False
-        
-        if self.P_muutos_kerroin and self.PB_luku:
-            self.nykyinen_PB_luku = round( self.P_muutos_kerroin * self.PB_luku, 2)
-        else:
-            self.nykyinen_PB_luku=False
-        
-        if self.P_muutos_kerroin and self.PE_luku:
-            self.nykyinen_PE_luku = round( self.P_muutos_kerroin * self.PE_luku, 2)
-        else:
-            self.nykyinen_PE_luku=False
-        
-        
-        
-        self.tiedot_print()
-        self.kiinnostavat_tunnusluvut_print()
-        """
-        
-        print("\n" + "+"*10 + "\tcalculations:" + self.add_dict_to_str(self.metrics["calculations"]))
+        self.calculate_fresh()
 
     def addCalc(self, key, value):
         assert not str(key) in self.metrics["calculations"]
@@ -319,64 +254,21 @@ class Company():
         self.addCalc("E", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["tulos (e)"])
         self.addCalc("P", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["markkina-arvo (p)"])
 
-
-    def tiedot_print(self):
-        #print(": ", self.)
-        
-        print("\n\tPOIMITUT ARVOT:")
-        
-        print("nykyinen_kurssi: ", self.nykyinen_kurssi)
-        print("viime_osinko (EUR): ", self.viime_osinko)
-        print("on_jaettu_viisi_vuotta_osinkoa: ", self.on_jaettu_viisi_vuotta_osinkoa)
-        
-        print("\nomavaraisuusaste: ", self.omavaraisuusaste)
-        print("gearing: ", self.gearing)
-        print("kpl_osakkeita: ", self.kpl_osakkeita)
-        print("nettotulokset: ", self.nettotulokset)
-        
-        print("\nROE: ", self.ROE)
-        print("P_luku: ", self.P_luku)
-        print("E_luku: ", self.E_luku)
-        print("PB_luku: ", self.PB_luku)
-        print("PE_luku: ", self.PE_luku)
-        
-        print("\nToimiala: ", self.toimiala)
-        print("Toimialaluokka: ", self.toimialaluokka)
-        print("Kuvaus: ", self.kuvaus)
-        
-        
-        print("\n\tLASKETTUA:")
-        
-        print("nykyinen_osinkotuotto_PROCENT: ", self.nykyinen_osinkotuotto_PROCENT)
-        print("nykyinen_P_luku: ", self.nykyinen_P_luku)
-        print("P_muutos_kerroin: ", self.P_muutos_kerroin)
-        print("nykyinen_PB_luku: ", self.nykyinen_PB_luku)
-        print("nykyinen_PE_luku: ", self.nykyinen_PE_luku)
-
-    def kiinnostavat_tunnusluvut_print(self):
-        print("\n\tKIINNOSTAVAT TUNNUSLUVUT:")
-        print("Nimi\t\tLuku\tVanha\n\tKarsinta:")
-        print("Gearing\t\t{}".format(self.gearing))
-        print("Omavaraisuusas.\t{}".format(self.omavaraisuusaste))
-        print("ROE\t\t{}".format(self.ROE))
-        print("Osinko jaettu\t{}".format(self.on_jaettu_viisi_vuotta_osinkoa))
-        vuodet=['VUOSI', '12/15', '12/14', '12/13', '12/12', '12/11']
-        c=1
-        for i in self.nettotulokset:
-            print("N.tulos ({})\t{}".format(vuodet[c], i))
-            c+=1
-        print("\tJarjestys:")
-        print("PB_luku\t\t{}\t{}".format(self.nykyinen_PB_luku, self.PB_luku))
-        print("PE_luku\t\t{}\t{}".format(self.nykyinen_PE_luku, self.PE_luku))
-        print("Osinkot. (%)\t{}".format(self.nykyinen_osinkotuotto_PROCENT))
-        print("ROE\t\t{}".format(self.ROE))
-
-
+    def calculate_fresh(self):
+        calc = self.metrics["calculations"]
+        current_year = datetime.now().strftime("%Y") # "YYYY"
+        # the metrics below are fresher, because they are calculated with the current stock price
+        self.addCalc("calc_osinkotuotto_percent", round( 100 * calc["osinko_euro"][current_year] / calc["kurssi"], 2))
+        self.addCalc("calc_P", round( calc["osakkeet_kpl"] * calc["kurssi"] / 1e6, 4))
+        self.addCalc("calc_P_factor", round( calc["calc_P"] / calc["P"], 4))
+        self.addCalc("calc_PB", round( calc["calc_P_factor"] * calc["PB"], 2))
+        self.addCalc("calc_PE", round( calc["calc_P_factor"] * calc["PE"], 2))
 
 def get_raw_soup(link):
     r = requests.get(link)
     soup = BeautifulSoup(r.text, "html.parser")
     return soup
+
 
 # TODO: Go trough old functions here under and write tests for them
 

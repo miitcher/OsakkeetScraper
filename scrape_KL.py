@@ -5,11 +5,16 @@ import storage
 
 logger = logging.getLogger('root')
 
-#import webbrowser # WHAT IS THIS/COULD BE USED FOR ???
+#import webbrowser # TODO: WHAT IS THIS/COULD BE USED FOR ???
+
+"""
+When a company is scraped, its raw metrics is stored.
+When a company is loaded, the calculations are done,
+and the company is not stored again.
+"""
 
 
 def scrape_companies(storage_directory):
-    logger.debug("Check if company_names is already fetched today")
     company_names = storage.get_today_stored_company_names(storage_directory)
 
     if not company_names:
@@ -20,7 +25,7 @@ def scrape_companies(storage_directory):
     logger.debug("Individual companies data is scraped from Kauppalehti")
     company_list = []
     for company_id in company_names:
-        logger.debug("company_id:{}, company_name:{}".format(company_id, company_names[company_id]))
+        logger.debug("Scrape: company_id:{}, company_name:{}".format(company_id, company_names[company_id]))
         company = scraping.Company(company_id, name=company_names[company_id])
         company.scrape()
         company_list.append(company)
@@ -31,24 +36,26 @@ def scrape_companies(storage_directory):
     return tsv_filename_metrics
 
 def print_companies(filename):
-    logger.info("Print all companies:")
+    print("Print all companies:")
     company_list = scraping.Company.load_from_file(filename)
     for company in company_list:
         print(company)
 
-def print_company_metrics(filename, simple, company_id=None, company_name=None):
+def print_company_metrics(filename, print_type, company_id=None, company_name=None):
     company_list = scraping.Company.load_from_file(filename)
     if not company_id and not company_name:
-        logger.info("Print all companies info:")
+        print("Print all companies metrics:")
     company_printed = False
     for company in company_list:
         if ( not company_id and not company_name ) or \
            ( company_id and company_id == company.company_id ) or \
            ( company_name and str(company_name).lower() in str(company.company_name).lower() ):
-            if simple:
-                print(company.str_metrics_simple)
-            else:
+            if print_type == "metrics":
                 print(company.str_metrics)
+            elif print_type == "metrics_simple":
+                print(company.str_metrics_simple)
+            elif print_type == "calculations":
+                print(company.str_calculations)
             company_printed = True
     if not company_printed:
         if company_id:

@@ -19,22 +19,24 @@ class Window(QWidget):
 
     def setWindow(self):
         # strings
-        self.scrape_str         = "Scrape companies"
-        self.printCompanies_str = "Print companies"
-        self.printMetrics_str       = "Print metrics"
-        self.printMetricsSimple_str = "Print metrics simple"
-        self.filter_str         = "Filter companies"
-        self.organize_str       = "Organize companies"
-        self.null_filename      = "Select TSV-file"
+        self.scrape_str                 = "Scrape companies"
+        self.printCompanies_str         = "Print companies"
+        self.printMetrics_str           = "metrics"
+        self.printMetricsSimple_str     = "metrics simple"
+        self.printCalculations_str      = "calculations"
+        self.filter_str                 = "Filter companies"
+        self.organize_str               = "Organize companies"
+        self.null_filename              = "Select TSV-file"
 
         # buttons
-        ScrapeButton         = QPushButton(self.scrape_str)
-        PrintCompaniesButton = QPushButton(self.printCompanies_str)
-        PrintMetricsButton      = QPushButton(self.printMetrics_str)
-        PrintMetricsSimpleButton      = QPushButton(self.printMetricsSimple_str)
-        FilterButton         = QPushButton(self.filter_str)
-        OrganizeButton       = QPushButton(self.organize_str)
-        ExitButton           = QPushButton("Exit")
+        ScrapeButton                = QPushButton(self.scrape_str)
+        PrintCompaniesButton        = QPushButton(self.printCompanies_str)
+        PrintMetricsButton          = QPushButton(self.printMetrics_str)
+        PrintMetricsSimpleButton    = QPushButton(self.printMetricsSimple_str)
+        PrintCalculationsButton     = QPushButton(self.printCalculations_str)
+        FilterButton                = QPushButton(self.filter_str)
+        OrganizeButton              = QPushButton(self.organize_str)
+        ExitButton                  = QPushButton("Exit")
 
         # other widgets
         self.DebugCheckBox = QCheckBox("DEBUG")
@@ -48,6 +50,7 @@ class Window(QWidget):
         PrintCompaniesButton.clicked.connect(self.buttonClicked)
         PrintMetricsButton.clicked.connect(self.buttonClicked)
         PrintMetricsSimpleButton.clicked.connect(self.buttonClicked)
+        PrintCalculationsButton.clicked.connect(self.buttonClicked)
         FilterButton.clicked.connect(self.buttonClicked)
         OrganizeButton.clicked.connect(self.buttonClicked)
         ExitButton.clicked.connect(self.close)
@@ -58,10 +61,11 @@ class Window(QWidget):
         hbox_StoredFiles = QHBoxLayout()
         hbox_StoredFiles.addWidget(self.FileComboBox)
         hbox_PrintMetrics = QHBoxLayout()
-        hbox_PrintMetrics.addWidget(QLabel("Company"))
+        hbox_PrintMetrics.addWidget(QLabel("Company Print:"))
         hbox_PrintMetrics.addWidget(self.CompanySearchLineEdit)
         hbox_PrintMetrics.addWidget(PrintMetricsButton)
         hbox_PrintMetrics.addWidget(PrintMetricsSimpleButton)
+        hbox_PrintMetrics.addWidget(PrintCalculationsButton)
 
         # layout
         space = 15
@@ -123,7 +127,6 @@ class Window(QWidget):
                 self.FileComboBox.setCurrentIndex(1)
             else:
                 logger.error("Scraping failed")
-            logger.debug("tsv_filename: [{}]".format(str(self.tsv_filename)))
         except:
             # The traceback does not work properly with the PyQt in LiClipse.
             # There is no traceback on errors in LiClipse, but there is
@@ -133,7 +136,7 @@ class Window(QWidget):
     def buttonClicked(self):
         sender = self.sender()
         if self.tsv_filename:
-            simple = None
+            print_type = None
             company_id = None
             company_name = None
             try:
@@ -144,19 +147,21 @@ class Window(QWidget):
                 elif sender.text() == self.printCompanies_str:
                     scrape_KL.print_companies(self.tsv_filename)
                 elif sender.text() == self.printMetrics_str:
-                    simple = False
+                    print_type = "metrics"
                 elif sender.text() == self.printMetricsSimple_str:
-                    simple = True
+                    print_type = "metrics_simple"
+                elif sender.text() == self.printCalculations_str:
+                    print_type = "calculations"
                 else:
                     logger.error('Did not recognize "sender.text()": [{}]'.format(sender.text()))
-                if simple != None:
+                if print_type != None:
                     search_line_str = self.CompanySearchLineEdit.text().strip()
                     if search_line_str != "":
                         try:
                             company_id = int(search_line_str)
                         except ValueError:
                             company_name = search_line_str
-                    scrape_KL.print_company_metrics(self.tsv_filename, simple, company_id, company_name)
+                    scrape_KL.print_company_metrics(self.tsv_filename, print_type, company_id, company_name)
             except:
                 # The traceback does not work properly with the PyQt in LiClipse.
                 # There is no traceback on errors in LiClipse, but there is
