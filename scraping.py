@@ -268,15 +268,19 @@ class Company():
         self.addCalc("calc_PB", round( calc["calc_P_factor"] * calc["PB"], 2))
         self.addCalc("calc_PE", round( calc["calc_P_factor"] * calc["PE"], 2))
 
+
 def get_raw_soup(link):
     r = requests.get(link)
     soup = BeautifulSoup(r.text, "html.parser")
     return soup
 
-
-def fix_str(string):
+def fix_str_OLD(string):
     # deals with scandinavian characters
     return string.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
+
+def fix_str(string):
+    # the relplace:s deals with scandinavian characters (dots above a and o)
+    return str(string).lower().strip().replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
 
 def fix_str_noncompatible_chars_in_unicode(string):
     return string.replace("\x9a","?").replace("\x96","?").replace("\x92","?")
@@ -291,7 +295,7 @@ def scrape_company_names():
         company_name = i.string
         if company_id and company_name:
             company_id = int(company_id)
-            company_name = str(company_name)
+            company_name = fix_str(company_name)
             company_names[company_id] = company_name
         elif company_name != "Valitse osake":
             raise ScrapeException("Unexpected: id:[{}], name:[{}]".format(company_id, company_name))
@@ -339,7 +343,7 @@ def get_osingot_NEW(url):
                     val = "-"
                 else:
                     try:
-                        val = str(val).strip().lower()
+                        val = fix_str(val)
                     except TypeError:
                         logger.debug("Not a string:[{}]".format(val))
             sub_dict[head[i]] = val
@@ -412,7 +416,7 @@ def get_kuvaus(url):
         for tag in class_padding_tags:
             if tag.parent.h3.text=="Yrityksen perustiedot":
                 kuvaus_yrityksesta = tag.p.text.strip().replace("\n"," ").replace("\r"," ")
-                #kuvaus_yrityksesta = fix_str(kuvaus_yrityksesta)
+                #kuvaus_yrityksesta = fix_str_OLD(kuvaus_yrityksesta)
                 kuvaus_yrityksesta = fix_str_noncompatible_chars_in_unicode(kuvaus_yrityksesta)
                 return kuvaus_yrityksesta
         
@@ -456,14 +460,14 @@ def get_perustiedot(url):
             if c==0:
                 key=td_tags[0].text.replace(":","")
                 val=td_tags[1].text
-                perustiedot_dict[fix_str(key)]=val
+                perustiedot_dict[fix_str_OLD(key)]=val
                 
                 strs=td_tags[2].text.split("\n")
                 [key, val]=strs[1].split(":")
-                perustiedot_dict[fix_str(key)]=val
+                perustiedot_dict[fix_str_OLD(key)]=val
                 
                 [key, val]=strs[2].split(":")
-                perustiedot_dict[fix_str(key)]=val
+                perustiedot_dict[fix_str_OLD(key)]=val
                 c+=1
             else:
                 key=td_tags[0].text.strip().replace(":","")
@@ -477,7 +481,7 @@ def get_perustiedot(url):
                     except:
                         logger.debug("Osakkeet (KPL)")
                 
-                perustiedot_dict[fix_str(key)]=val
+                perustiedot_dict[fix_str_OLD(key)]=val
         
         perustiedot_dict[0]=True
     except:
@@ -544,7 +548,7 @@ def get_tunnuslukuja(url):
                 except:
                     logger.debug("float({})".format(key))
             
-            tunnuslukuja_dict[fix_str(key)]=val
+            tunnuslukuja_dict[fix_str_OLD(key)]=val
             c+=1
         
         tunnuslukuja_dict[0]=True
@@ -591,7 +595,7 @@ def get_kurssi_tulostiedot(url, otsikko):
                     rivi.append("VUOSI")
                     r+=1
                 else:
-                    val=fix_str(j.text.strip())
+                    val=fix_str_OLD(j.text.strip())
                     try:
                         val=float(val.replace("\xa0",""))
                     except:

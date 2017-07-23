@@ -19,14 +19,22 @@ kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid=
 
 class Test_scraping(unittest.TestCase):
 
+    def test_fix_str(self):
+        pass
+
+    def test_fix_str_noncompatible_chars_in_unicode(self):
+        pass
+
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
         for key in company_names:
             self.assertTrue(type(key) == int)
             self.assertTrue(type(company_names[key]) == str)
-        self.assertEqual(company_names[2048], "Talenom")
-        self.assertEqual(company_names[1032], "Fortum")
-        self.assertEqual(company_names[1135], "UPM-Kymmene")
+        self.assertEqual(company_names[2048], "talenom")
+        self.assertEqual(company_names[1032], "fortum")
+        self.assertEqual(company_names[1135], "upm-kymmene")
+        self.assertEqual(company_names[1120], "huhtamaki")
+        self.assertEqual(company_names[1105], "alandsbanken b")
 
     def test_get_osingot(self):
         # TODO: Not ready yet...
