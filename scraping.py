@@ -9,9 +9,9 @@ logger = logging.getLogger('root')
 
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
 osingot_url             = url_basic + "osingot/osinkohistoria.jsp"
-osingot_yritys_url      = url_basic + "osingot/osinkohistoria.jsp?klid={}"            #ID loppuun!
-kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"         #ID loppuun!
-kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"   #ID loppuun!
+osingot_yritys_url      = url_basic + "osingot/osinkohistoria.jsp?klid={}"
+kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
+kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 
 class Company():
@@ -19,7 +19,7 @@ class Company():
         self.company_id = company_id
         self.name = name
         self.scrape_date = None # datetime.date Object
-        self.scrape_type = None # raw, metrics, None
+        self.scrape_type = None # raw, metrics, None #TODO: REMOVE???
 
         if metrics:
             self.metrics = metrics
@@ -28,6 +28,7 @@ class Company():
             self.scrape_type = self.metrics["scrape_type"]
             self.scrape_date = datetime.strptime(self.metrics["scrape_date"], "%y-%m-%d")
 
+            self.set_representations()
             self.calculate_metrics()
         else:
             self.metrics = {}
@@ -37,7 +38,7 @@ class Company():
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.name)
 
-    def scrape(self):
+    def scrape_old(self):
         url = osingot_yritys_url.format(self.company_id)
         self.osingot = get_osingot(url)
 
@@ -58,6 +59,40 @@ class Company():
         self.scrape_type = "raw"
 
         self.set_metrics()
+        self.set_representations()
+
+    def scrape(self):
+        url_os = osingot_yritys_url.format(self.company_id)
+        url_ku = kurssi_url.format(self.company_id)
+        url_ku_tu = kurssi_tulostiedot_url.format(self.company_id)
+
+        self.metrics["company_id"] = self.company_id
+        self.metrics["name"] = self.name
+        self.scrape_date = datetime.now().date() # YY-MM-DD
+        self.metrics["scrape_date"] = self.scrape_date.strftime("%y-%m-%d")
+        self.scrape_type = "raw" # TODO: is scrape_type needed anymore, if data is stored always in metrics
+        self.metrics["scrape_type"] = self.scrape_type
+
+        self.metrics["kurssi"] = get_kurssi(url_ku)
+        self.metrics["kuvaus_yrityksesta"] = get_kuvaus_yrityksesta(url_ku)
+
+        self.metrics["osingot"] = self.list_to_pretty_dict(get_osingot(url_os))
+
+        self.metrics["perustiedot"] = self.dict_to_pretty_dict(get_perustiedot(url_ku))
+        self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja(url_ku))
+
+        toiminnan_laajuus = get_kurssi_tulostiedot(url_ku_tu, "Toiminnan laajuus")
+        kannattavuus = get_kurssi_tulostiedot(url_ku_tu, "Kannattavuus")
+        vakavaraisuus = get_kurssi_tulostiedot(url_ku_tu, "Vakavaraisuus")
+        maksuvalmius = get_kurssi_tulostiedot(url_ku_tu, "Maksuvalmius")
+        sijoittajan_tunnuslukuja = get_kurssi_tulostiedot(url_ku_tu, "Sijoittajan tunnuslukuja")
+
+        self.metrics["toiminnan_laajuus"] = self.list_to_pretty_dict_pivot(toiminnan_laajuus)
+        self.metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(kannattavuus)
+        self.metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(vakavaraisuus)
+        self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
+        self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(sijoittajan_tunnuslukuja)
+
         self.set_representations()
 
     @staticmethod
@@ -149,7 +184,7 @@ class Company():
         self.metrics["osingot"] = self.list_to_pretty_dict(self.osingot)
 
         self.metrics["perustiedot"] = self.dict_to_pretty_dict(self.perustiedot)
-        self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(self.perustiedot)
+        self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(self.tunnuslukuja)
 
         self.metrics["toiminnan_laajuus"] = self.list_to_pretty_dict_pivot(self.toiminnan_laajuus)
         self.metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(self.kannattavuus)
@@ -215,6 +250,7 @@ class Company():
         print(self.sijoittajan_tunnuslukuja)
         """
 
+        """
         self.str_raw = "company_id:\t{}\nname:\t{}".format(self.company_id, self.name) +\
             "\nkurssi:\t{}\nkuvaus:\t{}".format(self.kurssi, self.kuvaus_yrityksesta) +\
             "\nscrape_date:\t{}\nscrape_type:\t{}".format(self.scrape_date, self.scrape_type) +\
@@ -238,20 +274,26 @@ class Company():
             self.list_to_str(self.vakavaraisuus,            "vakavaraisuus",              True) +\
             self.list_to_str(self.maksuvalmius,             "maksuvalmius",               True) +\
             self.list_to_str(self.sijoittajan_tunnuslukuja, "sijoittajan_tunnuslukuja",   True)
+        """
+
+        assert self.metrics
 
         self.tsv_metrics = "\n{}".format(self.metrics)
 
         # TODO: str metrics
         self.str_metrics = "\n"
+        max_key_len = 0
         for k in self.metrics:
-            #print(k)
-            pass
+            self.str_metrics += "{}\t{}".format(k)
+            if len(k) > max_key_len:
+                print("longer: [[{}], len: {}".format(k, len(k)))
+                max_key_len = len(k)
 
     # TODO: UNDER IS OLD FUNCTIONS: go troghe
 
     def calculate_metrics(self):
         #POIMI TIEDOT
-        self.set_osinko_tiedot()
+        self.calculate_osinko()
         self.set_kurssi_tiedot()
         self.set_kurssi_tulostiedot()
         
@@ -288,7 +330,7 @@ class Company():
         self.tiedot_print()
         self.kiinnostavat_tunnusluvut_print()
     
-    def set_osinko_tiedot(self):
+    def calculate_osinko(self):
         #osinkoa on tasaisesti jaettu viiden vuoden ajan (osinkotuotto >0% joka vuosi)
         self.on_jaettu_viisi_vuotta_osinkoa=None
         self.viime_osinko=None

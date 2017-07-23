@@ -1,4 +1,5 @@
 go trough old functions in Company-class in scraping.py
+write tests
 implement funcions in scrape_KL
 implement reading of stored raw, or store it better
 
