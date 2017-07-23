@@ -75,13 +75,8 @@ class Company():
 
     @staticmethod
     def make_value_pretty(v):
-        """ # Seems None does not work with JSON
-        if v == "-":
-            return None
-        """
-        # TODO: turn all empty fields to "-"
         coeff = 1
-        if "milj.eur" in v: # TODO: handle other like miljard, etc.
+        if "milj.eur" in v:
             coeff = 1e6
             v = v.replace("milj.eur", "")
         try:
@@ -93,7 +88,9 @@ class Company():
                 v = int(v)
         except ValueError:
             pass
-        # TODO: handle dates
+        # TODO: handle other like miljard, etc.
+        # TODO: turn all empty fields to "-"
+        # TODO: handle dates and booleans
         return v
 
     @staticmethod
@@ -142,12 +139,8 @@ class Company():
         return d
 
     def after_basic_metrics_is_set(self):
-        try:
-            if self.metrics["calculations"]:
-                #self.calculate_metrics()
-                pass
-        except KeyError:
-            pass
+        if not "calculations" in self.metrics:
+            self.calculate_metrics()
         self.set_representations()
 
     def add_dict_to_str(self, in_dict, in_str="", indent_str="", simple=False):
@@ -181,8 +174,12 @@ class Company():
     # TODO: UNDER IS OLD FUNCTIONS: go troghe
 
     def calculate_metrics(self):
-        #POIMI TIEDOT
+        assert self.metrics
+        self.metrics["calculations"] = {}
         self.calculate_osinko()
+        
+        """
+        #POIMI TIEDOT
         self.set_kurssi_tiedot()
         self.set_kurssi_tulostiedot()
         
@@ -218,37 +215,32 @@ class Company():
         
         self.tiedot_print()
         self.kiinnostavat_tunnusluvut_print()
-    
-    def calculate_osinko(self):
-        #osinkoa on tasaisesti jaettu viiden vuoden ajan (osinkotuotto >0% joka vuosi)
-        self.on_jaettu_viisi_vuotta_osinkoa=None
-        self.viime_osinko=None
-        c=0
-        for i in self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][0]:
-            if c>1:
-                #print(i, i[3], i[5])
-                try:
-                    if not (i[5]>0):
-                        self.on_jaettu_viisi_vuotta_osinkoa=False
-                        break
-                except:
-                    logger.debug("osinko")
-                    self.on_jaettu_viisi_vuotta_osinkoa=False
-                    break
-            if c==2:
-                self.viime_osinko=i[3]
-            if c==6:
-                if i[0]!=2012:
-                    logger.debug("osinko outoa")
-                    self.on_jaettu_viisi_vuotta_osinkoa=False
-                    break
-                self.on_jaettu_viisi_vuotta_osinkoa=True
-                break
-            c+=1
+        """
         
-        if self.on_jaettu_viisi_vuotta_osinkoa==False:
-            self.viime_osinko=False
-    
+        print("\n" + "+"*10 + "\tcalculations:" + self.add_dict_to_str(self.metrics["calculations"]))
+
+    def calculate_osinko(self):
+        # steady osinko: osinkotuotto > 0% for five years
+        current_year = int(datetime.now().strftime("%Y")) # YYYY
+        osinko_tuotto_procent = {}
+        for year in range(current_year-4, current_year+1):
+            osinko_tuotto_procent[str(year)] = 0
+
+        for top_key in self.metrics["osingot"]:
+            osinko_dict = self.metrics["osingot"][top_key]
+            osinko_year = str(osinko_dict["vuosi"])
+            if osinko_year in osinko_tuotto_procent:
+                osinko_tuotto_procent[osinko_year] += osinko_dict["tuotto-%"]
+
+        steady_osinko = True
+        for year in osinko_tuotto_procent:
+            if osinko_tuotto_procent[year] <= 0:
+                steady_osinko = False
+                break
+
+        self.metrics["calculations"]["osinko_tuotto_procent"] = osinko_tuotto_procent
+        self.metrics["calculations"]["steady_osinko"] = steady_osinko
+
     def set_kurssi_tiedot(self):
         #nykyinen kurssi
         val=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][1]
