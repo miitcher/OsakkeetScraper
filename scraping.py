@@ -179,9 +179,29 @@ class Company():
         self.calculate_osinko()
         
         """
+        was nothing (maby was not yet implemented...)
+            toiminnan laajuus
+            maksuvalmius
+        
+        perustiedot
+            Toimiala
+            Toimialaluokka
+            Kappaletta osakkeita
+        kannattavuus
+            ROE: Oman paaoman tuotto, %
+            nettotulokset: Nettotulos
+        vakavaraisuus
+            omavaraisuusaste: Omavaraisuusaste, %
+            gearing: Nettovelkaantumisaste, %
+        sijoittajan_tunnuslukuja
+            PB_luku
+            PE_luku
+            E_luku: Tulos (E)
+            P_luku: Markkina-arvo (P)
+        """
+        
+        """
         #POIMI TIEDOT
-        self.set_kurssi_tiedot()
-        self.set_kurssi_tulostiedot()
         
         
         #LASKE NYKYISIA LUKUJA
@@ -240,115 +260,6 @@ class Company():
 
         self.metrics["calculations"]["osinko_tuotto_procent"] = osinko_tuotto_procent
         self.metrics["calculations"]["steady_osinko"] = steady_osinko
-
-    def set_kurssi_tiedot(self):
-        #nykyinen kurssi
-        val=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][1]
-        if type(val)==float:
-            self.nykyinen_kurssi=val
-        else:
-            logger.debug("nykyinen_kurssi")
-            self.nykyinen_kurssi=False
-        
-        #Kuvaus
-        self.kuvaus=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][2]
-        
-        #Toimiala, Toimialaluokka, Kappaletta osakkeita
-        perus_dict=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][3]
-        if perus_dict[0]:
-            self.toimiala=perus_dict["Toimiala"]
-            self.toimialaluokka=perus_dict["Toimialaluokka"]
-            self.kpl_osakkeita=perus_dict["Osakkeet (KPL)"]
-        else:
-            logger.debug("toimiala TAI toimialaluokka")
-            self.toimiala=False
-            self.toimialaluokka=False
-            self.kpl_osakkeita=False
-    
-    def poimi_arvo_tuolostiedoista(self, matrix, header, rivi, sarake):
-        if matrix[0]:
-            vuodet=['VUOSI', '12/15', '12/14', '12/13', '12/12', '12/11']
-            vuosi=matrix[1][sarake]
-            head=matrix[rivi][0]
-            if head==header and vuosi==vuodet[sarake]:
-                val=matrix[rivi][sarake]
-                #print(val)
-                if type(val)==float:
-                    return val
-                else:
-                    logger.debug(header)
-                    return False
-        logger.debug(header)
-        return False
-    
-    def set_kurssi_tulostiedot(self):
-        ##TOIMINNAN LAAJUUS
-        """
-        toim_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][5]
-        if toim_mat[0]:
-            pass
-        else:
-            logger.debug("DICT_toiminnan_laajuus_mat PUUTTUU TAI ON VIALLINEN")
-        """
-        
-        ##KANNATTAVUUS
-        kann_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][6]
-        if kann_mat[0]:
-            #ROE (Oman paaoman tuotto, %)
-            self.ROE=self.poimi_arvo_tuolostiedoista(kann_mat, "Oman paaoman tuotto, %", 7, 1)
-            
-            #Nettotulokset
-            self.nettotulokset=[]
-            for i in range(1,6):
-                val=self.poimi_arvo_tuolostiedoista(kann_mat, "Nettotulos", 4, i)
-                self.nettotulokset.append(val)
-        else:
-            logger.debug("DICT_kannattavuus_mat PUUTTUU TAI ON VIALLINEN")
-            self.ROE=False
-            self.nettotulokset=False
-        
-        ##VAKAVARAISUUS
-        vaka_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][7]
-        if vaka_mat[0]:
-            #Omavaraisuusaste, %
-            self.omavaraisuusaste=self.poimi_arvo_tuolostiedoista(vaka_mat, "Omavaraisuusaste, %", 2, 1)
-            
-            #Gearing (Nettovelkaantumisaste, %)
-            self.gearing=self.poimi_arvo_tuolostiedoista(vaka_mat, 'Nettovelkaantumisaste, %', 3, 1)
-        else:
-            logger.debug("DICT_vakavaraisuus_mat PUUTTUU TAI ON VIALLINEN")
-            self.omavaraisuusaste=False
-            self.gearing=False
-        
-        ##MAKSUVALMIUS
-        """
-        maksu_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][8]
-        if maksu_mat[0]:
-            pass
-        else:
-            logger.debug("DICT_maksuvalmius_mat PUUTTUU TAI ON VIALLINEN")
-        """
-        
-        ##SIJOITTAJAN TUNNUSLUKUJA
-        sijo_mat=self.Tiedot.DICT_YRITYKSEN_TIEDOT[self.company_id][9]
-        if sijo_mat[0]:
-            #P/B-luku
-            self.PB_luku=self.poimi_arvo_tuolostiedoista(sijo_mat, 'P/B-luku', 6, 1)
-            
-            #P/E-luku
-            self.PE_luku=self.poimi_arvo_tuolostiedoista(sijo_mat, 'P/E-luku', 8, 1)
-            
-            #Tulos (E), (oikea tulos vahennysten jalkeen)
-            self.E_luku=self.poimi_arvo_tuolostiedoista(sijo_mat, 'Tulos (E)', 5, 1)
-            
-            #Markkina-arvo (P)
-            self.P_luku=self.poimi_arvo_tuolostiedoista(sijo_mat, 'Markkina-arvo (P)', 2, 1)
-        else:
-            logger.debug("DICT_sijoittajan_tunnuslukuja_mat PUUTTUU TAI ON VIALLINEN")
-            self.PB_luku=False
-            self.PE_luku=False
-            self.E_luku=False
-            self.P_luku=False
 
 
     def tiedot_print(self):
