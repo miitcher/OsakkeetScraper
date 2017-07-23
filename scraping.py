@@ -14,6 +14,10 @@ kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
 kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 
+class ScrapeException(Exception):
+    pass
+
+
 class Company():
     def __init__(self, company_id=None, name="Unknown", metrics=None):
         self.company_id = company_id
@@ -224,7 +228,7 @@ class Company():
             all_keys = []
             for key in self.metrics["kannattavuus"]:
                 all_keys.append(key)
-            logger.error("Problem with keys: {}".format(str(all_keys)))
+            raise ScrapeException("Unexpected keys: {}".format(str(all_keys)))
         assert self.tt_current_key
         assert self.tt_current_key == "12/16"
 
@@ -270,8 +274,6 @@ def get_raw_soup(link):
     return soup
 
 
-# TODO: Go trough old functions here under and write tests for them
-
 def fix_str(string):
     # deals with scandinavian characters
     return string.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
@@ -281,30 +283,78 @@ def fix_str_noncompatible_chars_in_unicode(string):
 
 def scrape_company_names():
     soup = get_raw_soup(osingot_url)
-
     form_tags = soup.find_all('form')
     option_tags = form_tags[2].find_all('option')
-
-    yritys_dict = {}
+    company_names = {}
     for i in option_tags:
-        name = i.string
-        ID = i.attrs['value']
-        try:
-            ID = int(ID)
-            yritys_dict[ID] = name
-        except:
-            pass
-    return yritys_dict
+        company_id = i.attrs['value']
+        company_name = i.string
+        if company_id and company_name:
+            company_id = int(company_id)
+            company_name = str(company_name)
+            company_names[company_id] = company_name
+        elif company_name != "Valitse osake":
+            raise ScrapeException("Unexpected: id:[{}], name:[{}]".format(company_id, company_name))
+    return company_names
+
+# TODO: Go trough old functions here under and write tests for them
+
+def get_osingot_NEW(url):
+    soup = get_raw_soup(url)
+    table_tags = soup.find_all('table')
+    table_row_tags = table_tags[5].find_all('tr')
+    """osingot metrics for a company on a row:
+    Vuosi, Irtoaminen, Oikaistu euroina, Maara, Valuutta, Tuotto-%, Lisatieto
+    """
+    head = ["vuosi", "irtoaminen", "oikaistu_euroina", \
+            "maara", "valuutta", "tuotto_%", "lisatieto"]
+    osingot = {}
+    row_counter = 0
+    for row in table_row_tags:
+        sub_dict = {}
+        columns = row.find_all('td')
+        if columns[0].string == None: # vuosi
+            # if every metric is null it can be discarded
+            for i in range(6):
+                if columns[i].string != None:
+                    raise ScrapeException("Unexpected osinko row")
+            continue
+        for i in range(7):
+            val = columns[i].string
+            if i == 0:
+                try:
+                    val = int(val)
+                except TypeError:
+                    logger.debug("Not an integer:[{}]".format(val))
+            elif i == 1:
+                assert len(val.split(".")) == 3, "Not an expected date: [{}]".format(val)
+                val = datetime.strptime(val.strip(), "%d.%m.%Y").date()
+            elif i == 2 or i == 3 or i == 5:
+                try:
+                    val = float(val)
+                except TypeError:
+                    logger.debug("Not a float:[{}]".format(val))
+            elif i == 4 or i == 6:
+                if i == 6 and val == None:
+                    val = "-"
+                else:
+                    try:
+                        val = str(val).strip().lower()
+                    except TypeError:
+                        logger.debug("Not a string:[{}]".format(val))
+            sub_dict[head[i]] = val
+        osingot[row_counter] = sub_dict
+        row_counter += 1
+    return osingot
 
 def get_osingot(url):
     soup = get_raw_soup(url)
-    yrityksen_osingot=["NOT REDY"]
-    
-    table_tags=soup.find_all('table')
-    table_row_tags=table_tags[5].find_all('tr')
-    c=0
+    table_tags = soup.find_all('table')
+    table_row_tags = table_tags[5].find_all('tr')
+    osingot = ["HEHE"]
+    c = 0
     for i in table_row_tags:
-        columns=i.find_all('td')
+        columns = i.find_all('td')
         
         OYV=[]
         """Osingot yritykselle yhdella rivilla:
@@ -333,10 +383,10 @@ def get_osingot(url):
                         logger.debug("int('{}')".format(val))
                 OYV.append(val)
             
-        yrityksen_osingot.append(OYV)
+        osingot.append(OYV)
         c+=1
-    yrityksen_osingot[0]=True
-    return yrityksen_osingot
+    osingot[0]=True
+    return osingot
 
 def get_kurssi(url):
     soup = get_raw_soup(url)

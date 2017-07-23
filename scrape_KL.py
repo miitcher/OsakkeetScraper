@@ -22,6 +22,8 @@ def scrape_companies(storage_directory):
         company_names = scraping.scrape_company_names()
         storage.store_company_data(company_names, storage_directory, "names")
 
+    #company_names = {2050:"foobar"} # TODO: so just one company is scraped
+
     logger.debug("Individual companies data is scraped from Kauppalehti")
     company_list = []
     for company_id in company_names:

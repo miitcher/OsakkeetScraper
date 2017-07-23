@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import *
 from datetime import datetime
 
 import scrape_KL
+import scraping
 
 
 class Window(QWidget):
@@ -126,7 +127,7 @@ class Window(QWidget):
                 self.refreshFileComboBox()
                 self.FileComboBox.setCurrentIndex(1)
             else:
-                logger.error("Scraping failed")
+                raise scraping.ScrapeException("Scraping failed")
         except:
             # The traceback does not work properly with the PyQt in LiClipse.
             # There is no traceback on errors in LiClipse, but there is
@@ -153,7 +154,7 @@ class Window(QWidget):
                 elif sender.text() == self.printCalculations_str:
                     print_type = "calculations"
                 else:
-                    logger.error('Did not recognize "sender.text()": [{}]'.format(sender.text()))
+                    raise scraping.ScrapeException('Unexpected "sender.text()": [{}]'.format(sender.text()))
                 if print_type != None:
                     search_line_str = self.CompanySearchLineEdit.text().strip()
                     if search_line_str != "":
@@ -175,7 +176,6 @@ if __name__ == '__main__':
     logger = logging.getLogger('root')
     logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
     logger.setLevel(logging.DEBUG)
-    #logger.setLevel(logging.INFO)
 
     storage_dir = "scrapes"
     #Creates a storage-folder if one does not exist.
