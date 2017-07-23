@@ -2,7 +2,8 @@ go trough old functions at end of scraping.py and add tests
     make them return pretty_dictionaries
 try scraping every company
 implement funcions in scrape_KL
-implement reading of stored raw, or store it better
+time parts in program
+    maby use cpython...
 
 
     Maby useful:

@@ -302,6 +302,7 @@ def scrape_company_names():
     return company_names
 
 # TODO: Go trough old functions here under and write tests for them
+# USE FUNCTION: fix_str()
 
 def get_osingot_NEW(url):
     soup = get_raw_soup(url)
