@@ -17,49 +17,29 @@ kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid=
 class Company():
     def __init__(self, company_id=None, name="Unknown", metrics=None):
         self.company_id = company_id
-        self.name = name
+        self.company_name = name
         self.scrape_date = None # datetime.date Object
-        self.scrape_type = None # raw, metrics, None #TODO: REMOVE???
 
         if metrics:
             self.metrics = metrics
-            self.company_id  = self.metrics["company_id"]
-            self.name        = self.metrics["name"]
-            self.scrape_type = self.metrics["scrape_type"]
+            self.company_id = self.metrics["company_id"]
+            self.company_name = self.metrics["company_name"]
             self.scrape_date = datetime.strptime(self.metrics["scrape_date"], "%y-%m-%d")
 
-            self.set_representations()
-            self.calculate_metrics()
+            self.after_basic_metrics_is_set()
         else:
             self.metrics = {}
 
         assert self.company_id, "Company has no id"
 
     def __repr__(self):
-        return "Company({}, {})".format(self.company_id, self.name)
+        return "Company({}, {})".format(self.company_id, self.company_name)
 
-    def scrape_old(self):
-        url = osingot_yritys_url.format(self.company_id)
-        self.osingot = get_osingot(url)
-
-        url = kurssi_url.format(self.company_id)
-        self.kurssi = get_kurssi(url)
-        self.kuvaus_yrityksesta = get_kuvaus_yrityksesta(url)
-        self.perustiedot = get_perustiedot(url)
-        self.tunnuslukuja = get_tunnuslukuja(url)
-
-        url = kurssi_tulostiedot_url.format(self.company_id)
-        self.toiminnan_laajuus = get_kurssi_tulostiedot(url, "Toiminnan laajuus")
-        self.kannattavuus = get_kurssi_tulostiedot(url, "Kannattavuus")
-        self.vakavaraisuus = get_kurssi_tulostiedot(url, "Vakavaraisuus")
-        self.maksuvalmius = get_kurssi_tulostiedot(url, "Maksuvalmius")
-        self.sijoittajan_tunnuslukuja = get_kurssi_tulostiedot(url, "Sijoittajan tunnuslukuja")
-
-        self.scrape_date = datetime.now().date() # YY-MM-DD
-        self.scrape_type = "raw"
-
-        self.set_metrics()
-        self.set_representations()
+    @staticmethod
+    def load_from_file(filename):
+        company_list = storage.get_stored_companies(filename)
+        logger.debug("Loaded {} companies from {}".format(len(company_list), filename))
+        return company_list
 
     def scrape(self):
         url_os = osingot_yritys_url.format(self.company_id)
@@ -67,11 +47,9 @@ class Company():
         url_ku_tu = kurssi_tulostiedot_url.format(self.company_id)
 
         self.metrics["company_id"] = self.company_id
-        self.metrics["name"] = self.name
+        self.metrics["company_name"] = self.company_name
         self.scrape_date = datetime.now().date() # YY-MM-DD
         self.metrics["scrape_date"] = self.scrape_date.strftime("%y-%m-%d")
-        self.scrape_type = "raw" # TODO: is scrape_type needed anymore, if data is stored always in metrics
-        self.metrics["scrape_type"] = self.scrape_type
 
         self.metrics["kurssi"] = get_kurssi(url_ku)
         self.metrics["kuvaus_yrityksesta"] = get_kuvaus_yrityksesta(url_ku)
@@ -93,16 +71,7 @@ class Company():
         self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
         self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(sijoittajan_tunnuslukuja)
 
-        self.set_representations()
-
-    @staticmethod
-    def load_from_file(filename):
-        company_list, scrape_type = storage.get_stored_company_data(filename)
-        # the scrape_type is stored inside the company
-        logger.debug("loaded company_list: {}, scrape_type: {}".format(str(company_list), scrape_type))
-        # TODO: unpacking of stored_scrape, depending on the scrape_type
-        
-        return company_list
+        self.after_basic_metrics_is_set()
 
     @staticmethod
     def make_value_pretty(v):
@@ -172,122 +141,42 @@ class Company():
                 d[k] = Company.make_value_pretty(v)
         return d
 
-    def set_metrics(self):
-        self.metrics["company_id"] = self.company_id
-        self.metrics["name"] = self.name
-        self.metrics["scrape_date"] = self.scrape_date.strftime("%y-%m-%d")
-        self.metrics["scrape_type"] = self.scrape_type
+    def after_basic_metrics_is_set(self):
+        try:
+            if self.metrics["calculations"]:
+                #self.calculate_metrics()
+                pass
+        except KeyError:
+            pass
+        self.set_representations()
 
-        self.metrics["kurssi"] = self.kurssi
-        self.metrics["kuvaus_yrityksesta"] = self.kuvaus_yrityksesta
+    def add_dict_to_str(self, in_dict, in_str="", indent_str="", simple=False):
+        max_key_len = 0
+        for key in in_dict:
+            if len(key) > max_key_len:
+                max_key_len = len(key)
 
-        self.metrics["osingot"] = self.list_to_pretty_dict(self.osingot)
+        line_str = "\n" + indent_str + "{:" + str(max_key_len) + "} : {}"
+        next_indent_str = indent_str + "\t"
 
-        self.metrics["perustiedot"] = self.dict_to_pretty_dict(self.perustiedot)
-        self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(self.tunnuslukuja)
-
-        self.metrics["toiminnan_laajuus"] = self.list_to_pretty_dict_pivot(self.toiminnan_laajuus)
-        self.metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(self.kannattavuus)
-        self.metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(self.vakavaraisuus)
-        self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(self.maksuvalmius)
-        self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(self.sijoittajan_tunnuslukuja)
-
-    @staticmethod
-    def list_to_str(company_list, name, tsv=False):
-        if company_list[0]:
-            if tsv:
-                string = "\n# {}".format(name)
+        for key in sorted(in_dict):
+            val_type = type(in_dict[key])
+            if val_type == dict and not simple:
+                in_str += line_str.format(key, "{")
+                in_str = self.add_dict_to_str(in_dict[key], in_str, next_indent_str)
+                in_str += "\n" + indent_str + "}"
             else:
-                string = "\n{}".format(name)
-            for i in range(1, len(company_list)):
-                string = string + "\n"
-                for j in company_list[i]:
-                    # one tab is 8 spaces/characters
-                    if tsv:
-                        string = string + "{}\t".format(j)
-                    else:
-                        string = string + "\t%-15.15s" % str(j)
-                if tsv:
-                    string.rstrip()
-        else:
-            string = "\n{}: Empty".format(name)
-        return string
-
-    @staticmethod
-    def dict_to_str(company_dict, name, tsv=False):
-        if company_dict[0]:
-            if tsv:
-                string = "\n# {}".format(name)
-            else:
-                string = "\n{}".format(name)
-            for i in company_dict:
-                # one tab is 8 spaces/characters
-                if i != 0:
-                    if tsv:
-                        string = string + "\n{}\t{}".format(i, str(company_dict[i]))
-                    else:
-                        string = string + "\n\t%-31.31s:%s" % (i, str(company_dict[i]))
-        else:
-            string = "\n{}: Empty".format(name)
-        return string
+                line = line_str.format(key, str(in_dict[key]))
+                in_str += line[:80]
+                if len(line) > 80:
+                    in_str += "..."
+        return in_str
 
     def set_representations(self):
-        # TODO: Remove print later
-        """
-        print(self.company_id)
-        print(self.name)
-        print(self.scrape_date)
-        print(self.scrape_type)
-        print(self.kurssi)
-        print(self.kuvaus_yrityksesta)
-        print(self.osingot)
-        print(self.perustiedot)
-        print(self.tunnuslukuja)
-        print(self.toiminnan_laajuus)
-        print(self.kannattavuus)
-        print(self.vakavaraisuus)
-        print(self.maksuvalmius)
-        print(self.sijoittajan_tunnuslukuja)
-        """
-
-        """
-        self.str_raw = "company_id:\t{}\nname:\t{}".format(self.company_id, self.name) +\
-            "\nkurssi:\t{}\nkuvaus:\t{}".format(self.kurssi, self.kuvaus_yrityksesta) +\
-            "\nscrape_date:\t{}\nscrape_type:\t{}".format(self.scrape_date, self.scrape_type) +\
-            self.list_to_str(self.osingot,                  "osingot") +\
-            self.dict_to_str(self.perustiedot,              "perustiedot") +\
-            self.dict_to_str(self.tunnuslukuja,             "tunnuslukuja") +\
-            self.list_to_str(self.toiminnan_laajuus,        "toiminnan_laajuus") +\
-            self.list_to_str(self.kannattavuus,             "kannattavuus") +\
-            self.list_to_str(self.vakavaraisuus,            "vakavaraisuus") +\
-            self.list_to_str(self.maksuvalmius,             "maksuvalmius") +\
-            self.list_to_str(self.sijoittajan_tunnuslukuja, "sijoittajan_tunnuslukuja")
-
-        self.tsv_raw = "\n## company_id\t{}\nname\t{}".format(self.company_id, self.name) +\
-            "\nkurssi\t{}\nkuvaus\t{}".format(self.kurssi, self.kuvaus_yrityksesta) +\
-            "\nscrape_date:\t{}\nscrape_type:\t{}".format(self.scrape_date, self.scrape_type) +\
-            self.list_to_str(self.osingot,                  "osingot",                    True) +\
-            self.dict_to_str(self.perustiedot,              "perustiedot",                True) +\
-            self.dict_to_str(self.tunnuslukuja,             "tunnuslukuja",               True) +\
-            self.list_to_str(self.toiminnan_laajuus,        "toiminnan_laajuus",          True) +\
-            self.list_to_str(self.kannattavuus,             "kannattavuus",               True) +\
-            self.list_to_str(self.vakavaraisuus,            "vakavaraisuus",              True) +\
-            self.list_to_str(self.maksuvalmius,             "maksuvalmius",               True) +\
-            self.list_to_str(self.sijoittajan_tunnuslukuja, "sijoittajan_tunnuslukuja",   True)
-        """
-
         assert self.metrics
-
         self.tsv_metrics = "\n{}".format(self.metrics)
-
-        # TODO: str metrics
-        self.str_metrics = "\n"
-        max_key_len = 0
-        for k in self.metrics:
-            self.str_metrics += "{}\t{}".format(k)
-            if len(k) > max_key_len:
-                print("longer: [[{}], len: {}".format(k, len(k)))
-                max_key_len = len(k)
+        self.str_metrics = self.add_dict_to_str(self.metrics)
+        self.str_metrics_simple = self.add_dict_to_str(self.metrics, simple=True)
 
     # TODO: UNDER IS OLD FUNCTIONS: go troghe
 

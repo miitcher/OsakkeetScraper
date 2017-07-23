@@ -20,49 +20,46 @@ def scrape_companies(storage_directory):
     logger.debug("Individual companies data is scraped from Kauppalehti")
     company_list = []
     for company_id in company_names:
-        logger.debug("company_id:{}, Name:{}".format(company_id, company_names[company_id]))
+        logger.debug("company_id:{}, company_name:{}".format(company_id, company_names[company_id]))
         company = scraping.Company(company_id, name=company_names[company_id])
         company.scrape()
         company_list.append(company)
-        break # so just one company is scraped
+        break # TODO: so just one company is scraped
     logger.debug("Number of companies scraped: {}".format(len(company_list)))
 
-    logger.debug("Scraped companies are stored")
-    tsv_filename_raw         = storage.store_company_data(company_list, storage_directory, "raw")
-    tsv_filename_metrics     = storage.store_company_data(company_list, storage_directory, "metrics")
-
+    tsv_filename_metrics = storage.store_company_data(company_list, storage_directory, "metrics")
     return tsv_filename_metrics
 
-def load_companies(filename):
-    # TODO: function can be removed
-    # but the used function below can be elsewhere used
-    # can use load_companies for testing for now
-    company_list = scraping.Company.load_from_file(filename)
-
 def print_companies(filename):
-    """
-    if self.Tiedot:
-        for ID in self.Tiedot.scraped_IDs:
-            print("{} {}".format(ID, self.Tiedot.DICT_yritys[ID]))
-    else:
-        print("TIEDOT is missing")
-    """
-    pass
+    logger.info("Print all companies:")
+    company_list = scraping.Company.load_from_file(filename)
+    for company in company_list:
+        print(company)
 
-def print_company(filename, ID):
-    """
-    if ID in self.Tiedot.scraped_IDs:
-        print("{} {}".format(ID, self.Tiedot.DICT_yritys[ID]))
-        matrix_print(self.Tiedot.DICT_YRITYKSEN_TIEDOT[ID][0])
-        kurssi_tiedot_print(self.Tiedot.DICT_YRITYKSEN_TIEDOT[ID])
-        kurssi_tulostiedot_print(self.Tiedot.DICT_YRITYKSEN_TIEDOT[ID])
-    else:
-        print("There is no company scraped with ID: {}".format(ID))
-    """
-    pass
+def print_company_metrics(filename, simple, company_id=None, company_name=None):
+    company_list = scraping.Company.load_from_file(filename)
+    if not company_id and not company_name:
+        logger.info("Print all companies info:")
+    company_printed = False
+    for company in company_list:
+        if ( not company_id and not company_name ) or \
+           ( company_id and company_id == company.company_id ) or \
+           ( company_name and str(company_name).lower() in str(company.company_name).lower() ):
+            if simple:
+                print(company.str_metrics_simple)
+            else:
+                print(company.str_metrics)
+            company_printed = True
+    if not company_printed:
+        if company_id:
+            logger.info("Found no company with company_id: [{}]".format(company_id))
+        if company_name:
+            logger.info("Found no company with company_name: [{}]".format(company_name))
 
 def filter_companies(filename):
+    # TODO:
     pass
 
 def organize_companies(filename):
+    # TODO:
     pass
