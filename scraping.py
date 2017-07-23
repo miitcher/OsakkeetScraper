@@ -52,7 +52,7 @@ class Company():
         self.metrics["scrape_date"] = self.scrape_date.strftime("%y-%m-%d")
 
         self.metrics["kurssi"] = get_kurssi(url_ku)
-        self.metrics["kuvaus_yrityksesta"] = get_kuvaus_yrityksesta(url_ku)
+        self.metrics["kuvaus"] = get_kuvaus(url_ku)
 
         self.metrics["osingot"] = self.list_to_pretty_dict(get_osingot(url_os))
 
@@ -75,14 +75,16 @@ class Company():
 
     @staticmethod
     def make_value_pretty(v):
-        coeff = 1
+        # substitute string for coefficient
+        coefficient = 1
         if "milj.eur" in v:
-            coeff = 1e6
+            coefficient = 1e6
             v = v.replace("milj.eur", "")
         try:
-            v = float(v) * coeff
+            v = float(v) * coefficient
         except ValueError:
             pass
+        # integer
         try:
             if v == int(v):
                 v = int(v)
@@ -177,6 +179,7 @@ class Company():
         assert self.metrics
         self.metrics["calculations"] = {}
         self.calculate_osinko()
+        self.collect_metrics()
         
         """
         was nothing (maby was not yet implemented...)
@@ -239,27 +242,82 @@ class Company():
         
         print("\n" + "+"*10 + "\tcalculations:" + self.add_dict_to_str(self.metrics["calculations"]))
 
+    def addCalc(self, key, value):
+        assert not str(key) in self.metrics["calculations"]
+        self.metrics["calculations"][str(key)] = value
+
     def calculate_osinko(self):
         # steady osinko: osinkotuotto > 0% for five years
         current_year = int(datetime.now().strftime("%Y")) # YYYY
-        osinko_tuotto_procent = {}
+        osinko_tuotto_prosentti = {}
+        osinko_euro = {}
         for year in range(current_year-4, current_year+1):
-            osinko_tuotto_procent[str(year)] = 0
+            osinko_tuotto_prosentti[str(year)] = 0
+            osinko_euro[str(year)] = 0
 
         for top_key in self.metrics["osingot"]:
             osinko_dict = self.metrics["osingot"][top_key]
             osinko_year = str(osinko_dict["vuosi"])
-            if osinko_year in osinko_tuotto_procent:
-                osinko_tuotto_procent[osinko_year] += osinko_dict["tuotto-%"]
+            if osinko_year in osinko_tuotto_prosentti:
+                osinko_tuotto_prosentti[osinko_year] += osinko_dict["tuotto-%"]
+                osinko_euro[osinko_year] += osinko_dict["oikaistu euroina"]
 
-        steady_osinko = True
-        for year in osinko_tuotto_procent:
-            if osinko_tuotto_procent[year] <= 0:
-                steady_osinko = False
+        steady_osinko_bool = 1 # 1: True, 0: False
+        for year in osinko_tuotto_prosentti:
+            if osinko_tuotto_prosentti[year] <= 0:
+                steady_osinko_bool = 0
                 break
 
-        self.metrics["calculations"]["osinko_tuotto_procent"] = osinko_tuotto_procent
-        self.metrics["calculations"]["steady_osinko"] = steady_osinko
+        self.addCalc("osinko_tuotto_prosentti", osinko_tuotto_prosentti)
+        self.addCalc("osinko_euro", osinko_euro)
+        self.addCalc("steady_osinko_bool", steady_osinko_bool)
+
+    def set_taloustiedot_current_key(self):
+        self.tt_current_key = None # "12/16", used for dictionaries scraped from the tulostiedot-page
+        current_year = int(datetime.now().strftime("%y")) # YY
+        key_dict = {} # keys_dict(year_int) = key_str
+        for key in self.metrics["kannattavuus"]:
+            if key.endswith("/{}".format(current_year)) or \
+               key.endswith("/{}".format(current_year - 1)):
+                parts = key.split("/")
+                key_dict[int(parts[1])] = key
+        if current_year in key_dict:
+            self.tt_current_key = key_dict[current_year]
+        elif (current_year - 1) in key_dict:
+            self.tt_current_key = key_dict[(current_year - 1)]
+        else:
+            all_keys = []
+            for key in self.metrics["kannattavuus"]:
+                all_keys.append(key)
+            logger.error("Problem with keys: {}".format(str(all_keys)))
+        assert self.tt_current_key
+        assert self.tt_current_key == "12/16"
+
+    def collect_metrics(self):
+        # Sidenote: not using: toiminnan laajuus, maksuvalmius
+        self.set_taloustiedot_current_key() # self.tt_current_key
+        self.addCalc("tt_current_key", self.tt_current_key)
+
+        self.addCalc("company_id", self.metrics["company_id"])
+        self.addCalc("company_name", self.metrics["company_name"])
+        self.addCalc("kurssi", self.metrics["kurssi"])
+        self.addCalc("kuvaus", self.metrics["kuvaus"])
+        self.addCalc("scrape_date", self.metrics["scrape_date"])
+
+        self.addCalc("toimiala", self.metrics["perustiedot"]["toimiala"])
+        self.addCalc("toimialaluokka", self.metrics["perustiedot"]["toimialaluokka"])
+        self.addCalc("osakkeet_kpl", self.metrics["perustiedot"]["osakkeet (kpl)"])
+
+        self.addCalc("ROE", self.metrics["kannattavuus"][self.tt_current_key]["oman paaoman tuotto, %"])
+        self.addCalc("nettotulos", self.metrics["kannattavuus"][self.tt_current_key]["nettotulos"])
+
+        self.addCalc("omavaraisuusaste", self.metrics["vakavaraisuus"][self.tt_current_key]["omavaraisuusaste, %"])
+        self.addCalc("gearing", self.metrics["vakavaraisuus"][self.tt_current_key]["nettovelkaantumisaste, %"])
+
+        self.addCalc("PB", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["p/b-luku"])
+        self.addCalc("PE", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["p/e-luku"])
+        self.addCalc("E", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["tulos (e)"])
+        self.addCalc("P", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["markkina-arvo (p)"])
 
 
     def tiedot_print(self):
@@ -404,7 +462,7 @@ def get_kurssi(url):
         kurssi="FAIL"
     return kurssi
 
-def get_kuvaus_yrityksesta(url):
+def get_kuvaus(url):
     soup = get_raw_soup(url)
     try:
         class_padding_tags=soup.find_all(class_="paddings")
