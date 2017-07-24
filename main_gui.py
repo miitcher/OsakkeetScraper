@@ -11,9 +11,9 @@ class ScrapeGuiException(Exception):
 
 
 class Window(QWidget):
-    def __init__(self, storage_dir):
+    def __init__(self, storage_directory):
         super().__init__()
-        self.storage_dir = storage_dir
+        self.storage_directory = storage_directory
         self.tsv_filename = None
         self.setWindowTitle('OsakkeetScraper Kauppalehdesta')
         self.setWindow()
@@ -103,7 +103,7 @@ class Window(QWidget):
             self.FileComboBox.removeItem(0)
             i -= 1
         self.FileComboBox.addItem(self.null_filename)
-        all_filenames = os.listdir(self.storage_dir)
+        all_filenames = os.listdir(self.storage_directory)
         stored_filenames = []
         for f in reversed(all_filenames):
             if f.endswith(".tsv") and f.startswith("scrape_metrics"):
@@ -120,12 +120,12 @@ class Window(QWidget):
         if self.FileComboBox.currentText() == self.null_filename:
             self.tsv_filename = None
         else:
-            self.tsv_filename = "{}\\{}".format(self.storage_dir, self.FileComboBox.currentText())
+            self.tsv_filename = "{}\\{}".format(self.storage_directory, self.FileComboBox.currentText())
 
     def buttonClicked(self):
         sender = self.sender()
         if sender.text() == self.scrape_str:
-            _tsv_filename_metrics = scrape_KL.scrape_companies(self.storage_dir)
+            _tsv_filename_metrics = scrape_KL.scrape_companies(self.storage_directory)
             self.refreshFileComboBox()
             self.FileComboBox.setCurrentIndex(1)
         elif self.tsv_filename:
@@ -169,13 +169,13 @@ if __name__ == '__main__':
     logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
     logger.setLevel(logging.DEBUG)
 
-    storage_dir = "scrapes"
+    storage_directory = "scrapes"
     #Creates a storage-folder if one does not exist.
-    if not os.path.isdir(storage_dir):
-        os.makedirs(storage_dir)
-        logger.debug("storage-folder created: [{}]".format(storage_dir))
+    if not os.path.isdir(storage_directory):
+        os.makedirs(storage_directory)
+        logger.debug("storage-folder created: [{}]".format(storage_directory))
 
     app = QApplication(sys.argv)
-    Window = Window(storage_dir)
+    Window = Window(storage_directory)
     Window.show()
     sys.exit(app.exec_())

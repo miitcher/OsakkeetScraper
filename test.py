@@ -1,11 +1,11 @@
 """
 python -m unittest -v
 """
-import unittest, logging
+import os, unittest, logging
 from datetime import datetime, date
 
 import scraping
-#import scrape_KL
+import scrape_KL
 
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
@@ -16,6 +16,8 @@ osingot_url             = url_basic + "osingot/osinkohistoria.jsp"
 osingot_yritys_url      = url_basic + "osingot/osinkohistoria.jsp?klid={}"
 kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
 kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
+
+storage_directory = "scrapes"
 
 
 class Test_scraping(unittest.TestCase):
@@ -141,8 +143,23 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
 
 class Test_scrape_KL(unittest.TestCase):
 
-    def test_scrape_KL_placeholder(self):
-        self.assertEqual(3,3)
+    def test_scrape_companies(self):
+        # just one company
+        filename = scrape_KL.scrape_companies(storage_directory, {2048:"talenom"})
+        self.assertTrue(os.path.isfile(filename))
+        #os.remove(filename)
+        # all companies
+        #scrape_KL.scrape_companies(storage_directory)
+
+    def test_print_companies(self):
+        filename = "testfiles\\scrape_metrics_17-07-25_00-44-11_one_comp.tsv"
+        scrape_KL.print_companies(filename)
+
+    def test_print_company_metrics(self):
+        filename = "testfiles\\scrape_metrics_17-07-25_00-44-11_one_comp.tsv"
+        scrape_KL.print_company_metrics(filename, "metrics")
+        scrape_KL.print_company_metrics(filename, "metrics_simple")
+        scrape_KL.print_company_metrics(filename, "calculations")
 
 
 if __name__ == '__main__':
