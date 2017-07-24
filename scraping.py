@@ -2,8 +2,6 @@ import requests, logging
 from bs4 import BeautifulSoup
 from datetime import datetime, date
 
-import storage
-
 logger = logging.getLogger('root')
 
 
@@ -19,9 +17,9 @@ class ScrapeException(Exception):
 
 
 class Company():
-    def __init__(self, company_id=None, name="Unknown", metrics=None):
+    def __init__(self, company_id=None, company_name="Unknown", metrics=None):
         self.company_id = company_id
-        self.company_name = name
+        self.company_name = company_name
         self.scrape_date = None # datetime.date Object
 
         if metrics:
@@ -39,12 +37,6 @@ class Company():
 
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.company_name)
-
-    @staticmethod
-    def load_from_file(filename):
-        company_list = storage.get_stored_companies(filename)
-        logger.debug("Loaded {} companies from {}".format(len(company_list), filename))
-        return company_list
 
     def scrape(self):
         url_os = osingot_yritys_url.format(self.company_id)
@@ -76,7 +68,7 @@ class Company():
         self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
         self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(sijoittajan_tunnuslukuja)
 
-        self.tsv_metrics = "\n{}".format(self.metrics) # for storage
+        self.tsv_metrics = "\n{}".format(self.metrics) # for storing metrics
 
     @staticmethod
     def make_value_pretty(v):

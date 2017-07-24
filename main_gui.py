@@ -4,7 +4,10 @@ from PyQt5.QtWidgets import *
 from datetime import datetime
 
 import scrape_KL
-import scraping
+
+
+class ScrapeGuiException(Exception):
+    pass
 
 
 class Window(QWidget):
@@ -47,7 +50,7 @@ class Window(QWidget):
         self.FileComboBox.setMaxVisibleItems(30)
 
         # connect buttons and widgets
-        ScrapeButton.clicked.connect(self.scrapebuttonClicked)
+        ScrapeButton.clicked.connect(self.buttonClicked)
         PrintCompaniesButton.clicked.connect(self.buttonClicked)
         PrintMetricsButton.clicked.connect(self.buttonClicked)
         PrintMetricsSimpleButton.clicked.connect(self.buttonClicked)
@@ -119,24 +122,13 @@ class Window(QWidget):
         else:
             self.tsv_filename = "{}\\{}".format(self.storage_dir, self.FileComboBox.currentText())
 
-    def scrapebuttonClicked(self):
-        try:
-            tsv_filename_metrics = scrape_KL.scrape_companies(self.storage_dir)
-            if tsv_filename_metrics:
-                logger.info("Scraping done")
-                self.refreshFileComboBox()
-                self.FileComboBox.setCurrentIndex(1)
-            else:
-                raise scraping.ScrapeException("Scraping failed")
-        except:
-            # The traceback does not work properly with the PyQt in LiClipse.
-            # There is no traceback on errors in LiClipse, but there is
-            # when running the program from the command line.
-            traceback.print_exc()
-
     def buttonClicked(self):
         sender = self.sender()
-        if self.tsv_filename:
+        if sender.text() == self.scrape_str:
+            _tsv_filename_metrics = scrape_KL.scrape_companies(self.storage_dir)
+            self.refreshFileComboBox()
+            self.FileComboBox.setCurrentIndex(1)
+        elif self.tsv_filename:
             print_type = None
             company_id = None
             company_name = None
@@ -154,7 +146,7 @@ class Window(QWidget):
                 elif sender.text() == self.printCalculations_str:
                     print_type = "calculations"
                 else:
-                    raise scraping.ScrapeException('Unexpected "sender.text()": [{}]'.format(sender.text()))
+                    raise ScrapeGuiException('Unexpected "sender.text()": [{}]'.format(sender.text()))
                 if print_type != None:
                     search_line_str = self.CompanySearchLineEdit.text().strip()
                     if search_line_str != "":

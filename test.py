@@ -20,6 +20,15 @@ kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid=
 
 class Test_scraping(unittest.TestCase):
 
+    def test_Company_scrape(self):
+        #company = scraping.Company(1930, "orion a")
+        company = scraping.Company(2048, "talenom")
+        company.scrape()
+
+    def test_Company_load(self):
+        filename = "test"
+        #company_list = scraping.Company.load_from_file(filename)
+
     def test_pretty_val(self):
         """ expected_type can be:
                 int, float, str, date
@@ -98,6 +107,9 @@ class Test_scraping(unittest.TestCase):
         test_get_osinko_Controll(self, 2051, one_expected_osinko_2051)
         test_get_osinko_Controll(self, 1050, one_expected_osinko_1050)
         test_get_osinko_Controll(self, 1083, one_expected_osinko_1083)
+
+    def test_he(self):
+        pass
 
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
     pretty_v = scraping.pretty_val(v, expected_type)

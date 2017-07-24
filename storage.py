@@ -1,11 +1,18 @@
-""" csv-files separated by: ';' """
-
-import os, logging, json
+import os, json, logging
 from datetime import datetime
 
 import scraping
 
 logger = logging.getLogger('root')
+
+
+def load_company_list(filename):
+    company_list = get_stored_companies(filename)
+    logger.debug("Loaded {} companies from {}".format(len(company_list), filename))
+    return company_list
+
+def store_company_list(company_list, storage_directory):
+    return store_company_data(company_list, storage_directory, "metrics")
 
 
 def store_company_data(company_list, storage_directory, scrape_type):
