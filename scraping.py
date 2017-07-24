@@ -324,13 +324,8 @@ def pretty_val(v, expected_type):
                 raise ScrapeException(exception_str)
     elif expected_type == date:
         v = v.strip()
-        # DD.MM.YYYY
-        """
-        if len(v.split(".")) != 3 or len(v) != 10:
-            raise ScrapeException(exception_str)
-        """
         try:
-            v = datetime.strptime(v, "%d.%m.%Y").date()
+            v = datetime.strptime(v, "%d.%m.%Y").date() # DD.MM.YYYY
         except ValueError:
             raise ScrapeException(exception_str)
     else:
@@ -340,10 +335,6 @@ def pretty_val(v, expected_type):
 def fix_str_OLD(string):
     # deals with scandinavian characters
     return string.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
-
-def fix_str(string):
-    # the relplace:s deals with scandinavian characters (dots above a and o)
-    return str(string).lower().strip().replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
 
 def fix_str_noncompatible_chars_in_unicode(string):
     return string.replace("\x9a","?").replace("\x96","?").replace("\x92","?")
@@ -358,14 +349,14 @@ def scrape_company_names():
         company_name = i.string
         if company_id and company_name:
             company_id = int(company_id)
-            company_name = fix_str(company_name)
+            company_name = pretty_val(company_name, str)
             company_names[company_id] = company_name
         elif company_name != "Valitse osake":
             raise ScrapeException("Unexpected: id:[{}], name:[{}]".format(company_id, company_name))
     return company_names
 
 # TODO: Go trough old functions here under and write tests for them
-# USE FUNCTION: fix_str()
+# USE FUNCTION: pretty_val()
 
 def get_osingot_NEW(url):
     soup = get_raw_soup(url)
@@ -381,35 +372,22 @@ def get_osingot_NEW(url):
     for row in table_row_tags:
         sub_dict = {}
         columns = row.find_all('td')
-        if columns[0].string == None: # vuosi
-            # if every metric is null it can be discarded
-            for i in range(6):
-                if columns[i].string != None:
+        # if every metric (except "lisatieto") is empty it can be discarded
+        if not columns[0].string:
+            for i in range(1,6):
+                if columns[i].string:
                     raise ScrapeException("Unexpected osinko row")
             continue
         for i in range(7):
             val = columns[i].string
             if i == 0:
-                try:
-                    val = int(val)
-                except TypeError:
-                    logger.debug("Not an integer:[{}]".format(val))
+                val = pretty_val(val, int)
             elif i == 1:
-                assert len(val.split(".")) == 3, "Not an expected date: [{}]".format(val)
-                val = datetime.strptime(val.strip(), "%d.%m.%Y").date()
+                val = pretty_val(val, date)
             elif i == 2 or i == 3 or i == 5:
-                try:
-                    val = float(val)
-                except TypeError:
-                    logger.debug("Not a float:[{}]".format(val))
+                val = pretty_val(val, float)
             elif i == 4 or i == 6:
-                if i == 6 and val == None:
-                    val = "-"
-                else:
-                    try:
-                        val = fix_str(val)
-                    except TypeError:
-                        logger.debug("Not a string:[{}]".format(val))
+                val = pretty_val(val, str)
             sub_dict[head[i]] = val
         osingot[row_counter] = sub_dict
         row_counter += 1

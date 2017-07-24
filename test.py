@@ -69,33 +69,62 @@ class Test_scraping(unittest.TestCase):
         self.assertEqual(company_names[1135], "upm-kymmene")
         self.assertEqual(company_names[1120], "huhtamaki")
         self.assertEqual(company_names[1105], "alandsbanken b")
-    """
+
     def test_get_osingot(self):
-        # TODO: Not ready yet...
-        #url = osingot_yritys_url.format(1050) # has not lisatieto metrics
-        url = osingot_yritys_url.format(2051) # has lisatieto metrics
-        osingot = scraping.get_osingot_NEW(url)
-        
-        print()
-        #print(osingot)
-        for i in osingot:
-            print(osingot[i])
-        print("len: " + str(len(osingot)))
-        
-        # OLD:
-        pretty_osingot = scraping.Company.list_to_pretty_dict(scraping.get_osingot(url))
-        print()
-        #print(pretty_osingot)
-        for i in pretty_osingot:
-            print(pretty_osingot[i])
-        print("len: " + str(len(pretty_osingot)))
-    """
+        one_expected_osinko_2051 = {'oikaistu_euroina': 0.5,
+                                    'maara': 0.5,
+                                    'tuotto_%': 3.7,
+                                    'irtoaminen': date(2017, 5, 18),
+                                    'valuutta': 'eur',
+                                    'vuosi': 2017,
+                                    'lisatieto': 'paaomanpalautus'
+        }
+        one_expected_osinko_1050 = {'lisatieto': '',
+                                    'oikaistu_euroina': 0.37,
+                                    'maara': 0.37,
+                                    'tuotto_%': 2.1,
+                                    'irtoaminen': date(2006, 3, 31),
+                                    'vuosi': 2006,
+                                    'valuutta': 'eur'
+        }
+        one_expected_osinko_1083 = {'valuutta': 'eur',
+                                    'irtoaminen': date(2003, 4, 25),
+                                    'oikaistu_euroina': 0.18,
+                                    'lisatieto': '',
+                                    'maara': 0.23,
+                                    'tuotto_%': 4.8,
+                                    'vuosi': 2003
+        }
+        test_get_osinko_Controll(self, 2051, one_expected_osinko_2051)
+        test_get_osinko_Controll(self, 1050, one_expected_osinko_1050)
+        test_get_osinko_Controll(self, 1083, one_expected_osinko_1083)
 
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
     pretty_v = scraping.pretty_val(v, expected_type)
     tester.assertEqual(pretty_v, expected_v)
-    tester.assertEqual(type(pretty_v), expected_type) # remove
     tester.assertIsInstance(pretty_v, expected_type)
+
+def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
+    type_dict = {"vuosi": int,
+                 "irtoaminen": date,
+                 "oikaistu_euroina": float,
+                 "maara": float,
+                 "valuutta": str,
+                 "tuotto_%": float,
+                 "lisatieto": str
+    }
+
+    url = osingot_yritys_url.format(company_id)
+    osingot = scraping.get_osingot_NEW(url)
+    matches = 0
+    for top_key in osingot:
+        if osingot[top_key]["irtoaminen"] == one_expected_osinko["irtoaminen"] and \
+           osingot[top_key]["maara"] == one_expected_osinko["maara"]:
+            tester.assertDictEqual(osingot[top_key], one_expected_osinko)
+            matches += 1
+        for key in osingot[top_key]:
+            tester.assertIsInstance(osingot[top_key][key], type_dict[key])
+    tester.assertEqual(matches, 1)
 
 
 class Test_scrape_KL(unittest.TestCase):
