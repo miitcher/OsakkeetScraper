@@ -1,6 +1,6 @@
 import requests, logging
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, date
 
 import storage
 
@@ -28,7 +28,7 @@ class Company():
             self.metrics = metrics
             self.company_id = self.metrics["company_id"]
             self.company_name = self.metrics["company_name"]
-            self.scrape_date = datetime.strptime(self.metrics["scrape_date"], "%y-%m-%d")
+            self.scrape_date = datetime.strptime(self.metrics["scrape_date"], "%y-%m-%d").date()
 
             self.do_calculations()
             self.set_representative_strings()
@@ -273,6 +273,69 @@ def get_raw_soup(link):
     r = requests.get(link)
     soup = BeautifulSoup(r.text, "html.parser")
     return soup
+
+def pretty_val(v, expected_type):
+    """ expected_type can be:
+            int, float, str, date
+        types not implemented:
+            datetime, boolean
+    """
+    # TODO: handle other like miljard, etc.
+    exception_str = "Unexpected type: expected_type:[{}], value:[{}]".format(expected_type, v)
+    if not isinstance(expected_type, type):
+        raise ScrapeException(exception_str)
+    if expected_type != str and isinstance(v, expected_type):
+        return v
+    if expected_type != str and not v:
+        raise ScrapeException(exception_str)
+
+    if expected_type == int or expected_type == float:
+        coefficient = 1
+        if not isinstance(v, int) and not isinstance(v, float):
+            if "milj.eur" in v:
+                coefficient = 1e6
+                v = v.replace("milj.eur", "")
+        try:
+            v = float(v) * coefficient
+        except ValueError:
+            raise ScrapeException(exception_str)
+        if expected_type == int:
+            try:
+                v_float = v
+                v = int(v)
+            except ValueError:
+                raise ScrapeException(exception_str)
+            if v != v_float:
+                raise ScrapeException(exception_str)
+    elif expected_type == str:
+        if v == None:
+            v = ""
+        else:
+            try:
+                v = str(v).strip().lower()
+                # the scandinavian letters:
+                v = v.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
+                # noncompatibel characters in unicode:
+                v_0 = v
+                v = v.replace("\x9a","?").replace("\x96","?").replace("\x92","?")
+                if v != v_0:
+                    raise ScrapeException("Weird character(s)!")
+            except ValueError:
+                raise ScrapeException(exception_str)
+    elif expected_type == date:
+        v = v.strip()
+        # DD.MM.YYYY
+        """
+        if len(v.split(".")) != 3 or len(v) != 10:
+            raise ScrapeException(exception_str)
+        """
+        try:
+            v = datetime.strptime(v, "%d.%m.%Y").date()
+        except ValueError:
+            raise ScrapeException(exception_str)
+    else:
+        raise ScrapeException("Not an accepted type: [{}]".format(expected_type))
+    return v
 
 def fix_str_OLD(string):
     # deals with scandinavian characters

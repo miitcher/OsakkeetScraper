@@ -2,6 +2,7 @@
 python -m unittest -v
 """
 import unittest, logging
+from datetime import datetime, date
 
 import scraping
 #import scrape_KL
@@ -19,11 +20,44 @@ kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid=
 
 class Test_scraping(unittest.TestCase):
 
-    def test_fix_str(self):
-        pass
+    def test_pretty_val(self):
+        """ expected_type can be:
+                int, float, str, date
+            types not implemented:
+                datetime, boolean
+        """
+        test_pretty_val_Equal(self, int, 12, 12)
+        test_pretty_val_Equal(self, int, "12", 12)
+        test_pretty_val_Equal(self, int, "100milj.eur", 1e8)
+        test_pretty_val_Equal(self, int, "3.4milj.eur", 34e5)
+        for v in ["38.2", " ", "", None, "he", "3,5", 2.1, "2miljard.eur"]:
+            self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, int)
 
-    def test_fix_str_noncompatible_chars_in_unicode(self):
-        pass
+        test_pretty_val_Equal(self, float, 38.23, 38.23)
+        test_pretty_val_Equal(self, float, "38.23", 38.23)
+        test_pretty_val_Equal(self, float, "3.4milj.eur", 34e5)
+        test_pretty_val_Equal(self, float, 2.1, 2.1)
+        for v in [" ", "", None, "he", "3,5"]:
+            self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, float)
+
+        test_pretty_val_Equal(self, str, "38.23", "38.23")
+        test_pretty_val_Equal(self, str, "fooBar\n", "foobar")
+        test_pretty_val_Equal(self, str, " aåäöox ", "aaaoox")
+        test_pretty_val_Equal(self, str, None, "")
+        test_pretty_val_Equal(self, str, "", "")
+        test_pretty_val_Equal(self, str, " ", "")
+        for v in ["\x9a"]:
+            self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, str)
+
+        # DD.MM.YYYY
+        test_pretty_val_Equal(self, date, date(2016, 2, 1), date(2016, 2, 1))
+        test_pretty_val_Equal(self, date, "12.11.2002", date(2002, 11, 12))
+        test_pretty_val_Equal(self, date, "01.02.2016", date(2016, 2, 1))
+        for v in ["01.20.2015", "01-02-2016", "01022016", "1.1.1aaaaa", "", None, " "]:
+            self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, date)
+
+        self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", datetime)
+        self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", "type")
 
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
@@ -35,14 +69,12 @@ class Test_scraping(unittest.TestCase):
         self.assertEqual(company_names[1135], "upm-kymmene")
         self.assertEqual(company_names[1120], "huhtamaki")
         self.assertEqual(company_names[1105], "alandsbanken b")
-
+    """
     def test_get_osingot(self):
         # TODO: Not ready yet...
         #url = osingot_yritys_url.format(1050) # has not lisatieto metrics
         url = osingot_yritys_url.format(2051) # has lisatieto metrics
         osingot = scraping.get_osingot_NEW(url)
-        
-        pretty_osingot = scraping.Company.list_to_pretty_dict(scraping.get_osingot(url))
         
         print()
         #print(osingot)
@@ -50,12 +82,20 @@ class Test_scraping(unittest.TestCase):
             print(osingot[i])
         print("len: " + str(len(osingot)))
         
+        # OLD:
+        pretty_osingot = scraping.Company.list_to_pretty_dict(scraping.get_osingot(url))
         print()
         #print(pretty_osingot)
         for i in pretty_osingot:
             print(pretty_osingot[i])
         print("len: " + str(len(pretty_osingot)))
-        
+    """
+
+def test_pretty_val_Equal(tester, expected_type, v, expected_v):
+    pretty_v = scraping.pretty_val(v, expected_type)
+    tester.assertEqual(pretty_v, expected_v)
+    tester.assertEqual(type(pretty_v), expected_type) # remove
+    tester.assertIsInstance(pretty_v, expected_type)
 
 
 class Test_scrape_KL(unittest.TestCase):
