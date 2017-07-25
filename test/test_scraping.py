@@ -1,11 +1,13 @@
 """
-python -m unittest -v
+python -m unittest -v    (same as discover)
+python -m unittest -v test.Test_scraping.test_get_perustiedot
+python -m unittest -v test.Test_scraping
+python -m unittest -v test.test_scraping
 """
-import os, unittest, logging
+import unittest, logging
 from datetime import datetime, date
 
 import scraping
-import scrape_KL
 
 
 skip_bigger_scrapes = False
@@ -75,7 +77,7 @@ class Test_scraping(unittest.TestCase):
 
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", datetime)
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", "type")
-    '''
+
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
         for key in company_names:
@@ -130,7 +132,7 @@ class Test_scraping(unittest.TestCase):
         test_get_osinko_Controll(self, 2051, one_expected_osinko_2051)
         test_get_osinko_Controll(self, 1050, one_expected_osinko_1050)
         test_get_osinko_Controll(self, 1083, one_expected_osinko_1083)
-    '''
+
     def test_get_perustiedot(self):
         part_of_expected_perustiedot_2048 = {
             'toimiala': 'teollisuustuotteet ja -palvelut',
@@ -212,58 +214,14 @@ def test_get_perustiedot_Controll(tester, company_id, part_of_expected_perustied
         "markkina-arvo": float,
         "osakkeet_kpl": int
     }
-    """
-    url_ku = kurssi_url.format(company_id)
-    per_old = scraping.Company.dict_to_pretty_dict(scraping.get_perustiedot_OLD(url_ku))
-
-    print()
-    print("----")
-    for i in per_old:
-        print(i + "\t" + str(per_old[i]))
-    print("++++")
-    """
     url = kurssi_url.format(company_id)
     perustiedot = scraping.get_perustiedot(url)
     tester.assertEqual(len(perustiedot), 10)
     for key in perustiedot:
-        #print(key + "\t" + str(perustiedot[key]))
         tester.assertIsInstance(perustiedot[key], type_dict[key])
         if type_dict[key] == str:
             tester.assertEqual(perustiedot[key], part_of_expected_perustiedot[key])
 
-
-class Test_scrape_KL(unittest.TestCase):
-    @unittest.skipIf(skip_bigger_scrapes or skip_print_tests, "fast testing & clear")
-    def test_scrape_companies_AND_other(self):
-        # scraping takes so long; so we do it just once
-
-        # all companies:
-        #scrape_KL.scrape_companies(storage_directory)
-
-        # one company:
-        filename = scrape_KL.scrape_companies(storage_directory, {2048:"talenom"})
-        self.assertTrue(os.path.isfile(filename))
-
-        scrape_KL.print_companies(filename)
-        scrape_KL.print_company_metrics(filename, "metrics")
-        scrape_KL.print_company_metrics(filename, "metrics_simple")
-        scrape_KL.print_company_metrics(filename, "calculations")
-
-        os.remove(filename)
-    """ # TODO: When all scraping.get_* functions fixed
-        #    --> update: "testfiles\\scrape_metrics_one_comp.tsv"
-    @unittest.skipIf(skip_print_tests, "clear")
-    def test_print_companies(self):
-        filename = "testfiles\\scrape_metrics_one_comp.tsv"
-        scrape_KL.print_companies(filename)
-
-    @unittest.skipIf(skip_print_tests, "clear")
-    def test_print_company_metrics(self):
-        filename = "testfiles\\scrape_metrics_one_comp.tsv"
-        scrape_KL.print_company_metrics(filename, "metrics")
-        scrape_KL.print_company_metrics(filename, "metrics_simple")
-        scrape_KL.print_company_metrics(filename, "calculations")
-    """
 
 if __name__ == '__main__':
     unittest.main()

@@ -68,9 +68,9 @@ def organize_companies(filename):
 
 
 def get_company_names(storage_directory):
-    company_names = storage.get_today_stored_company_names(storage_directory)
+    company_names = storage.load_todays_company_names(storage_directory)
     if not company_names:
         logger.debug("Company names are scraped from Kauppalehti")
         company_names = scraping.scrape_company_names()
-        storage.store_company_data(company_names, storage_directory, "names")
+        storage.store_company_names(company_names, storage_directory)
     return company_names
