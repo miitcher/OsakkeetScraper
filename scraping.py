@@ -62,7 +62,7 @@ class Company():
 
         self.metrics["osingot"] = get_osingot(url_os)
 
-        self.metrics["perustiedot"] = self.dict_to_pretty_dict(get_perustiedot(url_ku))
+        self.metrics["perustiedot"] = get_perustiedot(url_ku)
         self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja(url_ku))
 
         toiminnan_laajuus = get_kurssi_tulostiedot(url_ku_tu, "Toiminnan laajuus")
@@ -244,7 +244,7 @@ class Company():
 
         self.addCalc("toimiala", self.metrics["perustiedot"]["toimiala"])
         self.addCalc("toimialaluokka", self.metrics["perustiedot"]["toimialaluokka"])
-        self.addCalc("osakkeet_kpl", self.metrics["perustiedot"]["osakkeet (kpl)"])
+        self.addCalc("osakkeet_kpl", self.metrics["perustiedot"]["osakkeet_kpl"])
 
         self.addCalc("ROE", self.metrics["kannattavuus"][self.tt_current_key]["oman paaoman tuotto, %"])
         self.addCalc("nettotulos", self.metrics["kannattavuus"][self.tt_current_key]["nettotulos"])
@@ -422,9 +422,6 @@ def get_osingot(url):
         row_counter += 1
     return osingot
 
-# TODO: Go trough old functions here under and write tests for them
-# USE FUNCTION: pretty_val()
-
 def get_perustiedot(url):
     perustiedot = {}
     soup = get_raw_soup(url)
@@ -473,68 +470,8 @@ def get_perustiedot(url):
             perustiedot[key] = val
     return perustiedot
 
-
-def get_osakkeen_perustiedot_table_TAG(url):
-    soup = get_raw_soup(url)
-    try:
-        class_is_TSBD=soup.find_all(class_="table_stock_basic_details")
-        
-        for tag in class_is_TSBD:
-            try:
-                if tag.parent.parent.h3.text.strip() == "Osakkeen perustiedot":
-                    return tag
-            except:
-                pass
-        logger.debug("osakkeen_perustiedot_table_TAG EI LOYTYNYT")
-    except:
-        logger.debug("osakkeen_perustiedot_table_TAG")
-    return -1
-
-def get_perustiedot_OLD(url):
-    perustiedot_dict={}
-    try:
-        TAG=get_osakkeen_perustiedot_table_TAG(url)
-        
-        if TAG == -1:
-            perustiedot_dict[0]=False
-            return perustiedot_dict
-        
-        tr_tags=TAG.find_all('tr')
-        c=0
-        for i in tr_tags:
-            td_tags=i.find_all('td')
-            
-            if c==0:
-                key=td_tags[0].text.replace(":","")
-                val=td_tags[1].text
-                perustiedot_dict[fix_str_OLD(key)]=val
-                
-                strs=td_tags[2].text.split("\n")
-                [key, val]=strs[1].split(":")
-                perustiedot_dict[fix_str_OLD(key)]=val
-                
-                [key, val]=strs[2].split(":")
-                perustiedot_dict[fix_str_OLD(key)]=val
-                c+=1
-            else:
-                key=td_tags[0].text.strip().replace(":","")
-                val=td_tags[1].text.strip()
-                
-                if key=="Osakkeet":
-                    val= val.replace("kpl","").replace("\xa0", "")
-                    key="{} (KPL)".format(key)
-                    try:
-                        val=int(val)
-                    except:
-                        logger.debug("Osakkeet (KPL)")
-                
-                perustiedot_dict[fix_str_OLD(key)]=val
-        
-        perustiedot_dict[0]=True
-    except:
-        logger.debug("perustiedot_dict")
-        perustiedot_dict[0]=False
-    return perustiedot_dict
+# TODO: Go trough old functions here under and write tests for them
+# USE FUNCTION: pretty_val()
 
 def get_tunnuslukuja_table_TAG(url):
     soup = get_raw_soup(url)
