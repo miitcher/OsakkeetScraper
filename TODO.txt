@@ -1,3 +1,4 @@
+check that .gitignore works in test-folder
 make test of printing not show the print on tests
 go trough old functions at end of scraping.py and add tests
     make them return pretty_dictionaries
