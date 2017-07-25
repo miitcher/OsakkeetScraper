@@ -18,11 +18,11 @@ kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
 kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 storage_directory = "scrapes"
-run_fast_tests = not True
+scip_scrape_containing_tests = True
 
 
 class Test_scraping(unittest.TestCase):
-    @unittest.skipIf(run_fast_tests, "run fast tests")
+    @unittest.skipIf(scip_scrape_containing_tests, "fast testing")
     def test_Company_scrape(self):
         #company = scraping.Company(c_id=1930, c_name="orion a")
         company = scraping.Company(c_id=2048, c_name="talenom")
@@ -123,7 +123,7 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
     }
 
     url = osingot_yritys_url.format(company_id)
-    osingot = scraping.get_osingot_NEW(url)
+    osingot = scraping.get_osingot(url)
     matches = 0
     for top_key in osingot:
         tester.assertIsInstance(top_key, str)
@@ -138,7 +138,7 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
 
 
 class Test_scrape_KL(unittest.TestCase):
-    @unittest.skipIf(run_fast_tests, "run fast tests")
+    @unittest.skipIf(scip_scrape_containing_tests, "fast testing")
     def test_scrape_companies_AND_other(self):
         # scraping takes so long; so we do it just once
 

@@ -60,8 +60,7 @@ class Company():
         self.metrics["kurssi"] = get_kurssi(url_ku)
         self.metrics["kuvaus"] = get_kuvaus(url_ku)
 
-        #self.metrics["osingot"] = self.list_to_pretty_dict(get_osingot(url_os))
-        self.metrics["osingot"] = get_osingot_NEW(url_os)
+        self.metrics["osingot"] = get_osingot(url_os)
 
         self.metrics["perustiedot"] = self.dict_to_pretty_dict(get_perustiedot(url_ku))
         self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja(url_ku))
@@ -331,7 +330,7 @@ def pretty_val(v, expected_type):
             v = "{}-{}-{}".format(yyyy, mm, dd) # YYYY-MM-DD
         elif not date_pattern_0.match(v): # YYYY-MM-DD
             raise ScrapeException(exception_str)
-        """
+        """ # TODO: Remove later
         try:
             v = datetime.strptime(v, "%d.%m.%Y").date() # DD.MM.YYYY
         except ValueError:
@@ -341,11 +340,11 @@ def pretty_val(v, expected_type):
         raise ScrapeException("Not an accepted type: [{}]".format(expected_type))
     return v
 
-def fix_str_OLD(string):
+def fix_str_OLD(string): # TODO: Remove later
     # deals with scandinavian characters
     return string.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
 
-def fix_str_noncompatible_chars_in_unicode(string):
+def fix_str_noncompatible_chars_in_unicode(string): # TODO: Remove later
     return string.replace("\x9a","?").replace("\x96","?").replace("\x92","?")
 
 def scrape_company_names():
@@ -367,7 +366,7 @@ def scrape_company_names():
 # TODO: Go trough old functions here under and write tests for them
 # USE FUNCTION: pretty_val()
 
-def get_osingot_NEW(url):
+def get_osingot(url):
     soup = get_raw_soup(url)
     table_tags = soup.find_all('table')
     table_row_tags = table_tags[5].find_all('tr')
@@ -400,47 +399,6 @@ def get_osingot_NEW(url):
             sub_dict[head[i]] = val
         osingot[str(row_counter)] = sub_dict
         row_counter += 1
-    return osingot
-
-def get_osingot(url):
-    soup = get_raw_soup(url)
-    table_tags = soup.find_all('table')
-    table_row_tags = table_tags[5].find_all('tr')
-    osingot = ["HEHE"]
-    c = 0
-    for i in table_row_tags:
-        columns = i.find_all('td')
-        
-        OYV=[]
-        """Osingot yritykselle yhdella rivilla:
-            Vuosi, Irtoaminen, Oikaistu euroina,
-            Maara, Valuutta, Tuotto-%, Lisatieto"""
-        if c==0:
-            OYV.append("Vuosi")
-            OYV.append("Irtoaminen")
-            OYV.append("Oikaistu euroina")
-            OYV.append("Maara")
-            OYV.append("Valuutta")
-            OYV.append("Tuotto-%")
-            OYV.append("Lisatieto")
-        else:
-            for i in range(7):
-                val=columns[i].string
-                if i==0:
-                    try:
-                        val=int(val)
-                    except:
-                        logger.debug("int('{}')".format(val))
-                elif i==2 or i==3 or i==5:
-                    try:
-                        val=float(val)
-                    except:
-                        logger.debug("int('{}')".format(val))
-                OYV.append(val)
-            
-        osingot.append(OYV)
-        c+=1
-    osingot[0]=True
     return osingot
 
 def get_kurssi(url):
