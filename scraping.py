@@ -1,6 +1,6 @@
-import requests, logging
+import requests, re, logging
 from bs4 import BeautifulSoup
-from datetime import datetime, date
+from datetime import date
 
 logger = logging.getLogger('root')
 
@@ -11,29 +11,39 @@ osingot_yritys_url      = url_basic + "osingot/osinkohistoria.jsp?klid={}"
 kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
 kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
+date_format = "%Y-%m-%d" # YYYY-MM-DD
+datetime_format = "%y-%m-%d_%H-%M-%S" # YY-MM-DD_HH-MM-SS: for filename
+date_pattern_0 = re.compile("^\d{4}\-\d{2}\-\d{2}$") # YYYY-MM-DD
+date_pattern_1 = re.compile("^\d{2}\.\d{2}\.\d{4}$") # DD.MM.YYYY
+
 
 class ScrapeException(Exception):
     pass
 
 
 class Company():
-    def __init__(self, company_id=None, company_name="Unknown", metrics=None):
-        self.company_id = company_id
-        self.company_name = company_name
-        self.scrape_date = None # datetime.date Object
-
-        if metrics:
-            self.metrics = metrics
+    def __init__(self, c_metrics=None, c_id=None, c_name=None):
+        if c_metrics:
+            assert c_metrics
+            assert isinstance(c_metrics, dict)
+            assert not c_id
+            assert not c_name
+            self.metrics = c_metrics
             self.company_id = self.metrics["company_id"]
             self.company_name = self.metrics["company_name"]
-            self.scrape_date = datetime.strptime(self.metrics["scrape_date"], "%y-%m-%d").date()
 
             self.do_calculations()
             self.set_representative_strings()
         else:
+            assert not c_metrics
+            assert c_id
+            assert c_name
             self.metrics = {}
-
-        assert self.company_id, "Company has no id"
+            self.company_id = c_id
+            self.company_name = c_name
+        assert self.company_id
+        assert isinstance(self.company_id, int)
+        assert isinstance(self.company_name, str)
 
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.company_name)
@@ -45,13 +55,13 @@ class Company():
 
         self.metrics["company_id"] = self.company_id
         self.metrics["company_name"] = self.company_name
-        self.scrape_date = datetime.now().date() # YY-MM-DD
-        self.metrics["scrape_date"] = self.scrape_date.strftime("%y-%m-%d")
+        self.metrics["scrape_date"] = date.today().strftime(date_format)
 
         self.metrics["kurssi"] = get_kurssi(url_ku)
         self.metrics["kuvaus"] = get_kuvaus(url_ku)
 
-        self.metrics["osingot"] = self.list_to_pretty_dict(get_osingot(url_os))
+        #self.metrics["osingot"] = self.list_to_pretty_dict(get_osingot(url_os))
+        self.metrics["osingot"] = get_osingot_NEW(url_os)
 
         self.metrics["perustiedot"] = self.dict_to_pretty_dict(get_perustiedot(url_ku))
         self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja(url_ku))
@@ -160,14 +170,12 @@ class Company():
         return in_str
 
     def set_representative_strings(self):
-        assert self.metrics
         assert "calculations" in self.metrics
         self.str_metrics = self.add_dict_to_str(self.metrics)
         self.str_metrics_simple = self.add_dict_to_str(self.metrics, simple=True)
         self.str_calculations = self.add_dict_to_str(self.metrics["calculations"])
 
     def do_calculations(self):
-        assert self.metrics
         self.metrics["calculations"] = {}
         self.calculate_osinko()
         self.collect_metrics()
@@ -179,7 +187,7 @@ class Company():
 
     def calculate_osinko(self):
         # steady osinko: osinkotuotto > 0% for five years
-        current_year = int(datetime.now().strftime("%Y")) # YYYY
+        current_year = int(date.today().strftime("%Y")) # YYYY
         osinko_tuotto_prosentti = {}
         osinko_euro = {}
         for year in range(current_year-4, current_year+1):
@@ -205,7 +213,7 @@ class Company():
 
     def set_taloustiedot_current_key(self):
         self.tt_current_key = None # "12/16", used for dictionaries scraped from the tulostiedot-page
-        current_year = int(datetime.now().strftime("%y")) # YY
+        current_year = int(date.today().strftime("%y")) # YY
         key_dict = {} # keys_dict(year_int) = key_str
         for key in self.metrics["kannattavuus"]:
             if key.endswith("/{}".format(current_year)) or \
@@ -252,7 +260,7 @@ class Company():
 
     def calculate_fresh(self):
         calc = self.metrics["calculations"]
-        current_year = datetime.now().strftime("%Y") # "YYYY"
+        current_year = date.today().strftime("%Y") # "YYYY"
         # the metrics below are fresher, because they are calculated with the current stock price
         self.addCalc("calc_osinkotuotto_percent", round( 100 * calc["osinko_euro"][current_year] / calc["kurssi"], 2))
         self.addCalc("calc_P", round( calc["osakkeet_kpl"] * calc["kurssi"] / 1e6, 4))
@@ -269,10 +277,9 @@ def get_raw_soup(link):
 def pretty_val(v, expected_type):
     """ expected_type can be:
             int, float, str, date
-        types not implemented:
-            datetime, boolean
+        if there is a need:
+            handle more string replacements (like miljard, etc.)
     """
-    # TODO: handle other like miljard, etc.
     exception_str = "Unexpected type: expected_type:[{}], value:[{}]".format(expected_type, v)
     if not isinstance(expected_type, type):
         raise ScrapeException(exception_str)
@@ -316,10 +323,20 @@ def pretty_val(v, expected_type):
                 raise ScrapeException(exception_str)
     elif expected_type == date:
         v = v.strip()
+        if date_pattern_1.match(v): # DD.MM.YYYY
+            dd, mm, yyyy = v.split(".")
+            if int(dd) > 31 or int(mm) > 12 or \
+              int(dd) < 1 or int(mm) < 1 or int(yyyy) < 1:
+                raise ScrapeException(exception_str)
+            v = "{}-{}-{}".format(yyyy, mm, dd) # YYYY-MM-DD
+        elif not date_pattern_0.match(v): # YYYY-MM-DD
+            raise ScrapeException(exception_str)
+        """
         try:
             v = datetime.strptime(v, "%d.%m.%Y").date() # DD.MM.YYYY
         except ValueError:
             raise ScrapeException(exception_str)
+        """
     else:
         raise ScrapeException("Not an accepted type: [{}]".format(expected_type))
     return v
@@ -381,7 +398,7 @@ def get_osingot_NEW(url):
             elif i == 4 or i == 6:
                 val = pretty_val(val, str)
             sub_dict[head[i]] = val
-        osingot[row_counter] = sub_dict
+        osingot[str(row_counter)] = sub_dict
         row_counter += 1
     return osingot
 

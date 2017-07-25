@@ -1,9 +1,10 @@
 import os, sys, logging, traceback
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
-from datetime import datetime
+from datetime import date
 
 import scrape_KL
+import scraping
 
 
 class ScrapeGuiException(Exception):
@@ -112,7 +113,7 @@ class Window(QWidget):
 
     def setNewestTsvFileFromToday(self):
         if len(self.FileComboBox) > 1:
-            s = "scrape_metrics_" + datetime.now().strftime("%y-%m-%d")
+            s = "scrape_metrics_" + date.today().strftime(scraping.date_format) # YYYY-MM-DD
             if self.FileComboBox.itemText(1).startswith(s):
                 self.FileComboBox.setCurrentIndex(1)
 

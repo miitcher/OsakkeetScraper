@@ -18,25 +18,18 @@ kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
 kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 storage_directory = "scrapes"
+run_fast_tests = True
 
 
 class Test_scraping(unittest.TestCase):
-
+    @unittest.skipIf(run_fast_tests, "run fast tests")
     def test_Company_scrape(self):
-        #company = scraping.Company(1930, "orion a")
-        company = scraping.Company(2048, "talenom")
+        #company = scraping.Company(c_id=1930, c_name="orion a")
+        company = scraping.Company(c_id=2048, c_name="talenom")
         company.scrape()
 
-    def test_Company_load(self):
-        filename = "test"
-        #company_list = scraping.Company.load_from_file(filename)
-
     def test_pretty_val(self):
-        """ expected_type can be:
-                int, float, str, date
-            types not implemented:
-                datetime, boolean
-        """
+        # expected_type can be: int, float, str, date
         test_pretty_val_Equal(self, int, 12, 12)
         test_pretty_val_Equal(self, int, "12", 12)
         test_pretty_val_Equal(self, int, "100milj.eur", 1e8)
@@ -60,11 +53,12 @@ class Test_scraping(unittest.TestCase):
         for v in ["\x9a"]:
             self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, str)
 
-        # DD.MM.YYYY
-        test_pretty_val_Equal(self, date, date(2016, 2, 1), date(2016, 2, 1))
-        test_pretty_val_Equal(self, date, "12.11.2002", date(2002, 11, 12))
-        test_pretty_val_Equal(self, date, "01.02.2016", date(2016, 2, 1))
-        for v in ["01.20.2015", "01-02-2016", "01022016", "1.1.1aaaaa", "", None, " "]:
+        # DD.MM.YYYY --> YYYY-MM-DD
+        test_pretty_val_Equal(self, date, "2016-02-01", "2016-02-01")
+        test_pretty_val_Equal(self, date, "12.11.2002", "2002-11-12")
+        test_pretty_val_Equal(self, date, "01.02.2016", "2016-02-01")
+        for v in ["01.20.2015", "01-02-2016", "01022016",
+                  "1.1.1aaaaa", "i01.02.2011i", "", None, " "]:
             self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, date)
 
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", datetime)
@@ -85,7 +79,7 @@ class Test_scraping(unittest.TestCase):
         one_expected_osinko_2051 = {'oikaistu_euroina': 0.5,
                                     'maara': 0.5,
                                     'tuotto_%': 3.7,
-                                    'irtoaminen': date(2017, 5, 18),
+                                    'irtoaminen': "2017-05-18",
                                     'valuutta': 'eur',
                                     'vuosi': 2017,
                                     'lisatieto': 'paaomanpalautus'
@@ -94,12 +88,12 @@ class Test_scraping(unittest.TestCase):
                                     'oikaistu_euroina': 0.37,
                                     'maara': 0.37,
                                     'tuotto_%': 2.1,
-                                    'irtoaminen': date(2006, 3, 31),
+                                    'irtoaminen': "2006-03-31",
                                     'vuosi': 2006,
                                     'valuutta': 'eur'
         }
         one_expected_osinko_1083 = {'valuutta': 'eur',
-                                    'irtoaminen': date(2003, 4, 25),
+                                    'irtoaminen': "2003-04-25",
                                     'oikaistu_euroina': 0.18,
                                     'lisatieto': '',
                                     'maara': 0.23,
@@ -110,17 +104,17 @@ class Test_scraping(unittest.TestCase):
         test_get_osinko_Controll(self, 1050, one_expected_osinko_1050)
         test_get_osinko_Controll(self, 1083, one_expected_osinko_1083)
 
-    def test_he(self):
-        pass
-
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
     pretty_v = scraping.pretty_val(v, expected_type)
     tester.assertEqual(pretty_v, expected_v)
-    tester.assertIsInstance(pretty_v, expected_type)
+    if expected_type == date:
+        tester.assertIsInstance(pretty_v, str)
+    else:
+        tester.assertIsInstance(pretty_v, expected_type)
 
 def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
     type_dict = {"vuosi": int,
-                 "irtoaminen": date,
+                 "irtoaminen": str,
                  "oikaistu_euroina": float,
                  "maara": float,
                  "valuutta": str,
@@ -132,6 +126,8 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
     osingot = scraping.get_osingot_NEW(url)
     matches = 0
     for top_key in osingot:
+        tester.assertIsInstance(top_key, str)
+        tester.assertEqual(len(osingot[top_key]), 7)
         if osingot[top_key]["irtoaminen"] == one_expected_osinko["irtoaminen"] and \
            osingot[top_key]["maara"] == one_expected_osinko["maara"]:
             tester.assertDictEqual(osingot[top_key], one_expected_osinko)
@@ -142,14 +138,23 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
 
 
 class Test_scrape_KL(unittest.TestCase):
+    @unittest.skipIf(run_fast_tests, "run fast tests")
+    def test_scrape_companies_AND_other(self):
+        # scraping takes so long; so we do it just once
 
-    def test_scrape_companies(self):
-        # just one company
+        # all companies:
+        #scrape_KL.scrape_companies(storage_directory)
+
+        # one company:
         filename = scrape_KL.scrape_companies(storage_directory, {2048:"talenom"})
         self.assertTrue(os.path.isfile(filename))
-        #os.remove(filename)
-        # all companies
-        #scrape_KL.scrape_companies(storage_directory)
+
+        scrape_KL.print_companies(filename)
+        scrape_KL.print_company_metrics(filename, "metrics")
+        scrape_KL.print_company_metrics(filename, "metrics_simple")
+        scrape_KL.print_company_metrics(filename, "calculations")
+
+        os.remove(filename)
 
     def test_print_companies(self):
         filename = "testfiles\\scrape_metrics_17-07-25_00-44-11_one_comp.tsv"

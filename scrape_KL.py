@@ -19,7 +19,7 @@ def scrape_companies(storage_directory, company_names=None):
     company_list = []
     for company_id in company_names:
         logger.debug("Scrape: company_id:{}, company_name:{}".format(company_id, company_names[company_id]))
-        company = scraping.Company(company_id, company_names[company_id])
+        company = scraping.Company(c_id=company_id, c_name=company_names[company_id])
         company.scrape()
         company_list.append(company)
         break # TODO: so just one company is scraped

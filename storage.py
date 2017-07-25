@@ -1,5 +1,5 @@
 import os, json, logging
-from datetime import datetime
+from datetime import datetime, date
 
 import scraping
 
@@ -17,8 +17,7 @@ def store_company_list(company_list, storage_directory):
 
 def store_company_data(company_list, storage_directory, scrape_type):
     # stores names or metrics
-    # YY-MM-DD_HH-MM-SS
-    datetime_str = datetime.now().strftime("%y-%m-%d_%H-%M-%S")
+    datetime_str = datetime.now().strftime(scraping.datetime_format)
     tsv_filename = storage_directory + "\\scrape_{}_{}.tsv".format(scrape_type, datetime_str)
 
     with open(tsv_filename, "w") as f:
@@ -58,12 +57,12 @@ def get_stored_companies(filename):
                 # body
                 json_acceptable_string = line.replace("'", "\"")
                 #logger.debug("json_acceptable_string: [{}]".format(json_acceptable_string))
-                company_list.append(scraping.Company(metrics = json.loads(json_acceptable_string)))
+                company_list.append(scraping.Company(c_metrics=json.loads(json_acceptable_string)))
     return company_list
 
 def get_today_stored_company_names(storage_directory):
     # YY-MM-DD
-    date_str = datetime.now().strftime("%y-%m-%d")
+    date_str = date.today().strftime(scraping.date_format)
     filename_start_today = "scrape_names_{}".format(date_str)
 
     files = os.listdir(storage_directory)
