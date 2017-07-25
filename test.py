@@ -7,9 +7,20 @@ from datetime import datetime, date
 import scraping
 import scrape_KL
 
+
+skip_scrape_containing_tests = False
+skip_print_tests = False
+"""
+skip_scrape_containing_tests = True
+skip_print_tests = True
+"""
+
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
-logger.setLevel(logging.DEBUG)
+if skip_print_tests:
+    logger.setLevel(logging.INFO)
+else:
+    logger.setLevel(logging.DEBUG)
 
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
 osingot_url             = url_basic + "osingot/osinkohistoria.jsp"
@@ -18,11 +29,12 @@ kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
 kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 storage_directory = "scrapes"
-scip_scrape_containing_tests = True
+
+some_company_ids = [2048, 1032, 1135, 1120, 1105]
 
 
 class Test_scraping(unittest.TestCase):
-    @unittest.skipIf(scip_scrape_containing_tests, "fast testing")
+    @unittest.skipIf(skip_scrape_containing_tests, "fast testing")
     def test_Company_scrape(self):
         #company = scraping.Company(c_id=1930, c_name="orion a")
         company = scraping.Company(c_id=2048, c_name="talenom")
@@ -64,6 +76,7 @@ class Test_scraping(unittest.TestCase):
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", datetime)
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", "type")
 
+    @unittest.skipIf(skip_scrape_containing_tests, "fast testing")
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
         for key in company_names:
@@ -74,6 +87,18 @@ class Test_scraping(unittest.TestCase):
         self.assertEqual(company_names[1135], "upm-kymmene")
         self.assertEqual(company_names[1120], "huhtamaki")
         self.assertEqual(company_names[1105], "alandsbanken b")
+
+    def test_get_kurssi(self):
+        for company_id in some_company_ids:
+            url = kurssi_url.format(company_id)
+            kurssi = scraping.get_kurssi(url)
+            self.assertIsInstance(kurssi, float)
+
+    def test_get_kuvaus(self):
+        for company_id in some_company_ids:
+            url = kurssi_url.format(company_id)
+            kuvaus = scraping.get_kuvaus(url)
+            self.assertIsInstance(kuvaus, str)
 
     def test_get_osingot(self):
         one_expected_osinko_2051 = {'oikaistu_euroina': 0.5,
@@ -138,7 +163,7 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
 
 
 class Test_scrape_KL(unittest.TestCase):
-    @unittest.skipIf(scip_scrape_containing_tests, "fast testing")
+    @unittest.skipIf(skip_scrape_containing_tests or skip_print_tests, "fast testing & clear")
     def test_scrape_companies_AND_other(self):
         # scraping takes so long; so we do it just once
 
@@ -156,10 +181,12 @@ class Test_scrape_KL(unittest.TestCase):
 
         os.remove(filename)
 
+    @unittest.skipIf(skip_print_tests, "clear")
     def test_print_companies(self):
         filename = "testfiles\\scrape_metrics_one_comp.tsv"
         scrape_KL.print_companies(filename)
 
+    @unittest.skipIf(skip_print_tests, "clear")
     def test_print_company_metrics(self):
         filename = "testfiles\\scrape_metrics_one_comp.tsv"
         scrape_KL.print_company_metrics(filename, "metrics")

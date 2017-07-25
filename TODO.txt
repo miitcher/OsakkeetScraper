@@ -4,6 +4,7 @@ try scraping every company
 implement funcions in scrape_KL
 time parts in program
     maby use cpython...
+    maby get_raw_soup less often...
 
 
     Maby useful:

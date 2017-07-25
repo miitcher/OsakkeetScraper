@@ -340,12 +340,14 @@ def pretty_val(v, expected_type):
         raise ScrapeException("Not an accepted type: [{}]".format(expected_type))
     return v
 
+
 def fix_str_OLD(string): # TODO: Remove later
     # deals with scandinavian characters
     return string.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
 
 def fix_str_noncompatible_chars_in_unicode(string): # TODO: Remove later
     return string.replace("\x9a","?").replace("\x96","?").replace("\x92","?")
+
 
 def scrape_company_names():
     soup = get_raw_soup(osingot_url)
@@ -363,8 +365,24 @@ def scrape_company_names():
             raise ScrapeException("Unexpected: id:[{}], name:[{}]".format(company_id, company_name))
     return company_names
 
-# TODO: Go trough old functions here under and write tests for them
-# USE FUNCTION: pretty_val()
+def get_kurssi(url):
+    soup = get_raw_soup(url)
+    table_tags = soup.find_all('table')
+    kurssi = table_tags[5].find('span').text
+    kurssi = pretty_val(kurssi, float)
+    return kurssi
+
+def get_kuvaus(url):
+    soup = get_raw_soup(url)
+    class_padding_tags = soup.find_all(class_="paddings")
+    kuvaus = None
+    for tag in class_padding_tags:
+        if tag.parent.h3.text == "Yrityksen perustiedot":
+            kuvaus = tag.p.text.strip().replace("\n"," ").replace("\r"," ")
+            kuvaus = pretty_val(kuvaus, str)
+    if not kuvaus:
+        raise ScrapeException("Kuvaus not found")
+    return kuvaus
 
 def get_osingot(url):
     soup = get_raw_soup(url)
@@ -401,40 +419,8 @@ def get_osingot(url):
         row_counter += 1
     return osingot
 
-def get_kurssi(url):
-    soup = get_raw_soup(url)
-    try:
-        table_tags=soup.find_all('table')
-        
-        kurssi=table_tags[5].find('span').text
-        try:
-            kurssi=float(kurssi)
-        except:
-            logger.debug("float(kurssi)")
-        
-    except:
-        logger.debug("kurssi")
-        kurssi="FAIL"
-    return kurssi
-
-def get_kuvaus(url):
-    soup = get_raw_soup(url)
-    try:
-        class_padding_tags=soup.find_all(class_="paddings")
-        
-        for tag in class_padding_tags:
-            if tag.parent.h3.text=="Yrityksen perustiedot":
-                kuvaus_yrityksesta = tag.p.text.strip().replace("\n"," ").replace("\r"," ")
-                #kuvaus_yrityksesta = fix_str_OLD(kuvaus_yrityksesta)
-                kuvaus_yrityksesta = fix_str_noncompatible_chars_in_unicode(kuvaus_yrityksesta)
-                return kuvaus_yrityksesta
-        
-        logger.debug("kuvaus_yrityksesta EI LOYTYNYT")
-        kuvaus_yrityksesta="FAIL"
-    except:
-        logger.debug("kuvaus_yrityksesta")
-        kuvaus_yrityksesta="FAIL"
-    return kuvaus_yrityksesta
+# TODO: Go trough old functions here under and write tests for them
+# USE FUNCTION: pretty_val()
 
 def get_osakkeen_perustiedot_table_TAG(url):
     soup = get_raw_soup(url)
