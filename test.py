@@ -8,12 +8,12 @@ import scraping
 import scrape_KL
 
 
-skip_scrape_containing_tests = False
+skip_bigger_scrapes = False
 skip_print_tests = False
-"""
-skip_scrape_containing_tests = True
+
+skip_bigger_scrapes = True
 skip_print_tests = True
-"""
+
 
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
@@ -34,7 +34,7 @@ some_company_ids = [2048, 1032, 1135, 1120, 1105]
 
 
 class Test_scraping(unittest.TestCase):
-    @unittest.skipIf(skip_scrape_containing_tests, "fast testing")
+    @unittest.skipIf(skip_bigger_scrapes, "fast testing")
     def test_Company_scrape(self):
         #company = scraping.Company(c_id=1930, c_name="orion a")
         company = scraping.Company(c_id=2048, c_name="talenom")
@@ -75,8 +75,7 @@ class Test_scraping(unittest.TestCase):
 
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", datetime)
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", "type")
-
-    @unittest.skipIf(skip_scrape_containing_tests, "fast testing")
+    '''
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
         for key in company_names:
@@ -128,6 +127,23 @@ class Test_scraping(unittest.TestCase):
         test_get_osinko_Controll(self, 2051, one_expected_osinko_2051)
         test_get_osinko_Controll(self, 1050, one_expected_osinko_1050)
         test_get_osinko_Controll(self, 1083, one_expected_osinko_1083)
+    '''
+    def test_get_perustiedot(self):
+        # TODO: Not ready
+        for company_id in some_company_ids:
+            url = kurssi_url.format(company_id)
+            perustiedot = scraping.get_perustiedot(url)
+            
+            print("\n+++++ NEW:")
+            for i in perustiedot:
+                print("[{}]\t[{}]".format(i, perustiedot[i]))
+            
+            print("\n---- OLD:")
+            perustiedot = scraping.get_perustiedot_OLD(url)
+            for i in perustiedot:
+                print("[{}]\t[{}]".format(i, perustiedot[i]))
+            
+            #break
 
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
     pretty_v = scraping.pretty_val(v, expected_type)
@@ -163,7 +179,7 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
 
 
 class Test_scrape_KL(unittest.TestCase):
-    @unittest.skipIf(skip_scrape_containing_tests or skip_print_tests, "fast testing & clear")
+    @unittest.skipIf(skip_bigger_scrapes or skip_print_tests, "fast testing & clear")
     def test_scrape_companies_AND_other(self):
         # scraping takes so long; so we do it just once
 

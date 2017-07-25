@@ -290,6 +290,7 @@ def pretty_val(v, expected_type):
     if expected_type == int or expected_type == float:
         coefficient = 1
         if not isinstance(v, int) and not isinstance(v, float):
+            v = v.lower()
             if "milj.eur" in v:
                 coefficient = 1e6
                 v = v.replace("milj.eur", "")
@@ -320,6 +321,8 @@ def pretty_val(v, expected_type):
                     raise ScrapeException("Weird character(s)!")
             except ValueError:
                 raise ScrapeException(exception_str)
+        if v == "-":
+            v = ""
     elif expected_type == date:
         v = v.strip()
         if date_pattern_1.match(v): # DD.MM.YYYY
@@ -422,6 +425,55 @@ def get_osingot(url):
 # TODO: Go trough old functions here under and write tests for them
 # USE FUNCTION: pretty_val()
 
+def get_perustiedot(url):
+    perustiedot = {}
+    soup = get_raw_soup(url)
+    class_is_TSBD = soup.find_all(class_="table_stock_basic_details")
+    perustiedot_tag = None
+    for tag in class_is_TSBD:
+        if tag.parent.parent.h3.text.strip() == "Osakkeen perustiedot":
+            perustiedot_tag = tag
+            break
+    tr_tags = perustiedot_tag.find_all('tr')
+    c = 0
+    for i in tr_tags:
+        td_tags = i.find_all('td')
+        if c == 0:
+            key = td_tags[0].text.replace(":","")
+            val = td_tags[1].text
+            perustiedot[pretty_val(key, str)] = pretty_val(val, str)
+
+            strs = td_tags[2].text.split("\n")
+            [key, val] = strs[1].split(":")
+            perustiedot[pretty_val(key, str)] = pretty_val(val, str)
+
+            [key, val] = strs[2].split(":")
+            perustiedot[pretty_val(key, str)] = pretty_val(val, str)
+            c += 1
+        else:
+            key = td_tags[0].text.strip().replace(":","")
+            val = td_tags[1].text.strip()
+            key = pretty_val(key, str)
+            if key == "osakkeet":
+                key = "{}_kpl".format(key)
+                val = val.replace("kpl","").replace("\xa0", "")
+                val = pretty_val(val, int)
+            elif key == "markkina-arvo":
+                val = pretty_val(val, float)
+            elif key == "listattu":
+                val = pretty_val(val, date)
+            elif key == "isin-koodi" or key == "porssi" or \
+                        key == "nimellisarvo":
+                val = pretty_val(val, str)
+            elif key == "kaupank. val.":
+                key = "kaupankaynti_valuutta"
+                val = pretty_val(val, str)
+            else:
+                print("key: {}, val: {}".format(key, val))
+            perustiedot[key] = val
+    return perustiedot
+
+
 def get_osakkeen_perustiedot_table_TAG(url):
     soup = get_raw_soup(url)
     try:
@@ -438,7 +490,7 @@ def get_osakkeen_perustiedot_table_TAG(url):
         logger.debug("osakkeen_perustiedot_table_TAG")
     return -1
 
-def get_perustiedot(url):
+def get_perustiedot_OLD(url):
     perustiedot_dict={}
     try:
         TAG=get_osakkeen_perustiedot_table_TAG(url)
