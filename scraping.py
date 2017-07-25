@@ -198,8 +198,8 @@ class Company():
             osinko_dict = self.metrics["osingot"][top_key]
             osinko_year = str(osinko_dict["vuosi"])
             if osinko_year in osinko_tuotto_prosentti:
-                osinko_tuotto_prosentti[osinko_year] += osinko_dict["tuotto-%"]
-                osinko_euro[osinko_year] += osinko_dict["oikaistu euroina"]
+                osinko_tuotto_prosentti[osinko_year] += osinko_dict["tuotto_%"]
+                osinko_euro[osinko_year] += osinko_dict["oikaistu_euroina"]
 
         steady_osinko_bool = 1 # 1: True, 0: False
         for year in osinko_tuotto_prosentti:
@@ -207,7 +207,7 @@ class Company():
                 steady_osinko_bool = 0
                 break
 
-        self.addCalc("osinko_tuotto_prosentti", osinko_tuotto_prosentti)
+        self.addCalc("osinko_tuotto_%", osinko_tuotto_prosentti)
         self.addCalc("osinko_euro", osinko_euro)
         self.addCalc("steady_osinko_bool", steady_osinko_bool)
 

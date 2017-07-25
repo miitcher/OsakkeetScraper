@@ -18,7 +18,7 @@ kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
 kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 storage_directory = "scrapes"
-run_fast_tests = True
+run_fast_tests = not True
 
 
 class Test_scraping(unittest.TestCase):
@@ -157,11 +157,11 @@ class Test_scrape_KL(unittest.TestCase):
         os.remove(filename)
 
     def test_print_companies(self):
-        filename = "testfiles\\scrape_metrics_17-07-25_00-44-11_one_comp.tsv"
+        filename = "testfiles\\scrape_metrics_one_comp.tsv"
         scrape_KL.print_companies(filename)
 
     def test_print_company_metrics(self):
-        filename = "testfiles\\scrape_metrics_17-07-25_00-44-11_one_comp.tsv"
+        filename = "testfiles\\scrape_metrics_one_comp.tsv"
         scrape_KL.print_company_metrics(filename, "metrics")
         scrape_KL.print_company_metrics(filename, "metrics_simple")
         scrape_KL.print_company_metrics(filename, "calculations")
