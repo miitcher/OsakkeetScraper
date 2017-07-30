@@ -73,7 +73,7 @@ class Test_scraping(unittest.TestCase):
 
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", datetime)
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", "type")
-
+    """
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
         for key in company_names:
@@ -164,6 +164,10 @@ class Test_scraping(unittest.TestCase):
         test_get_perustiedot_Controll(self, 1032, part_of_expected_perustiedot_1032)
         test_get_perustiedot_Controll(self, 1135, part_of_expected_perustiedot_1135)
 
+    def test_get_tunnuslukuja(self):
+        for company_id in some_company_ids:
+            test_get_tunnuslukuja_Controll(self, company_id)
+    """
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
     pretty_v = scraping.pretty_val(v, expected_type)
     tester.assertEqual(pretty_v, expected_v)
@@ -217,6 +221,13 @@ def test_get_perustiedot_Controll(tester, company_id, part_of_expected_perustied
         tester.assertIsInstance(perustiedot[key], type_dict[key])
         if type_dict[key] == str:
             tester.assertEqual(perustiedot[key], part_of_expected_perustiedot[key])
+
+def test_get_tunnuslukuja_Controll(tester, company_id):
+    url = kurssi_url.format(company_id)
+    tunnuslukuja = scraping.get_tunnuslukuja(url)
+    tester.assertEqual(len(tunnuslukuja), 6)
+    for key in tunnuslukuja:
+        tester.assertIsInstance(tunnuslukuja[key], float)
 
 
 if __name__ == '__main__':

@@ -1,5 +1,3 @@
-make test of printing not show the print on tests
-    and hide logger output
 go trough old functions at end of scraping.py and add tests
     make them return pretty_dictionaries
 try scraping every company

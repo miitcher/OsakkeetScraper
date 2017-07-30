@@ -63,7 +63,8 @@ class Company():
         self.metrics["osingot"] = get_osingot(url_os)
 
         self.metrics["perustiedot"] = get_perustiedot(url_ku)
-        self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja(url_ku))
+        #self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja_OLD(url_ku)) # TODO: Remove when replacement tested!
+        self.metrics["tunnuslukuja"] = get_tunnuslukuja(url_ku)
 
         toiminnan_laajuus = get_kurssi_tulostiedot(url_ku_tu, "Toiminnan laajuus")
         kannattavuus = get_kurssi_tulostiedot(url_ku_tu, "Kannattavuus")
@@ -290,10 +291,12 @@ def pretty_val(v, expected_type):
     if expected_type == int or expected_type == float:
         coefficient = 1
         if not isinstance(v, int) and not isinstance(v, float):
-            v = v.lower()
-            if "milj.eur" in v:
-                coefficient = 1e6
-                v = v.replace("milj.eur", "")
+            v = v.lower().replace("€", "").replace("eur", "")
+            # remove noncompatibel characters in unicode (\x80-\xFF):
+            v = re.sub(r'[^\x00-\x7F]+','', v)
+            if "milj." in v:
+                coefficient *= 1e6
+                v = v.replace("milj.", "")
         try:
             v = float(v) * coefficient
         except ValueError:
@@ -314,10 +317,10 @@ def pretty_val(v, expected_type):
                 v = str(v).strip().lower()
                 # the scandinavian letters:
                 v = v.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
-                # noncompatibel characters in unicode:
-                v_0 = v
-                v = v.replace("\x9a","?").replace("\x96","?").replace("\x92","?")
-                if v != v_0:
+                # remove noncompatibel characters in unicode (\x80-\xFF):
+                len_v = len(v)
+                v = re.sub(r'[^\x00-\x7F]+','', v)
+                if len_v != len(v):
                     raise ScrapeException("Weird character(s)!")
             except ValueError:
                 raise ScrapeException(exception_str)
@@ -333,12 +336,6 @@ def pretty_val(v, expected_type):
             v = "{}-{}-{}".format(yyyy, mm, dd) # YYYY-MM-DD
         elif not date_pattern_0.match(v): # YYYY-MM-DD
             raise ScrapeException(exception_str)
-        """ # TODO: Remove later
-        try:
-            v = datetime.strptime(v, "%d.%m.%Y").date() # DD.MM.YYYY
-        except ValueError:
-            raise ScrapeException(exception_str)
-        """
     else:
         raise ScrapeException("Not an accepted type: [{}]".format(expected_type))
     return v
@@ -391,9 +388,6 @@ def get_osingot(url):
     soup = get_raw_soup(url)
     table_tags = soup.find_all('table')
     table_row_tags = table_tags[5].find_all('tr')
-    """osingot metrics for a company on a row:
-    Vuosi, Irtoaminen, Oikaistu euroina, Maara, Valuutta, Tuotto-%, Lisatieto
-    """
     head = ["vuosi", "irtoaminen", "oikaistu_euroina", \
             "maara", "valuutta", "tuotto_%", "lisatieto"]
     osingot = {}
@@ -473,6 +467,41 @@ def get_perustiedot(url):
 # TODO: Go trough old functions here under and write tests for them
 # USE FUNCTION: pretty_val()
 
+
+# TODO: Run all tests and remove OLD-function.
+def get_tunnuslukuja(url):
+    tunnuslukuja = {}
+    soup = get_raw_soup(url)
+    table_tags = soup.find_all('table')
+    tunnuslukuja_tag = None
+    for tag in table_tags:
+        if tag.parent.p and tag.parent.p.text.strip() == "Tunnuslukuja":
+            tunnuslukuja_tag = tag
+            break
+    tr_tags = tunnuslukuja_tag.find_all('tr')
+    head = [
+        "viimeisin_kurssi_eur",
+        "tulos/osake",
+        "oma_paaoma/osake_eur",
+        "p/e-luku_reaali",
+        "osinko/osake_eur",
+        "markkina-arvo_eur"
+    ]
+    c = 0
+    for i in tr_tags:
+        td_tags = i.find_all('td')
+        if c == 0:
+            strs = td_tags[0].text.split("(")
+            #key = strs[0].strip() # key could be used for debuging
+            val = strs[1].replace(")","")
+        else:
+            #key = td_tags[0].text
+            val = td_tags[1].text
+        tunnuslukuja[head[c]] = pretty_val(val, float)
+        c += 1
+    return tunnuslukuja
+
+""" TODO: Remove when replacement tested!
 def get_tunnuslukuja_table_TAG(url):
     soup = get_raw_soup(url)
     try:
@@ -489,7 +518,7 @@ def get_tunnuslukuja_table_TAG(url):
         logger.debug("tunnuslukuja_table_TAG")
     return -1
 
-def get_tunnuslukuja(url):
+def get_tunnuslukuja_OLD(url):
     tunnuslukuja_dict={}
     try:
         TAG=get_tunnuslukuja_table_TAG(url)
@@ -540,8 +569,7 @@ def get_tunnuslukuja(url):
         logger.debug("tunnuslukuja_dict")
         tunnuslukuja_dict[0]=False
     return tunnuslukuja_dict
-
-
+"""
 
 def get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko):
     soup = get_raw_soup(url)
