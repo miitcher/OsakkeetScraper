@@ -571,6 +571,48 @@ def get_tunnuslukuja_OLD(url):
     return tunnuslukuja_dict
 """
 
+""" get_kurssi_tulostiedot usecase:
+
+toiminnan_laajuus = get_kurssi_tulostiedot(url_ku_tu, "Toiminnan laajuus")
+kannattavuus = get_kurssi_tulostiedot(url_ku_tu, "Kannattavuus")
+vakavaraisuus = get_kurssi_tulostiedot(url_ku_tu, "Vakavaraisuus")
+maksuvalmius = get_kurssi_tulostiedot(url_ku_tu, "Maksuvalmius")
+sijoittajan_tunnuslukuja = get_kurssi_tulostiedot(url_ku_tu, "Sijoittajan tunnuslukuja")
+
+"""
+
+
+def get_tulostiedot(url, header):
+    tulostiedot = {}
+    soup = get_raw_soup(url)
+    table_tags = soup.find_all(class_="table_stockexchange")
+    tulostiedot_tag = None
+    for tag in table_tags:
+        if tag.parent.h3 and tag.parent.h3.text.strip() == header:
+            tulostiedot_tag = tag
+            break
+    tr_tags = tulostiedot_tag.find_all('tr')
+    # HERE
+    r = 0 # row
+    for i in tr_tags:
+        td_tags = i.find_all('td')
+        rivi = []
+        c = 0 # column
+        for j in td_tags:
+            if r == 0:
+                rivi.append("VUOSI")
+                r += 1
+            else:
+                if c == 0:
+                    val = pretty_val(j.text, str)
+                else:
+                    val = pretty_val(j.text, float)
+                rivi.append(val)
+        tulostiedot[pretty_val(i, str)] = rivi
+    return tulostiedot
+
+
+
 def get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko):
     soup = get_raw_soup(url)
     try:
@@ -587,6 +629,7 @@ def get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko):
         logger.debug("Otsikko='{}'".format(otsikko))
     return -1
 
+# OLD
 def get_kurssi_tulostiedot(url, otsikko):
     matrix=["NOT REDY"]
     try:

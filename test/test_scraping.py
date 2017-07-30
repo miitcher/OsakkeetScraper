@@ -168,6 +168,61 @@ class Test_scraping(unittest.TestCase):
         for company_id in some_company_ids:
             test_get_tunnuslukuja_Controll(self, company_id)
     """
+    def test_get_tulostiedot_Toiminnan_laajuus(self):
+        company_id = 2048
+        url = kurssi_tulostiedot_url.format(company_id)
+        
+        """
+        toiminnan_laajuus_pre = scraping.get_kurssi_tulostiedot(url, "Toiminnan laajuus")
+        toiminnan_laajuus = scraping.Company.list_to_pretty_dict_pivot(toiminnan_laajuus_pre)
+        print("OLD")
+        for top_key in toiminnan_laajuus:
+            print("top_key: " + top_key)
+            for key in toiminnan_laajuus[top_key]:
+                print("key=[{}], val=[{}]".format(key, toiminnan_laajuus[top_key][key]))
+        """
+        """ OLD:
+        top_key: 12/15
+        key=[ulkomaantoiminta, %], val=[0]
+        key=[oikaistun taseen loppusumma], val=[40.5]
+        key=[liikevaihto], val=[33]
+        key=[liikevaihdon muutos, %], val=[11.6]
+        key=[investointiaste, %], val=[25.6]
+        key=[henkilosto keskimaarin], val=[576]
+        key=[investoinnit], val=[8.44]
+        top_key: 12/13
+        key=[ulkomaantoiminta, %], val=[0]
+        key=[oikaistun taseen loppusumma], val=[30.72]
+        key=[liikevaihto], val=[25.94]
+        key=[liikevaihdon muutos, %], val=[-]
+        key=[investointiaste, %], val=[11.4]
+        key=[henkilosto keskimaarin], val=[396]
+        key=[investoinnit], val=[2.94]
+        top_key: 12/16
+        key=[ulkomaantoiminta, %], val=[0]
+        key=[oikaistun taseen loppusumma], val=[40.49]
+        key=[liikevaihto], val=[36.96]
+        key=[liikevaihdon muutos, %], val=[12]
+        key=[investointiaste, %], val=[16.7]
+        key=[henkilosto keskimaarin], val=[543]
+        key=[investoinnit], val=[6.18]
+        top_key: 12/14
+        key=[ulkomaantoiminta, %], val=[0]
+        key=[oikaistun taseen loppusumma], val=[34.39]
+        key=[liikevaihto], val=[29.58]
+        key=[liikevaihdon muutos, %], val=[14]
+        key=[investointiaste, %], val=[23.3]
+        key=[henkilosto keskimaarin], val=[486]
+        key=[investoinnit], val=[6.88]
+        """
+        
+        toiminnan_laajuus = scraping.get_tulostiedot(url, "Toiminnan laajuus")
+        print("NEW")
+        for top_key in toiminnan_laajuus:
+            print("top_key: " + top_key)
+            for key in toiminnan_laajuus[top_key]:
+                print("key=[{}], val=[{}]".format(key, toiminnan_laajuus[top_key][key]))
+
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
     pretty_v = scraping.pretty_val(v, expected_type)
     tester.assertEqual(pretty_v, expected_v)
