@@ -466,7 +466,7 @@ def get_perustiedot(url):
                 key = "kaupankaynti_valuutta"
                 val = pretty_val(val, str)
             else:
-                print("key: {}, val: {}".format(key, val))
+                raise ScrapeException("Unrecognized key: {}, val: {}".format(key, val))
             perustiedot[key] = val
     return perustiedot
 

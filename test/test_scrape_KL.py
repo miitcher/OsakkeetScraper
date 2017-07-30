@@ -1,21 +1,17 @@
 import os, unittest, logging
 
-import scrape_KL
-
-
-skip_bigger_scrapes = False
-skip_print_tests = False
-"""
-skip_bigger_scrapes = True
-skip_print_tests = True
-"""
+fast_tests = True
+show_debug = False
 
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
-if skip_print_tests:
+if not show_debug:
     logger.setLevel(logging.INFO)
 else:
     logger.setLevel(logging.DEBUG)
+
+import scrape_KL
+
 
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
 osingot_url             = url_basic + "osingot/osinkohistoria.jsp"
@@ -29,24 +25,29 @@ some_company_ids = [2048, 1032, 1135, 1120, 1105]
 
 
 class Test_scrape_KL(unittest.TestCase):
-    @unittest.skipIf(skip_bigger_scrapes or skip_print_tests, "fast testing & clear")
-    def test_scrape_companies_AND_other(self):
-        # scraping takes so long; so we do it just once
-
-        # all companies:
+    @unittest.skipIf(fast_tests, "fast testing")
+    def test_scrape_companies_All(self):
         #scrape_KL.scrape_companies(storage_directory)
+        # TODO: Not ready
+        pass
 
-        # one company:
+    def test_scrape_companies_One(self):
         filename = scrape_KL.scrape_companies(storage_directory, {2048:"talenom"})
         self.assertTrue(os.path.isfile(filename))
 
-        scrape_KL.print_companies(filename)
-        scrape_KL.print_company_metrics(filename, "metrics")
-        scrape_KL.print_company_metrics(filename, "metrics_simple")
-        scrape_KL.print_company_metrics(filename, "calculations")
+        output_str = scrape_KL.print_companies(filename, return_output=True)
+        self.assertGreater(len(output_str), 0)
+        output_str = scrape_KL.print_company_metrics(filename, "metrics", return_output=True)
+        self.assertGreater(len(output_str), 0)
+        output_str = scrape_KL.print_company_metrics(filename, "metrics_simple", return_output=True)
+        self.assertGreater(len(output_str), 0)
+        output_str = scrape_KL.print_company_metrics(filename, "calculations", return_output=True)
+        self.assertGreater(len(output_str), 0)
+        # TODO: Better validation of print output.
 
         os.remove(filename)
 
+    # Maby these test should just be done in test_storage.py.
     """ # TODO: When all scraping.get_* functions fixed
         #    --> update: "test\\scrape_metrics_one_comp.tsv"
     @unittest.skipIf(skip_print_tests, "clear")
@@ -61,6 +62,12 @@ class Test_scrape_KL(unittest.TestCase):
         scrape_KL.print_company_metrics(filename, "metrics_simple")
         scrape_KL.print_company_metrics(filename, "calculations")
     """
+
+    def test_filter_companies(self):
+        pass
+
+    def test_organize_companies(self):
+        pass
 
 
 if __name__ == '__main__':

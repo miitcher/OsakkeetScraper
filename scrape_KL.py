@@ -30,33 +30,42 @@ def scrape_companies(storage_directory, company_names=None):
     logger.info("Scraping done")
     return tsv_filename_metrics
 
-def print_companies(filename):
-    print("Print all companies:")
+def print_companies(filename, return_output=False):
     company_list = storage.load_company_list(filename)
+    output_str = ""
     for company in company_list:
-        print(company)
+        output_str += str(company)
+    if return_output:
+        return output_str
+    else:
+        print("Print all companies:\n" + output_str)
 
-def print_company_metrics(filename, print_type, company_id=None, company_name=None):
+def print_company_metrics(filename, print_type, company_id=None, company_name=None, return_output=False):
     company_list = storage.load_company_list(filename)
-    if not company_id and not company_name:
-        print("Print all companies metrics:")
-    company_printed = False
+    output_str = ""
     for company in company_list:
         if ( not company_id and not company_name ) or \
            ( company_id and company_id == company.company_id ) or \
            ( company_name and str(company_name).lower() in str(company.company_name).lower() ):
             if print_type == "metrics":
-                print(company.str_metrics)
+                output_str += company.str_metrics
             elif print_type == "metrics_simple":
-                print(company.str_metrics_simple)
+                output_str += company.str_metrics_simple
             elif print_type == "calculations":
-                print(company.str_calculations)
-            company_printed = True
-    if not company_printed:
+                output_str += company.str_calculations
+    if len(output_str) == 0:
         if company_id:
             logger.info("Found no company with company_id: [{}]".format(company_id))
         if company_name:
             logger.info("Found no company with company_name: [{}]".format(company_name))
+    elif return_output:
+        return output_str
+    else:
+        if not company_id and not company_name:
+            print("Print all companies metrics:")
+        else:
+            print("Print company metrics:")
+        print(output_str)
 
 def filter_companies(filename):
     # TODO:

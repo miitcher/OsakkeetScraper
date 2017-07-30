@@ -7,22 +7,18 @@ python -m unittest -v test.test_scraping
 import unittest, logging
 from datetime import datetime, date
 
-import scraping
-
-
-skip_bigger_scrapes = False
-skip_print_tests = False
-"""
-skip_bigger_scrapes = True
-skip_print_tests = True
-"""
+fast_tests = True
+show_debug = False
 
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
-if skip_print_tests:
+if not show_debug:
     logger.setLevel(logging.INFO)
 else:
     logger.setLevel(logging.DEBUG)
+
+import scraping
+
 
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
 osingot_url             = url_basic + "osingot/osinkohistoria.jsp"
@@ -36,7 +32,7 @@ some_company_ids = [2048, 1032, 1135, 1120, 1105]
 
 
 class Test_scraping(unittest.TestCase):
-    @unittest.skipIf(skip_bigger_scrapes, "fast testing")
+    @unittest.skipIf(fast_tests, "fast testing")
     def test_Company_scrape(self):
         #company = scraping.Company(c_id=1930, c_name="orion a")
         company = scraping.Company(c_id=2048, c_name="talenom")
