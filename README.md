@@ -4,7 +4,7 @@ Project where the companies information in the Finnish stock-market is scraped f
 by Miitcher
 
 ## Used Python
-* Python 3.4 (change to: 3.6)
+* Python 3.6
 * Pydev 5.8.0
 
 ## Setup
@@ -12,9 +12,6 @@ To install the dependancies, run command:
 ```
 ./setup.sh
 ```
-'''
-./setup.sh
-'''
 
 ## Running unit tests
     python -m unittest discover
