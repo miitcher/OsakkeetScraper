@@ -31,7 +31,7 @@ storage_directory = "scrapes"
 some_company_ids = [2048, 1032, 1135, 1120, 1105]
 
 
-class Test_scraping(unittest.TestCase):
+class Test(unittest.TestCase):
     @unittest.skipIf(fast_tests, "fast testing")
     def test_Company_scrape(self):
         #company = scraping.Company(c_id=1930, c_name="orion a")

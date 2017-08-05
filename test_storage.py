@@ -16,7 +16,7 @@ import storage
 storage_directory = "scrapes"
 
 
-class Test_storage(unittest.TestCase):
+class Test(unittest.TestCase):
 
     def test_load_todays_company_names(self):
         pass
