@@ -3,6 +3,9 @@ import traceback, logging
 import scraping
 import storage
 
+from PyQt5.Qt import QThread, pyqtSignal
+import time
+
 logger = logging.getLogger('root')
 
 """
@@ -12,7 +15,129 @@ and the company is not stored again.
 """
 
 
+class scrapeCompanyThread(QThread):
+    # Create signal
+    add_company_sig = pyqtSignal(scraping.Company)
+
+    def __init__(self, c_id, c_name):
+        QThread.__init__(self)
+        assert isinstance(c_id, int)
+        assert isinstance(c_name, str)
+        self.c_id = c_id
+        self.c_name = c_name
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        logger.debug("Starting scrapeCompanyThread: c_id:{}, c_name:{}".format(self.c_id, self.c_name))
+        company = scraping.Company(c_id=self.c_id, c_name=self.c_name)
+        try:
+            company.scrape()
+        except:
+            company.scraping_failed = True
+            pass #traceback.print_exc()
+        self.add_company_sig.emit(company)
+        #print(company)
+
+
+class scrapeThread(QThread):
+    # Create signals
+    company_names_len_sig = pyqtSignal(int)
+    company_processed_sig = pyqtSignal()
+
+    def __init__(self, terminate_all_scrapeThreads_sig, storage_directory, company_names=None):
+        QThread.__init__(self)
+        terminate_all_scrapeThreads_sig.connect(self.terminate_scrapeThreads)
+        self.storage_directory = storage_directory
+        if company_names:
+            self.company_names = company_names
+        else:
+            self.company_names = get_company_names(storage_directory)
+        self.threads = None
+
+    def __del__(self):
+        self.wait()
+
+    def terminate_scrapeThreads(self):
+        try:
+            logger.info("Stop scraping")
+            print("self.running_treads_id: " + str(self.running_treads_id))
+            print("self.threads")
+            for i in sorted(self.threads):
+                print(i)
+            for company_id in self.running_treads_id:
+                print("terminate: " + str(company_id))
+                self.threads[company_id].terminate()
+            print("after loop")
+            self.terminate()
+        except:
+            traceback.print_exc()
+
+    def create_scrapeCompanyThreads(self):
+        self.threads = {}
+        for company_id in self.company_names:
+            scrapeC_thread = scrapeCompanyThread(company_id, self.company_names[company_id])
+            scrapeC_thread.add_company_sig.connect(self.add_scraped_company)
+            #scrapeC_thread.finished.connect(self.scrapingCompanyDone)
+            self.threads[company_id] = scrapeC_thread
+        logger.debug("All threads created")
+
+    def add_scraped_company(self, company):
+        print("IN add_scraped_company WITH " + str(company))
+        try:
+            self.company_processed_sig.emit()
+            self.active_thread_count -= 1
+
+            if not company.scraping_failed:
+                print("FAIL" + str(company))
+                self.company_list.append(company)
+            print("1" + str(company))
+            self.threads.pop(company.company_id)
+            print("2" + str(company))
+            self.running_treads_id.remove(company.company_id)
+            print("3" + str(company))
+            for company_id in self.threads:
+                self.running_treads_id.append(company_id)
+                self.threads[company_id].start()
+                break
+        except:
+            traceback.print_exc()
+        print("OUT add_scraped_company WITH " + str(company))
+    """
+    def scrapingCompanyDone(self):
+        self.company_processed_sig.emit()
+        self.active_thread_count -= 1
+    """
+    def run(self):
+        logger.debug("Individual companies data is scraped from Kauppalehti")
+        self.company_list = []
+        self.active_thread_count = len(self.company_names)
+        self.given_companies_count = self.active_thread_count
+        self.company_names_len_sig.emit(self.active_thread_count)
+        logger.debug("scrapeCompanyThreads: {}".format(self.active_thread_count))
+
+        self.create_scrapeCompanyThreads()
+        self.running_treads_id = []
+        self.running_threads_max = 7
+        c = 0
+        for company_id in self.threads:
+            self.running_treads_id.append(company_id)
+            self.threads[company_id].start()
+            c += 1
+            if c == self.running_threads_max:
+                break
+
+        while self.active_thread_count > 0:
+            pass #time.sleep(1)
+
+        logger.info("{} companies scraped, out of {} given".format(len(self.company_list), self.given_companies_count))
+        #_filename_metrics = storage.store_company_list(self.company_list, self.storage_directory)
+        logger.info("Scraping done")
+
+
 def scrape_companies(storage_directory, company_names=None):
+    # OLD WAY TO SCRAPE
     try:
         if not company_names:
             company_names = get_company_names(storage_directory)
@@ -26,9 +151,8 @@ def scrape_companies(storage_directory, company_names=None):
         if len(company_list) == 0:
             raise scraping.ScrapeException("Scraping failed")
         logger.debug("Number of companies scraped: {}".format(len(company_list)))
-        tsv_filename_metrics = storage.store_company_list(company_list, storage_directory)
+        _filename_metrics = storage.store_company_list(company_list, storage_directory)
         logger.info("Scraping done")
-        return tsv_filename_metrics
     except:
         traceback.print_exc()
 

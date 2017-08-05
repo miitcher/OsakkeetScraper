@@ -44,6 +44,7 @@ class Company():
         assert isinstance(self.company_id, int)
         assert isinstance(self.company_name, str)
 
+        self.scraping_failed = False
         self.tsv_metrics = None
 
     def __repr__(self):

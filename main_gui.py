@@ -1,17 +1,22 @@
 import os, sys, logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
+from PyQt5.Qt import pyqtSignal
 from datetime import date
 
 import scrape_KL
 import scraping
 
+import time, traceback
 
 class ScrapeGuiException(Exception):
     pass
 
 
 class Window(QWidget):
+    # Create signal
+    terminate_all_scrapeThreads_sig = pyqtSignal()
+
     def __init__(self, storage_directory):
         super().__init__()
         self.storage_directory = storage_directory
@@ -21,44 +26,102 @@ class Window(QWidget):
         self.setLoggingLevel()
         self.refreshFileComboBox()
         self.setNewestTsvFileFromToday()
+        self.setScrapingThread()
+
+    def setScrapingThread(self):
+        self.stopThreads = False
+        company_names = None
+        #company_names = {2048:"talenom", 1906:"cargotec"} # TODO: safe company to scrape
+        company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
+        self.scrapeThread = scrape_KL.scrapeThread(self.terminate_all_scrapeThreads_sig, self.storage_directory, company_names)
+        self.scrapeThread.company_names_len_sig.connect(self.set_company_names_len)
+        self.scrapeThread.company_processed_sig.connect(self.company_scraped)
+        self.scrapeThread.finished.connect(self.scrapingDone)
+
+    def set_company_names_len(self, company_names_len):
+        self.company_names_len = company_names_len
+        self.ScrapingProgressBar.setMaximum(self.company_names_len)
+
+    def company_scraped(self):
+        try:
+            self.companies_scraped += 1
+            self.ScrapingProgressBar.setValue(self.ScrapingProgressBar.value() + 1)
+
+            companies_left = self.company_names_len - self.companies_scraped
+            if self.companies_scraped == 1:
+                self.first_company_scraped_time = time.time()
+                self.reference_scraping_started_time = self.first_company_scraped_time \
+                    - ( ( self.first_company_scraped_time - self.scraping_started_time) / 20 ) 
+            elif self.companies_scraped % 1 == 0 and not self.stopThreads and companies_left:
+                average_scrape_time = ( -15 / companies_left ) + (time.time() - self.reference_scraping_started_time) / self.companies_scraped
+                whole_time = companies_left * average_scrape_time + (time.time() - self.scraping_started_time)
+                print("time_left: {:.1f} s\t\taverage_scrape_time: {:.1f} s\t\ttime_advanced: {:.1f} s\t\tcompanies_scraped: {}\t\twhole_time: {:.1f}\t\tcompared_to_real: {:.1f}".format(
+                    companies_left * average_scrape_time,
+                    average_scrape_time,
+                    time.time() - self.scraping_started_time,
+                    self.companies_scraped,
+                    whole_time,
+                    whole_time - 180
+                ))
+        except:
+            traceback.print_exc()
+
+    def scrapingDone(self):
+        whole_scrape_time = time.time() - self.scraping_started_time
+        final_average_scrape_time = whole_scrape_time / self.companies_scraped
+        time_taken_to_scrape_first_company = self.first_company_scraped_time - self.scraping_started_time
+        print("whole_scrape_time: {} s".format(whole_scrape_time))
+        print("final_average_scrape_time: {} s".format(final_average_scrape_time))
+        print("time_taken_to_scrape_first_company: {} s".format(time_taken_to_scrape_first_company))
+
+        self.ScrapeButton.setText(self.scrape_str)
+        if not self.stopThreads:
+            self.refreshFileComboBox()
+            self.FileComboBox.setCurrentIndex(1)
+        else:
+            self.stopThreads = False
+            self.ScrapingProgressBar.setValue(0)
 
     def setWindow(self):
         # strings
         self.scrape_str                 = "Scrape companies"
+        self.stop_scraping_str          = "Stop scraping"
         self.printCompanies_str         = "Print companies"
         self.printMetrics_str           = "metrics"
         self.printMetricsSimple_str     = "metrics simple"
         self.printCalculations_str      = "calculations"
         self.filter_str                 = "Filter companies"
         self.organize_str               = "Organize companies"
+        self.exit_str                   = "Exit"
         self.null_filename              = "Select TSV-file"
 
         # buttons
-        ScrapeButton                = QPushButton(self.scrape_str)
+        self.ScrapeButton           = QPushButton(self.scrape_str)
         PrintCompaniesButton        = QPushButton(self.printCompanies_str)
         PrintMetricsButton          = QPushButton(self.printMetrics_str)
         PrintMetricsSimpleButton    = QPushButton(self.printMetricsSimple_str)
         PrintCalculationsButton     = QPushButton(self.printCalculations_str)
         FilterButton                = QPushButton(self.filter_str)
         OrganizeButton              = QPushButton(self.organize_str)
-        ExitButton                  = QPushButton("Exit")
+        ExitButton                  = QPushButton(self.exit_str)
 
         # other widgets
         self.DebugCheckBox = QCheckBox("DEBUG")
         self.DebugCheckBox.setCheckState(Qt.Checked)
+        self.ScrapingProgressBar = QProgressBar()
         self.CompanySearchLineEdit = QLineEdit(self)
         self.FileComboBox = QComboBox()
         self.FileComboBox.setMaxVisibleItems(30)
 
         # connect buttons and widgets
-        ScrapeButton.clicked.connect(self.buttonClicked)
+        self.ScrapeButton.clicked.connect(self.buttonClicked)
         PrintCompaniesButton.clicked.connect(self.buttonClicked)
         PrintMetricsButton.clicked.connect(self.buttonClicked)
         PrintMetricsSimpleButton.clicked.connect(self.buttonClicked)
         PrintCalculationsButton.clicked.connect(self.buttonClicked)
         FilterButton.clicked.connect(self.buttonClicked)
         OrganizeButton.clicked.connect(self.buttonClicked)
-        ExitButton.clicked.connect(self.close)
+        ExitButton.clicked.connect(self.buttonClicked)
         self.DebugCheckBox.stateChanged.connect(self.setLoggingLevel)
         self.FileComboBox.currentTextChanged.connect(self.setTsvFilename)
 
@@ -76,7 +139,8 @@ class Window(QWidget):
         space = 15
         vbox_main = QVBoxLayout()
         vbox_main.addWidget(self.DebugCheckBox)
-        vbox_main.addWidget(ScrapeButton)
+        vbox_main.addWidget(self.ScrapingProgressBar)
+        vbox_main.addWidget(self.ScrapeButton)
         vbox_main.addLayout(hbox_StoredFiles)
         vbox_main.addSpacing(space)
         vbox_main.addWidget(PrintCompaniesButton)
@@ -126,11 +190,17 @@ class Window(QWidget):
     def buttonClicked(self):
         sender = self.sender()
         if sender.text() == self.scrape_str:
-            company_names = None
-            company_names = {2048:"talenom"} # TODO: safe company to scrape
-            _tsv_filename_metrics = scrape_KL.scrape_companies(self.storage_directory, company_names)
-            self.refreshFileComboBox()
-            self.FileComboBox.setCurrentIndex(1)
+            self.ScrapeButton.setText(self.stop_scraping_str)
+            self.ScrapingProgressBar.setValue(0)
+            self.companies_scraped = 0
+            self.scraping_started_time = time.time()
+            self.scrapeThread.start()
+        elif sender.text() == self.stop_scraping_str:
+            self.stopThreads = True
+            self.terminate_all_scrapeThreads_sig.emit()
+        elif sender.text() == self.exit_str:
+            self.terminate_all_scrapeThreads_sig.emit()
+            self.close()
         elif self.tsv_filename:
             print_type = None
             company_id = None
