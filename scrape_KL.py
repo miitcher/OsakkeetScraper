@@ -1,4 +1,4 @@
-import logging
+import traceback, logging
 
 import scraping
 import storage
@@ -13,22 +13,24 @@ and the company is not stored again.
 
 
 def scrape_companies(storage_directory, company_names=None):
-    if not company_names:
-        company_names = get_company_names(storage_directory)
-    logger.debug("Individual companies data is scraped from Kauppalehti")
-    company_list = []
-    for company_id in company_names:
-        logger.debug("Scrape: company_id:{}, company_name:{}".format(company_id, company_names[company_id]))
-        company = scraping.Company(c_id=company_id, c_name=company_names[company_id])
-        company.scrape()
-        company_list.append(company)
-        break # TODO: so just one company is scraped
-    if len(company_list) == 0:
-        raise scraping.ScrapeException("Scraping failed")
-    logger.debug("Number of companies scraped: {}".format(len(company_list)))
-    tsv_filename_metrics = storage.store_company_list(company_list, storage_directory)
-    logger.info("Scraping done")
-    return tsv_filename_metrics
+    try:
+        if not company_names:
+            company_names = get_company_names(storage_directory)
+        logger.debug("Individual companies data is scraped from Kauppalehti")
+        company_list = []
+        for company_id in company_names:
+            logger.debug("Scrape: company_id:{}, company_name:{}".format(company_id, company_names[company_id]))
+            company = scraping.Company(c_id=company_id, c_name=company_names[company_id])
+            company.scrape()
+            company_list.append(company)
+        if len(company_list) == 0:
+            raise scraping.ScrapeException("Scraping failed")
+        logger.debug("Number of companies scraped: {}".format(len(company_list)))
+        tsv_filename_metrics = storage.store_company_list(company_list, storage_directory)
+        logger.info("Scraping done")
+        return tsv_filename_metrics
+    except:
+        traceback.print_exc()
 
 def print_companies(filename, return_output=False):
     company_list = storage.load_company_list(filename)
@@ -68,11 +70,11 @@ def print_company_metrics(filename, print_type, company_id=None, company_name=No
         print(output_str)
 
 def filter_companies(filename):
-    # TODO:
+    # TODO: Done after metrics is scraped properly.
     pass
 
 def organize_companies(filename):
-    # TODO:
+    # TODO: Done after metrics is scraped properly.
     pass
 
 

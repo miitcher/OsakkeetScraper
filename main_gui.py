@@ -1,4 +1,4 @@
-import os, sys, logging, traceback
+import os, sys, logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
 from datetime import date
@@ -126,41 +126,37 @@ class Window(QWidget):
     def buttonClicked(self):
         sender = self.sender()
         if sender.text() == self.scrape_str:
-            _tsv_filename_metrics = scrape_KL.scrape_companies(self.storage_directory)
+            company_names = None
+            company_names = {2048:"talenom"} # TODO: safe company to scrape
+            _tsv_filename_metrics = scrape_KL.scrape_companies(self.storage_directory, company_names)
             self.refreshFileComboBox()
             self.FileComboBox.setCurrentIndex(1)
         elif self.tsv_filename:
             print_type = None
             company_id = None
             company_name = None
-            try:
-                if sender.text() == self.filter_str:
-                    scrape_KL.filter_companies(self.tsv_filename)
-                elif sender.text() == self.organize_str:
-                    scrape_KL.organize_companies(self.tsv_filename)
-                elif sender.text() == self.printCompanies_str:
-                    scrape_KL.print_companies(self.tsv_filename)
-                elif sender.text() == self.printMetrics_str:
-                    print_type = "metrics"
-                elif sender.text() == self.printMetricsSimple_str:
-                    print_type = "metrics_simple"
-                elif sender.text() == self.printCalculations_str:
-                    print_type = "calculations"
-                else:
-                    raise ScrapeGuiException('Unexpected "sender.text()": [{}]'.format(sender.text()))
-                if print_type != None:
-                    search_line_str = self.CompanySearchLineEdit.text().strip()
-                    if search_line_str != "":
-                        try:
-                            company_id = int(search_line_str)
-                        except ValueError:
-                            company_name = search_line_str
-                    scrape_KL.print_company_metrics(self.tsv_filename, print_type, company_id, company_name)
-            except:
-                # The traceback does not work properly with the PyQt in LiClipse.
-                # There is no traceback on errors in LiClipse, but there is
-                # when running the program from the command line.
-                traceback.print_exc()
+            if sender.text() == self.filter_str:
+                scrape_KL.filter_companies(self.tsv_filename)
+            elif sender.text() == self.organize_str:
+                scrape_KL.organize_companies(self.tsv_filename)
+            elif sender.text() == self.printCompanies_str:
+                scrape_KL.print_companies(self.tsv_filename)
+            elif sender.text() == self.printMetrics_str:
+                print_type = "metrics"
+            elif sender.text() == self.printMetricsSimple_str:
+                print_type = "metrics_simple"
+            elif sender.text() == self.printCalculations_str:
+                print_type = "calculations"
+            else:
+                raise ScrapeGuiException('Unexpected "sender.text()": [{}]'.format(sender.text()))
+            if print_type != None:
+                search_line_str = self.CompanySearchLineEdit.text().strip()
+                if search_line_str != "":
+                    try:
+                        company_id = int(search_line_str)
+                    except ValueError:
+                        company_name = search_line_str
+                scrape_KL.print_company_metrics(self.tsv_filename, print_type, company_id, company_name)
         else:
             logger.info("No TSV-file selected")
 

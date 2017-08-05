@@ -12,6 +12,7 @@ kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
 kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 date_format = "%Y-%m-%d" # YYYY-MM-DD
+date_short_format = "%y-%m-%d" # YY-MM-DD
 datetime_format = "%y-%m-%d_%H-%M-%S" # YY-MM-DD_HH-MM-SS: for filename
 date_pattern_0 = re.compile("^\d{4}\-\d{2}\-\d{2}$") # YYYY-MM-DD
 date_pattern_1 = re.compile("^\d{2}\.\d{2}\.\d{4}$") # DD.MM.YYYY
@@ -23,8 +24,8 @@ class ScrapeException(Exception):
 
 class Company():
     def __init__(self, c_metrics=None, c_id=None, c_name=None):
+        assert c_metrics or (c_id and c_name), "Invalid Company input"
         if c_metrics:
-            assert c_metrics
             assert isinstance(c_metrics, dict)
             assert not c_id
             assert not c_name
@@ -36,14 +37,14 @@ class Company():
             self.set_representative_strings()
         else:
             assert not c_metrics
-            assert c_id
-            assert c_name
             self.metrics = {}
             self.company_id = c_id
             self.company_name = c_name
         assert self.company_id
         assert isinstance(self.company_id, int)
         assert isinstance(self.company_name, str)
+
+        self.tsv_metrics = None
 
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.company_name)

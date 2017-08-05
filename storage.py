@@ -6,34 +6,37 @@ import scraping
 logger = logging.getLogger('root')
 
 
+def _load_company_names(filename):
+    logger.debug("Using company names from file : " + filename)
+    company_names = {}
+    in_body = False
+    line = True
+    with open(filename, "r") as f:
+        while line:
+            line = f.readline().strip()
+            if not in_body:
+                # header
+                if line.startswith("###"):
+                    in_body = True
+            elif in_body and line:
+                # body
+                try:
+                    c_id, c_name = line.split("\t")
+                    c_id = int(c_id)
+                    company_names[c_id] = c_name
+                except ValueError:
+                    logger.error("Error in names file [{}] with line [{}]. Will scrape names.".format(filename, line))
+                    return None
+    return company_names
+
 def load_todays_company_names(storage_directory):
-    date_str = date.today().strftime(scraping.date_format) # YY-MM-DD
+    date_str = date.today().strftime(scraping.date_short_format) # YY-MM-DD
     filename_start_today = "scrape_names_{}".format(date_str)
     files = os.listdir(storage_directory)
-    for filename in files:
-        if filename.startswith(filename_start_today):
-            matching_filename = storage_directory +'\\'+ filename
-            logger.debug("Using ready company names from file : " + matching_filename)
-            company_names = {}
-            in_body = False
-            line = True
-            with open(matching_filename, "r") as f:
-                while line:
-                    line = f.readline().strip()
-                    if not in_body:
-                        # header
-                        if line.startswith("###"):
-                            in_body = True
-                    elif in_body and line:
-                        # body
-                        try:
-                            c_id, c_name = line.split("\t")
-                            c_id = int(c_id)
-                            company_names[c_id] = c_name
-                        except ValueError:
-                            logger.error("Error in names file [{}] with line [{}]. Will scrape names.".format(matching_filename, line))
-                            return None
-            return company_names
+    for filename_end in files:
+        if filename_end.startswith(filename_start_today):
+            filename = storage_directory +'\\'+ filename_end
+            return _load_company_names(filename)
     return None
 
 def load_company_list(filename):
@@ -60,28 +63,43 @@ def load_company_list(filename):
     logger.debug("Loaded {} companies from {}".format(len(company_list), filename))
     return company_list
 
-def store_company_names(company_names, storage_directory):
-    return _store_company_data(company_names, storage_directory, "names")
+def _store_company_data(company_data, storage_directory, scrape_type, filename=None):
+    # store company names or metrics to file
+    # the data is stored in alphabetical order by the company_name
+    if scrape_type == "names":
+        assert isinstance(company_data, dict)
+        for company_id in company_data:
+            assert isinstance(company_id, int)
+            assert isinstance(company_data[company_id], str)
+    elif scrape_type == "metrics":
+        assert isinstance(company_data, list)
+        for company in company_data:
+            assert isinstance(company, scraping.Company)
+            assert isinstance(company.tsv_metrics, str)
+    else:
+        raise AssertionError("Invalid scrape_type")
 
-def store_company_list(company_list, storage_directory):
-    return _store_company_data(company_list, storage_directory, "metrics")
-
-def _store_company_data(company_list, storage_directory, scrape_type):
-    # store: names or metrics
     datetime_str = datetime.now().strftime(scraping.datetime_format)
-    tsv_filename = storage_directory + "\\scrape_{}_{}.tsv".format(scrape_type, datetime_str)
-    with open(tsv_filename, "w") as f:
+    if not filename:
+        filename = storage_directory + "\\scrape_{}_{}.tsv".format(scrape_type, datetime_str)
+    with open(filename, "w") as f:
         f.write("Companies scraped from www.kauppalehti.fi\n" +\
                 "scrape_{}\n".format(scrape_type) +\
                 "storage_datetime:\t{}\n".format(datetime_str) +\
                 "###")
         if scrape_type == "names":
-            for i in company_list:
-                f.write("\n{}\t{}".format(i, company_list[i]))
+            for company_id in sorted(company_data, key=company_data.get):
+                f.write("\n{}\t{}".format(company_id, company_data[company_id]))
         elif scrape_type == "metrics":
-            for company in company_list:
+            for company in sorted(company_data, key=lambda Company: Company.company_name):
                 f.write(company.tsv_metrics)
         else:
             logger.error("Not a valid scrape_type: [{}]".format(scrape_type))
-    logger.debug("Stored scrape_{} into: {}".format(scrape_type, tsv_filename))
-    return tsv_filename
+    logger.debug("Stored scrape_{} into: {}".format(scrape_type, filename))
+    return filename
+
+def store_company_names(company_names, storage_directory, filename=None):
+    return _store_company_data(company_names, storage_directory, "names", filename)
+
+def store_company_list(company_list, storage_directory, filename=None):
+    return _store_company_data(company_list, storage_directory, "metrics", filename)

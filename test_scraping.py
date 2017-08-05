@@ -1,9 +1,3 @@
-"""
-python -m unittest -v    (same as discover)
-python -m unittest -v test.Test_scraping.test_get_perustiedot
-python -m unittest -v test.Test_scraping
-python -m unittest -v test.test_scraping
-"""
 import unittest, logging
 from datetime import datetime, date
 
