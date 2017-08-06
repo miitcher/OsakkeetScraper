@@ -23,22 +23,30 @@ class scrapeCompanyThread(QThread):
         QThread.__init__(self)
         assert isinstance(c_id, int)
         assert isinstance(c_name, str)
-        self.c_id = c_id
-        self.c_name = c_name
+        self.company_id = c_id
+        self.company_name = c_name
+
+    def __repr__(self):
+        return "scrapeCompanyThread({}, {})".format(self.company_id, self.company_name)
 
     def __del__(self):
         self.wait()
 
     def run(self):
-        logger.debug("Starting scrapeCompanyThread: c_id:{}, c_name:{}".format(self.c_id, self.c_name))
-        company = scraping.Company(c_id=self.c_id, c_name=self.c_name)
         try:
-            company.scrape()
+            logger.debug("Starting scrapeCompanyThread: c_id:{}, c_name:{}".format(self.company_id, self.company_name))
+            company = scraping.Company(c_id=self.company_id, c_name=self.company_name)
+            try:
+                company.scrape()
+            except:
+                company.scraping_failed = True
+                traceback.print_exc()
+                logger.error("ERROR")
+            self.add_company_sig.emit(company)
+            print(company)
         except:
-            company.scraping_failed = True
-            pass #traceback.print_exc()
-        self.add_company_sig.emit(company)
-        #print(company)
+            traceback.print_exc()
+            logger.error("ERROR")
 
 
 class scrapeThread(QThread):
@@ -46,9 +54,10 @@ class scrapeThread(QThread):
     company_names_len_sig = pyqtSignal(int)
     company_processed_sig = pyqtSignal()
 
-    def __init__(self, terminate_all_scrapeThreads_sig, storage_directory, company_names=None):
+    def __init__(self, storage_directory, company_names=None, terminate_all_scrapeThreads_sig=None):
         QThread.__init__(self)
-        terminate_all_scrapeThreads_sig.connect(self.terminate_scrapeThreads)
+        if terminate_all_scrapeThreads_sig:
+            terminate_all_scrapeThreads_sig.connect(self.terminate_scraping)
         self.storage_directory = storage_directory
         if company_names:
             self.company_names = company_names
@@ -59,7 +68,7 @@ class scrapeThread(QThread):
     def __del__(self):
         self.wait()
 
-    def terminate_scrapeThreads(self):
+    def terminate_scraping(self):
         try:
             logger.info("Stop scraping")
             print("self.running_treads_id: " + str(self.running_treads_id))
@@ -77,11 +86,10 @@ class scrapeThread(QThread):
     def create_scrapeCompanyThreads(self):
         self.threads = {}
         for company_id in self.company_names:
-            scrapeC_thread = scrapeCompanyThread(company_id, self.company_names[company_id])
-            scrapeC_thread.add_company_sig.connect(self.add_scraped_company)
-            #scrapeC_thread.finished.connect(self.scrapingCompanyDone)
-            self.threads[company_id] = scrapeC_thread
-        logger.debug("All threads created")
+            SCThread = scrapeCompanyThread(company_id, self.company_names[company_id])
+            SCThread.add_company_sig.connect(self.add_scraped_company)
+            self.threads[company_id] = SCThread
+        logger.debug("All scrapeCompanyThreads created")
 
     def add_scraped_company(self, company):
         print("IN add_scraped_company WITH " + str(company))
@@ -104,11 +112,7 @@ class scrapeThread(QThread):
         except:
             traceback.print_exc()
         print("OUT add_scraped_company WITH " + str(company))
-    """
-    def scrapingCompanyDone(self):
-        self.company_processed_sig.emit()
-        self.active_thread_count -= 1
-    """
+
     def run(self):
         logger.debug("Individual companies data is scraped from Kauppalehti")
         self.company_list = []
@@ -132,6 +136,7 @@ class scrapeThread(QThread):
             pass #time.sleep(1)
 
         logger.info("{} companies scraped, out of {} given".format(len(self.company_list), self.given_companies_count))
+        # TODO: storage could be its own thread
         #_filename_metrics = storage.store_company_list(self.company_list, self.storage_directory)
         logger.info("Scraping done")
 

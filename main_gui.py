@@ -33,7 +33,7 @@ class Window(QWidget):
         company_names = None
         #company_names = {2048:"talenom", 1906:"cargotec"} # TODO: safe company to scrape
         company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
-        self.scrapeThread = scrape_KL.scrapeThread(self.terminate_all_scrapeThreads_sig, self.storage_directory, company_names)
+        self.scrapeThread = scrape_KL.scrapeThread(self.storage_directory, company_names, self.terminate_all_scrapeThreads_sig)
         self.scrapeThread.company_names_len_sig.connect(self.set_company_names_len)
         self.scrapeThread.company_processed_sig.connect(self.company_scraped)
         self.scrapeThread.finished.connect(self.scrapingDone)
