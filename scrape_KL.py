@@ -4,9 +4,7 @@ import scraping
 import storage
 
 from PyQt5.Qt import QThread, pyqtSignal
-import time
 
-import threading
 
 logger = logging.getLogger('root')
 
@@ -17,51 +15,18 @@ and the company is not stored again.
 """
 
 
-class scrapeCompanyThread(threading.Thread):
-    def __init__(self, company_id, company_name, company_list):
-        threading.Thread.__init__(self)
-        assert isinstance(company_id, int)
-        assert isinstance(company_name, str)
-        self.company_id = company_id
-        self.company_name = company_name
-        self.company_list = company_list
-        self.name = "({}, {})".format(self.company_id, self.company_name)
-
-    def __repr__(self):
-        return "scrapeCompanyThread({}, {})".format(self.company_id, self.company_name)
-
-    def run(self):
-        logger.debug("Starting {}".format(self))
-        company = scraping.Company(c_id=self.company_id, c_name=self.company_name)
-        try:
-            company.scrape()
-            self.company_list.append(company)
-            logger.debug("Finished {}".format(self))
-        except scraping.ScrapeException:
-            logger.error("Failed   {}".format(self))
-
-
-def scrape_companies(company_names, company_list):
-    thread_list = []
-    for company_id in company_names:
-        thread = scrapeCompanyThread(company_id, company_names[company_id], company_list)
-        thread_list.append(thread)
-        thread.start()
-    for thread in thread_list:
-        thread.join()
-
 def scrape_and_store_companies(storage_directory, company_names=None):
     logger.debug("Scraping starts")
     if company_names is None:
         company_names = get_company_names(storage_directory)
     company_list = []
-    scrape_companies(company_names, company_list)
+    scraping.scrape_companies(company_names, company_list)
     logger.debug("Companies scraped: {}/{}".format(len(company_list, len(company_names))))
     filename_metrics = storage.store_company_list(company_list, storage_directory)
     logger.info("Scraping done")
     return filename_metrics, company_list
 
-
+"""
 class scrapeMaster(QThread):
     def __init__(self, storage_directory, company_names=None):
         QThread.__init__(self)
@@ -73,7 +38,7 @@ class scrapeMaster(QThread):
 
     def run(self):
         self.filename_metrics, self.company_list = scrape_and_store_companies(self.storage_directory, self.company_names)
-
+"""
 
 def scrape_companies_OLD(storage_directory, company_names=None):
     # OLD WAY TO SCRAPE
