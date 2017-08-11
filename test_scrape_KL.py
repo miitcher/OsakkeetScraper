@@ -1,5 +1,7 @@
-import os, unittest, logging
+import unittest, logging, os
+from threading import Thread
 
+import scraping
 import scrape_KL
 
 
@@ -21,18 +23,34 @@ kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid=
 
 storage_directory = "scrapes"
 
-some_company_ids = [2048, 1032, 1135, 1120, 1105]
-
 
 class Test(unittest.TestCase):
 
-    def test_scrape_and_store_companies(self):
-        # Create and start three scrapeCompanyThreads and save companies
+    def test_scrape_and_store_companies_as_thread(self):
+        filename_metrics = ""
+        company_list = []
+        company_names = None
+        """
         company_names = {
             2048: "talenom",
             1102: "cramo",
             1091: "sanoma"
         }
+        """
+        thread = Thread(
+            target=scrape_KL.scrape_and_store_companies,
+            args=(storage_directory, company_names, company_list, filename_metrics)
+        )
+        thread.start()
+        thread.join()
+
+        self.assertIsInstance(filename_metrics, str)
+        self.assertEqual(len(company_list), 3)
+        for company in company_list:
+            self.assertIsInstance(company, scraping.Company)
+            self.assertIsInstance(company.json_metrics, str)
+            self.assertGreater(len(company.json_metrics), 1000)
+
 
     """
     def test_scrape_companies_One_OLD(self):

@@ -1,4 +1,4 @@
-import os, unittest, logging
+import unittest, logging, os
 from datetime import date
 from scraping import date_short_format, Company
 

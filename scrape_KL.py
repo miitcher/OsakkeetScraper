@@ -15,16 +15,16 @@ and the company is not stored again.
 """
 
 
-def scrape_and_store_companies(storage_directory, company_names=None):
+def scrape_and_store_companies(storage_directory, company_names, company_list, filename_metrics):
+    # No return values so function can be used as threads target.
+    assert company_list == [] and filename_metrics == "", "Wrong input"
     logger.debug("Scraping starts")
     if company_names is None:
         company_names = get_company_names(storage_directory)
-    company_list = []
     scraping.scrape_companies(company_names, company_list)
-    logger.debug("Companies scraped: {}/{}".format(len(company_list, len(company_names))))
-    filename_metrics = storage.store_company_list(company_list, storage_directory)
+    logger.debug("Companies scraped: {}/{}".format(len(company_list), len(company_names)))
+    filename_metrics += storage.store_company_list(company_list, storage_directory)
     logger.info("Scraping done")
-    return filename_metrics, company_list
 
 """
 class scrapeMaster(QThread):

@@ -1,7 +1,7 @@
 import requests, re, logging
 from bs4 import BeautifulSoup
 from datetime import date
-import threading
+from threading import Thread
 
 logger = logging.getLogger('root')
 
@@ -23,18 +23,18 @@ class ScrapeException(Exception):
     pass
 
 
-class scrapeCompanyThread(threading.Thread):
-    def __init__(self, company_id, company_name, company_list):
-        threading.Thread.__init__(self)
+class scrapeCompanyThread(Thread):
+    def __init__(self, company_id, company_name, company_list, thread_index=-1):
+        Thread.__init__(self)
         assert isinstance(company_id, int)
         assert isinstance(company_name, str)
         self.company_id = company_id
         self.company_name = company_name
         self.company_list = company_list
-        self.name = "({}, {})".format(self.company_id, self.company_name)
+        self.name = "({}, {}, {})".format(thread_index, self.company_id, self.company_name)
 
     def __repr__(self):
-        return "scrapeCompanyThread({}, {})".format(self.company_id, self.company_name)
+        return "scrapeCompanyThread({})".format(self.name)
 
     def run(self):
         logger.debug("Starting {}".format(self))
@@ -49,10 +49,12 @@ class scrapeCompanyThread(threading.Thread):
 
 def scrape_companies(company_names, company_list):
     thread_list = []
+    thread_index = 1
     for company_id in company_names:
-        thread = scrapeCompanyThread(company_id, company_names[company_id], company_list)
+        thread = scrapeCompanyThread(company_id, company_names[company_id], company_list, thread_index)
         thread_list.append(thread)
         thread.start()
+        thread_index += 1
     for thread in thread_list:
         thread.join()
 
