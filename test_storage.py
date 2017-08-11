@@ -1,17 +1,15 @@
-import unittest, logging
-
-import os
+import os, unittest, logging
 from datetime import date
 from scraping import date_short_format, Company
 
 import storage
 
 
-show_debug = False
+SHOW_DEBUG = False
 
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
-if not show_debug:
+if not SHOW_DEBUG:
     logger.setLevel(logging.INFO)
 else:
     logger.setLevel(logging.DEBUG)

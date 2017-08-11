@@ -1,17 +1,17 @@
 import unittest, logging
 from datetime import datetime, date
 
-fast_tests = True
-show_debug = False
+import scraping
+
+
+SHOW_DEBUG = False
 
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
-if not show_debug:
+if not SHOW_DEBUG:
     logger.setLevel(logging.INFO)
 else:
     logger.setLevel(logging.DEBUG)
-
-import scraping
 
 
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
@@ -20,17 +20,44 @@ osingot_yritys_url      = url_basic + "osingot/osinkohistoria.jsp?klid={}"
 kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
 kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
-storage_directory = "scrapes"
-
 some_company_ids = [2048, 1032, 1135, 1120, 1105]
 
 
 class Test(unittest.TestCase):
-    @unittest.skipIf(fast_tests, "fast testing")
+
+    def test_scrapeCompanyThread(self):
+        # Create and start one scrapeCompanyThread
+        company_list = []
+        thread = scraping.scrapeCompanyThread(2048, "talenom", company_list)
+        thread.start()
+        thread.join()
+
+        self.assertEqual(len(company_list), 1)
+        company = company_list[0]
+        self.assertIsInstance(company, scraping.Company)
+        self.assertIsInstance(company.json_metrics, str)
+        self.assertGreater(len(company.json_metrics), 1000)
+
+    def test_scrape_companies(self):
+        # Create and start three scrapeCompanyThreads
+        company_names = {
+            2048: "talenom",
+            1102: "cramo",
+            1091: "sanoma"
+        }
+        company_list = []
+        scraping.scrape_companies(company_names, company_list)
+
+        for company in company_list:
+            self.assertIsInstance(company, scraping.Company)
+            self.assertIsInstance(company.json_metrics, str)
+            self.assertGreater(len(company.json_metrics), 1000)
+
     def test_Company_scrape(self):
-        #company = scraping.Company(c_id=1930, c_name="orion a")
         company = scraping.Company(c_id=2048, c_name="talenom")
         company.scrape()
+        self.assertIsInstance(company.json_metrics, str)
+        self.assertGreater(len(company.json_metrics), 1000)
 
     def test_pretty_val(self):
         # expected_type can be: int, float, str, date
@@ -67,7 +94,7 @@ class Test(unittest.TestCase):
 
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", datetime)
         self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", "type")
-    """
+
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
         for key in company_names:
@@ -161,12 +188,12 @@ class Test(unittest.TestCase):
     def test_get_tunnuslukuja(self):
         for company_id in some_company_ids:
             test_get_tunnuslukuja_Controll(self, company_id)
-    """
+"""
     def test_get_tulostiedot_Toiminnan_laajuus(self):
         company_id = 2048
         url = kurssi_tulostiedot_url.format(company_id)
         
-        """
+        '''
         toiminnan_laajuus_pre = scraping.get_kurssi_tulostiedot(url, "Toiminnan laajuus")
         toiminnan_laajuus = scraping.Company.list_to_pretty_dict_pivot(toiminnan_laajuus_pre)
         print("OLD")
@@ -174,8 +201,8 @@ class Test(unittest.TestCase):
             print("top_key: " + top_key)
             for key in toiminnan_laajuus[top_key]:
                 print("key=[{}], val=[{}]".format(key, toiminnan_laajuus[top_key][key]))
-        """
-        """ OLD:
+
+        # OLD:
         top_key: 12/15
         key=[ulkomaantoiminta, %], val=[0]
         key=[oikaistun taseen loppusumma], val=[40.5]
@@ -208,15 +235,15 @@ class Test(unittest.TestCase):
         key=[investointiaste, %], val=[23.3]
         key=[henkilosto keskimaarin], val=[486]
         key=[investoinnit], val=[6.88]
-        """
-        
+        '''
+
         toiminnan_laajuus = scraping.get_tulostiedot(url, "Toiminnan laajuus")
         print("NEW")
         for top_key in toiminnan_laajuus:
             print("top_key: " + top_key)
             for key in toiminnan_laajuus[top_key]:
                 print("key=[{}], val=[{}]".format(key, toiminnan_laajuus[top_key][key]))
-
+"""
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
     pretty_v = scraping.pretty_val(v, expected_type)
     tester.assertEqual(pretty_v, expected_v)

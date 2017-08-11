@@ -1,6 +1,7 @@
 import requests, re, logging
 from bs4 import BeautifulSoup
 from datetime import date
+import threading
 
 logger = logging.getLogger('root')
 
@@ -20,6 +21,40 @@ date_pattern_1 = re.compile("^\d{2}\.\d{2}\.\d{4}$") # DD.MM.YYYY
 
 class ScrapeException(Exception):
     pass
+
+
+class scrapeCompanyThread(threading.Thread):
+    def __init__(self, company_id, company_name, company_list):
+        threading.Thread.__init__(self)
+        assert isinstance(company_id, int)
+        assert isinstance(company_name, str)
+        self.company_id = company_id
+        self.company_name = company_name
+        self.company_list = company_list
+        self.name = "({}, {})".format(self.company_id, self.company_name)
+
+    def __repr__(self):
+        return "scrapeCompanyThread({}, {})".format(self.company_id, self.company_name)
+
+    def run(self):
+        logger.debug("Starting {}".format(self))
+        company = Company(c_id=self.company_id, c_name=self.company_name)
+        try:
+            company.scrape()
+            self.company_list.append(company)
+            logger.debug("Finished {}".format(self))
+        except ScrapeException:
+            logger.error("Failed   {}".format(self))
+
+
+def scrape_companies(company_names, company_list):
+    thread_list = []
+    for company_id in company_names:
+        thread = scrapeCompanyThread(company_id, company_names[company_id], company_list)
+        thread_list.append(thread)
+        thread.start()
+    for thread in thread_list:
+        thread.join()
 
 
 class Company():
@@ -44,8 +79,7 @@ class Company():
         assert isinstance(self.company_id, int)
         assert isinstance(self.company_name, str)
 
-        self.scraping_failed = False
-        self.tsv_metrics = None
+        self.json_metrics = None # for storage
 
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.company_name)
@@ -80,7 +114,7 @@ class Company():
         self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
         self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(sijoittajan_tunnuslukuja)
 
-        self.tsv_metrics = "\n{}".format(self.metrics) # for storing metrics
+        self.json_metrics = "\n{}".format(self.metrics)
 
     @staticmethod
     def make_value_pretty(v):

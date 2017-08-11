@@ -75,7 +75,7 @@ def _store_company_data(company_data, storage_directory, scrape_type, filename=N
         assert isinstance(company_data, list)
         for company in company_data:
             assert isinstance(company, scraping.Company)
-            assert isinstance(company.tsv_metrics, str)
+            assert isinstance(company.json_metrics, str)
     else:
         raise AssertionError("Invalid scrape_type")
 
@@ -92,7 +92,7 @@ def _store_company_data(company_data, storage_directory, scrape_type, filename=N
                 f.write("\n{}\t{}".format(company_id, company_data[company_id]))
         elif scrape_type == "metrics":
             for company in sorted(company_data, key=lambda Company: Company.company_name):
-                f.write(company.tsv_metrics)
+                f.write(company.json_metrics)
         else:
             logger.error("Not a valid scrape_type: [{}]".format(scrape_type))
     logger.debug("Stored scrape_{} into: {}".format(scrape_type, filename))

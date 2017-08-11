@@ -1,5 +1,6 @@
 go trough old functions at end of scraping.py and add tests
     make them return pretty_dictionaries
+Remove "tsv" and make file end to ".data"
 try scraping every company
 implement funcions in scrape_KL
 time parts in program
