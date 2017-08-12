@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from datetime import date
 
 from threading import Thread
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Pipe
 
 logger = logging.getLogger('root')
 
@@ -103,6 +103,12 @@ class scrapeCompanyProcess(Process):
             print("Failed   {}".format(self))
         """
 
+def scrape_for_process(pipe, company_id, company_name):
+    output_p, input_p = pipe
+    output_p.close()
+    company = Company(c_id=company_id, c_name=company_name)
+    company.scrape()
+    input_p.send(company)
 
 def scrape_companies_with_processes(company_names, company_list, company_failed_count):
     assert isinstance(company_names, dict), "Invalid company_names"
@@ -115,14 +121,34 @@ def scrape_companies_with_processes(company_names, company_list, company_failed_
 
     process_list = []
     process_index = 1
+    output_p_list = []
     for company_id in company_names:
+        """
         process = scrapeCompanyProcess(company_id, company_names[company_id],
                                        company_queue, company_failed_queue, process_index)
+        """
+
+
+        output_p, input_p = Pipe()
+        process = Process(
+            target=scrape_for_process,
+            args=((output_p, input_p), company_id, company_names[company_id])
+        )
+        #input_p.close()
+        output_p_list.append(output_p)
+
+
         process_list.append(process)
         process_index += 1
     for process in process_list:
         logger.debug("Starting {}".format(process))
         process.start()
+
+
+    for output_p in output_p_list:
+        company = output_p.recv()
+        print("received: {}".format(company))
+
 
     logger.debug("Wait on processes")
     for process in process_list:
