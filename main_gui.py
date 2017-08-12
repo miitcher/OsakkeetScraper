@@ -1,13 +1,13 @@
 import os, sys, logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
-from PyQt5.Qt import pyqtSignal, QThread
+from PyQt5.Qt import QThread
 from datetime import date
+import time, traceback
 
 import scrapeKL
 import scraping
 
-import time, traceback
 
 class ScrapeGuiException(Exception):
     pass
@@ -15,52 +15,72 @@ class ScrapeGuiException(Exception):
 
 class scrapeThread(QThread):
 
-    def __init__(self, storage_directory, company_names):
+    def __init__(self, storage_directory, company_names, showProgress):
         QThread.__init__(self)
         self.storage_directory = storage_directory
         self.company_names = company_names
+        self.showProgress = showProgress
 
     def __del__(self): # TODO: Is this needed?
         self.wait()
 
     def run(self):
-        logger.debug("Starting scrapeing from QThread")
-        _json_metrics_list, _failed_company_dict, _metricsfilename = scrapeKL.scrape_companies(self.storage_directory, self.company_names)
+        logger.debug("Starting scraping from QThread")
+        if not self.showProgress:
+            logger.info("Hide progress")
+        time0 = time.time()
+        _json_metrics_list, _failed_company_dict, _metricsfilename = scrapeKL.scrape_companies(self.storage_directory, self.company_names, self.showProgress)
+        logger.info("Scraping took: {:.2f} s".format(time.time() - time0))
 
 
 class Window(QWidget):
-    terminate_scraping_sig = pyqtSignal()
 
     def __init__(self, storage_directory):
         super().__init__()
         self.storage_directory = storage_directory
-        self.tsv_filename = None
+        self.filename = None
         self.setWindowTitle('OsakkeetScraper Kauppalehdesta')
         self.setWindow()
         self.setLoggingLevel()
+        self.setShowProgress()
         self.refreshFileComboBox()
-        self.setNewestTsvFileFromToday()
+        self.setNewestFileFromToday()
         self.setScraping()
 
     def setScraping(self):
+        self.scraping = False
         self.scraping_terminated = False
         company_names = {}
         #company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
-        self.scrapeThread = scrapeThread(self.storage_directory, company_names)
+        self.scrapeThread = scrapeThread(self.storage_directory, company_names, self.showProgress)
         self.scrapeThread.finished.connect(self.scrapingDone)
+
+    def startScraping(self):
+        self.scraping = True
+        self.ScrapeButton.setText(self.during_scraping_str)
+        self.DebugCheckBox.setEnabled(False)
+        self.ProgressCheckBox.setEnabled(False)
+        self.FileComboBox.setEnabled(False)
+
+        self.scrapeThread.start()
 
     def scrapingDone(self):
         if self.scraping_terminated:
             time.sleep(1)
+            self.scraping_terminated = False
         else:
             self.refreshFileComboBox()
             self.FileComboBox.setCurrentIndex(1)
+
         self.ScrapeButton.setText(self.scrape_str)
+        self.DebugCheckBox.setEnabled(True)
+        self.ProgressCheckBox.setEnabled(True)
+        self.scraping = False
 
     def setWindow(self):
         # strings
         self.scrape_str                 = "Scrape companies"
-        self.stop_scraping_str          = "Stop scraping"
+        self.during_scraping_str        = "(Click to STOP) Scraping..."
         self.printCompanies_str         = "Print companies"
         self.printMetrics_str           = "metrics"
         self.printMetricsSimple_str     = "metrics simple"
@@ -68,7 +88,7 @@ class Window(QWidget):
         self.filter_str                 = "Filter companies"
         self.organize_str               = "Organize companies"
         self.exit_str                   = "Exit"
-        self.null_filename              = "Select TSV-file"
+        self.null_filename              = "Select file"
 
         # buttons
         self.ScrapeButton           = QPushButton(self.scrape_str)
@@ -83,7 +103,8 @@ class Window(QWidget):
         # other widgets
         self.DebugCheckBox = QCheckBox("DEBUG")
         self.DebugCheckBox.setCheckState(Qt.Checked)
-        self.ScrapingProgressBar = QProgressBar()
+        self.ProgressCheckBox = QCheckBox("Show Progress")
+        self.ProgressCheckBox.setCheckState(Qt.Checked)
         self.CompanySearchLineEdit = QLineEdit(self)
         self.FileComboBox = QComboBox()
         self.FileComboBox.setMaxVisibleItems(30)
@@ -98,9 +119,14 @@ class Window(QWidget):
         OrganizeButton.clicked.connect(self.buttonClicked)
         ExitButton.clicked.connect(self.buttonClicked)
         self.DebugCheckBox.stateChanged.connect(self.setLoggingLevel)
-        self.FileComboBox.currentTextChanged.connect(self.setTsvFilename)
+        self.ProgressCheckBox.stateChanged.connect(self.setShowProgress)
+        self.FileComboBox.currentTextChanged.connect(self.setFilename)
 
         # layout boxes
+        hbox_Checkboxes = QHBoxLayout()
+        hbox_Checkboxes.addWidget(self.DebugCheckBox)
+        hbox_Checkboxes.addWidget(self.ProgressCheckBox)
+        hbox_Checkboxes.addStretch(1)
         hbox_StoredFiles = QHBoxLayout()
         hbox_StoredFiles.addWidget(self.FileComboBox)
         hbox_PrintMetrics = QHBoxLayout()
@@ -113,8 +139,7 @@ class Window(QWidget):
         # layout
         space = 15
         vbox_main = QVBoxLayout()
-        vbox_main.addWidget(self.DebugCheckBox)
-        #vbox_main.addWidget(self.ScrapingProgressBar)
+        vbox_main.addLayout(hbox_Checkboxes)
         vbox_main.addWidget(self.ScrapeButton)
         vbox_main.addLayout(hbox_StoredFiles)
         vbox_main.addSpacing(space)
@@ -133,9 +158,20 @@ class Window(QWidget):
 
     def setLoggingLevel(self):
         if self.DebugCheckBox.isChecked():
+            logger_handler.setFormatter(logging.Formatter("%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"))
+            #logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
             logger.setLevel(logging.DEBUG)
         else:
+            logger_handler.setFormatter(logging.Formatter('%(message)s'))
+            #logging.basicConfig(format="%(message)s")
             logger.setLevel(logging.INFO)
+    
+    def setShowProgress(self):
+        if self.ProgressCheckBox.isChecked():
+            self.showProgress = True
+        else:
+            self.showProgress = False
+        self.setScraping()
 
     def refreshFileComboBox(self):
         i = self.FileComboBox.count()
@@ -150,42 +186,38 @@ class Window(QWidget):
                 stored_filenames.append(f)
         self.FileComboBox.addItems(stored_filenames)
 
-    def setNewestTsvFileFromToday(self):
+    def setNewestFileFromToday(self):
         if len(self.FileComboBox) > 1:
             s = "scrape_metrics_" + date.today().strftime(scraping.date_format) # YYYY-MM-DD
             if self.FileComboBox.itemText(1).startswith(s):
                 self.FileComboBox.setCurrentIndex(1)
 
-    def setTsvFilename(self):
+    def setFilename(self):
         if self.FileComboBox.currentText() == self.null_filename:
-            self.tsv_filename = None
+            self.filename = None
         else:
-            self.tsv_filename = "{}\\{}".format(self.storage_directory, self.FileComboBox.currentText())
+            self.filename = "{}\\{}".format(self.storage_directory, self.FileComboBox.currentText())
 
     def buttonClicked(self):
         sender = self.sender()
         if sender.text() == self.scrape_str:
-            self.ScrapeButton.setText(self.stop_scraping_str)
-            self.ScrapingProgressBar.setValue(0)
-            self.companies_scraped = 0
-            self.scraping_started_time = time.time()
-            self.scrapeThread.start()
-        elif sender.text() == self.stop_scraping_str:
-            logger.info("Scraping terminated")
+            self.startScraping()
+        elif sender.text() == self.during_scraping_str:
             self.scraping_terminated = True
             self.scrapeThread.terminate()
         elif sender.text() == self.exit_str:
+            self.scrapeThread.terminate()
             self.close()
-        elif self.tsv_filename:
+        elif self.filename and not self.scraping:
             print_type = None
             company_id = None
             company_name = None
             if sender.text() == self.filter_str:
-                scrapeKL.filter_companies(self.tsv_filename)
+                scrapeKL.filter_companies(self.filename)
             elif sender.text() == self.organize_str:
-                scrapeKL.organize_companies(self.tsv_filename)
+                scrapeKL.organize_companies(self.filename)
             elif sender.text() == self.printCompanies_str:
-                scrapeKL.print_companies(self.tsv_filename)
+                scrapeKL.print_companies(self.filename)
             elif sender.text() == self.printMetrics_str:
                 print_type = "metrics"
             elif sender.text() == self.printMetricsSimple_str:
@@ -201,15 +233,24 @@ class Window(QWidget):
                         company_id = int(search_line_str)
                     except ValueError:
                         company_name = search_line_str
-                scrapeKL.print_company_metrics(self.tsv_filename, print_type, company_id, company_name)
+                scrapeKL.print_company_metrics(self.filename, print_type, company_id, company_name)
+        elif self.scraping:
+            logger.info("Can not do that while scraping")
         else:
-            logger.info("No TSV-file selected")
+            logger.info("No file selected")
 
 
 if __name__ == '__main__':
     logger = logging.getLogger('root')
-    logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
+    #logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
+    #logging.basicConfig(format="%(message)s")
+
+    logger_handler = logging.StreamHandler()
+    logger.addHandler(logger_handler)
+    logger_handler.setFormatter(logging.Formatter('%(message)s'))
+
     logger.setLevel(logging.DEBUG)
+
 
     storage_directory = "scrapes"
     #Creates a storage-folder if one does not exist.

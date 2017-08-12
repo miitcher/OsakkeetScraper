@@ -36,7 +36,7 @@ def scrape_company_target_function(company_queue, company_id, company_name):
             company_id, company_name.replace("\"", "").replace("'", "")
         ) + "}")
 
-def scrape_companies_with_processes(company_names):
+def scrape_companies_with_processes(company_names, showProgress=True):
     json_metrics_queue = Queue() # json_metrics stings are stored here
     process_list = []
     for company_id in company_names:
@@ -57,7 +57,8 @@ def scrape_companies_with_processes(company_names):
         if len(json_metrics_list) == expected_company_count:
             break
         json_metrics_list.append(json_metrics_queue.get()) # waits on the next value
-        logger.info("Progress: {}/{}".format(len(json_metrics_list), expected_company_count))
+        if showProgress:
+            logger.info("Progress: {}/{}".format(len(json_metrics_list), expected_company_count))
 
     for process in process_list:
         process.join()

@@ -14,16 +14,16 @@ and the company is not stored again.
 """
 
 
-def scrape_companies(storage_directory, company_names):
+def scrape_companies(storage_directory, company_names, showProgress=True):
     # No return values so function can be used as threads target.
     # Explains also the strict input values
     assert isinstance(storage_directory, str)
     assert isinstance(company_names, dict)
-    logger.debug("Scraping starts")
+    logger.info("Scraping starts")
     if len(company_names) == 0:
         company_names = get_company_names(storage_directory)
 
-    json_metrics_list = scraping.scrape_companies_with_processes(company_names)
+    json_metrics_list = scraping.scrape_companies_with_processes(company_names, showProgress)
 
     # Find failed scrapes
     failed_company_dict = {}
