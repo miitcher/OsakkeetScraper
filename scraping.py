@@ -103,62 +103,41 @@ class scrapeCompanyProcess(Process):
             print("Failed   {}".format(self))
         """
 
-def scrape_for_process(pipe, company_id, company_name):
-    output_p, input_p = pipe
-    output_p.close()
+def scrape_for_process(company_queue, company_id, company_name):
     company = Company(c_id=company_id, c_name=company_name)
     company.scrape()
-    input_p.send(company)
+    company_queue.put(company.json_metrics)
 
-def scrape_companies_with_processes(company_names, company_list, company_failed_count):
-    assert isinstance(company_names, dict), "Invalid company_names"
-    assert len(company_names) > 0, "No company_names"
-    assert company_list == [], "Invalid company_list"
-    assert company_failed_count == 0, "Invalid company_failed_count"
+def scrape_companies_with_processes(in_company_names, out_json_metrics_list):
+    assert isinstance(in_company_names, dict), "Invalid company_names"
+    assert len(in_company_names) > 0, "No company_names"
+    assert out_json_metrics_list == [], "Invalid json_metrics_list"
 
-    company_queue = Queue()
-    company_failed_queue = 1 #Queue()
+    expected_companies = len(in_company_names)
+    json_metrics_queue = Queue() # json_metrics stings are stored here
 
     process_list = []
-    process_index = 1
-    output_p_list = []
-    for company_id in company_names:
-        """
-        process = scrapeCompanyProcess(company_id, company_names[company_id],
-                                       company_queue, company_failed_queue, process_index)
-        """
-
-
-        output_p, input_p = Pipe()
+    for company_id in in_company_names:
         process = Process(
             target=scrape_for_process,
-            args=((output_p, input_p), company_id, company_names[company_id])
+            args=(json_metrics_queue, company_id, in_company_names[company_id]),
+            name="({}, {})".format(company_id, in_company_names[company_id])
         )
-        #input_p.close()
-        output_p_list.append(output_p)
-
-
         process_list.append(process)
-        process_index += 1
+
     for process in process_list:
         logger.debug("Starting {}".format(process))
         process.start()
 
+    while True:
+        logger.debug("json_metrics_list len: {}".format(len(out_json_metrics_list)))
+        out_json_metrics_list.append(json_metrics_queue.get()) # waits on the next value
+        if len(out_json_metrics_list) == expected_companies:
+            break
 
-    for output_p in output_p_list:
-        company = output_p.recv()
-        print("received: {}".format(company))
-
-
-    logger.debug("Wait on processes")
     for process in process_list:
-        logger.debug(process)
-        company = company_queue.get()
+        logger.debug("Wait on processes: {}".format(process))
         process.join()
-    """
-    company_list.append(company_queue.get())
-    company_failed_count += len(company_failed_queue)
-    """
 
 
 class Company():

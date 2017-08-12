@@ -4,7 +4,7 @@ import scraping
 import scrapeKL
 
 
-SHOW_DEBUG = True
+SHOW_DEBUG = False
 
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
@@ -42,7 +42,7 @@ class Test(unittest.TestCase):
         time0 = time.time()
         scrapeKL.scrape_companies_sequentially(storage_directory, company_names)
 
-        print("\n\ntest_scrape_companies_sequentially time: {:.2f} s".format(time.time() - time0))
+        print("\nSEQUENTIALLY\ttime: {:.2f} s".format(time.time() - time0))
 
         """
         self.assertTrue(os.path.isfile(filename))
@@ -66,7 +66,7 @@ class Test(unittest.TestCase):
         scrapeKL.scrape_companies_with_threads(storage_directory, filename_metrics,
                                                company_names, company_list, company_failed_count)
 
-        print("\n\ntest_scrape_companies_with_threads time: {:.2f} s".format(time.time() - time0))
+        print("\nTHREADS\t\ttime: {:.2f} s".format(time.time() - time0))
 
         self.assertIsInstance(filename_metrics, str)
         self.assertEqual(len(company_list), 3)
@@ -76,25 +76,24 @@ class Test(unittest.TestCase):
             self.assertGreater(len(company.json_metrics), 1000)
 
     def test_scrape_companies_with_processes(self):
-        company_list = []
+        json_metrics_list = []
         company_failed_count = 0
         filename_metrics = ""
 
         time0 = time.time()
         scrapeKL.scrape_companies_with_processes(storage_directory, filename_metrics,
-                                                 company_names, company_list, company_failed_count)
+                                                 company_names, json_metrics_list, company_failed_count)
 
-        print("\n\ntest_scrape_companies_with_threads time: {:.2f} s".format(time.time() - time0))
+        print("\nPROCESSES\ttime: {:.2f} s".format(time.time() - time0))
 
         self.assertIsInstance(filename_metrics, str)
         #self.assertEqual(len(company_list), 3)
-        self.assertGreater(len(company_list), 0)
-        print("company_list:")
-        for company in company_list:
-            self.assertIsInstance(company, scraping.Company)
-            self.assertIsInstance(company.json_metrics, str)
-            self.assertGreater(len(company.json_metrics), 1000)
-            print(company)
+        self.assertGreater(len(json_metrics_list), 0)
+        #print("json_metrics_list:")
+        for json_metrics in json_metrics_list:
+            self.assertIsInstance(json_metrics, str)
+            self.assertGreater(len(json_metrics), 1000)
+            #print(json_metrics[1:80] + "...")
 
 
 if __name__ == '__main__':
