@@ -1,7 +1,7 @@
 import os, sys, logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
-from PyQt5.Qt import pyqtSignal
+from PyQt5.Qt import pyqtSignal, QThread
 from datetime import date
 
 import scrapeKL
@@ -13,9 +13,23 @@ class ScrapeGuiException(Exception):
     pass
 
 
+class scrapeThread(QThread):
+
+    def __init__(self, storage_directory, company_names):
+        QThread.__init__(self)
+        self.storage_directory = storage_directory
+        self.company_names = company_names
+
+    def __del__(self): # TODO: Is this needed?
+        self.wait()
+
+    def run(self):
+        logger.debug("Starting scrapeing from QThread")
+        _json_metrics_list, _failed_company_dict, _metricsfilename = scrapeKL.scrape_companies(self.storage_directory, self.company_names)
+
+
 class Window(QWidget):
-    # Create signal
-    terminate_all_scrapeThreads_sig = pyqtSignal()
+    terminate_scraping_sig = pyqtSignal()
 
     def __init__(self, storage_directory):
         super().__init__()
@@ -26,61 +40,22 @@ class Window(QWidget):
         self.setLoggingLevel()
         self.refreshFileComboBox()
         self.setNewestTsvFileFromToday()
-        self.setScrapingThread()
+        self.setScraping()
 
-    def setScrapingThread(self):
-        self.stopThreads = False
-        company_names = None
-        #company_names = {2048:"talenom", 1906:"cargotec"} # TODO: safe company to scrape
-        company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
-        self.scrapeThread = scrapeKL.scrapeThread(self.storage_directory, company_names, self.terminate_all_scrapeThreads_sig)
-        self.scrapeThread.company_names_len_sig.connect(self.set_company_names_len)
-        self.scrapeThread.company_processed_sig.connect(self.company_scraped)
+    def setScraping(self):
+        self.scraping_terminated = False
+        company_names = {}
+        #company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
+        self.scrapeThread = scrapeThread(self.storage_directory, company_names)
         self.scrapeThread.finished.connect(self.scrapingDone)
 
-    def set_company_names_len(self, company_names_len):
-        self.company_names_len = company_names_len
-        self.ScrapingProgressBar.setMaximum(self.company_names_len)
-
-    def company_scraped(self):
-        try:
-            self.companies_scraped += 1
-            self.ScrapingProgressBar.setValue(self.ScrapingProgressBar.value() + 1)
-
-            companies_left = self.company_names_len - self.companies_scraped
-            if self.companies_scraped == 1:
-                self.first_company_scraped_time = time.time()
-                self.reference_scraping_started_time = self.first_company_scraped_time \
-                    - ( ( self.first_company_scraped_time - self.scraping_started_time) / 20 ) 
-            elif self.companies_scraped % 1 == 0 and not self.stopThreads and companies_left:
-                average_scrape_time = ( -15 / companies_left ) + (time.time() - self.reference_scraping_started_time) / self.companies_scraped
-                whole_time = companies_left * average_scrape_time + (time.time() - self.scraping_started_time)
-                print("time_left: {:.1f} s\t\taverage_scrape_time: {:.1f} s\t\ttime_advanced: {:.1f} s\t\tcompanies_scraped: {}\t\twhole_time: {:.1f}\t\tcompared_to_real: {:.1f}".format(
-                    companies_left * average_scrape_time,
-                    average_scrape_time,
-                    time.time() - self.scraping_started_time,
-                    self.companies_scraped,
-                    whole_time,
-                    whole_time - 180
-                ))
-        except:
-            traceback.print_exc()
-
     def scrapingDone(self):
-        whole_scrape_time = time.time() - self.scraping_started_time
-        final_average_scrape_time = whole_scrape_time / self.companies_scraped
-        time_taken_to_scrape_first_company = self.first_company_scraped_time - self.scraping_started_time
-        print("whole_scrape_time: {} s".format(whole_scrape_time))
-        print("final_average_scrape_time: {} s".format(final_average_scrape_time))
-        print("time_taken_to_scrape_first_company: {} s".format(time_taken_to_scrape_first_company))
-
-        self.ScrapeButton.setText(self.scrape_str)
-        if not self.stopThreads:
+        if self.scraping_terminated:
+            time.sleep(1)
+        else:
             self.refreshFileComboBox()
             self.FileComboBox.setCurrentIndex(1)
-        else:
-            self.stopThreads = False
-            self.ScrapingProgressBar.setValue(0)
+        self.ScrapeButton.setText(self.scrape_str)
 
     def setWindow(self):
         # strings
@@ -139,7 +114,7 @@ class Window(QWidget):
         space = 15
         vbox_main = QVBoxLayout()
         vbox_main.addWidget(self.DebugCheckBox)
-        vbox_main.addWidget(self.ScrapingProgressBar)
+        #vbox_main.addWidget(self.ScrapingProgressBar)
         vbox_main.addWidget(self.ScrapeButton)
         vbox_main.addLayout(hbox_StoredFiles)
         vbox_main.addSpacing(space)
@@ -196,10 +171,10 @@ class Window(QWidget):
             self.scraping_started_time = time.time()
             self.scrapeThread.start()
         elif sender.text() == self.stop_scraping_str:
-            self.stopThreads = True
-            self.terminate_all_scrapeThreads_sig.emit()
+            logger.info("Scraping terminated")
+            self.scraping_terminated = True
+            self.scrapeThread.terminate()
         elif sender.text() == self.exit_str:
-            self.terminate_all_scrapeThreads_sig.emit()
             self.close()
         elif self.tsv_filename:
             print_type = None

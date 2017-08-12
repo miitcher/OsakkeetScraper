@@ -25,74 +25,25 @@ class ScrapeException(Exception):
     pass
 
 
-class scrapeCompanyThread(Thread):
-    def __init__(self, company_id, company_name, company_list,
-                 company_failed_count, thread_index=-1):
-        Thread.__init__(self)
-        assert isinstance(company_id, int)
-        assert isinstance(company_name, str)
-        self.company_id = company_id
-        self.company_name = company_name
-        self.company_list = company_list
-        self.company_failed_count = company_failed_count
-        self.name = "({}, {}, {})".format(thread_index, self.company_id, self.company_name)
-
-    def __repr__(self):
-        return "scrapeCompanyThread({})".format(self.name)
-
-    def run(self):
-        logger.debug("Starting {}".format(self))
-        company = Company(c_id=self.company_id, c_name=self.company_name)
-        try:
-            company.scrape()
-            self.company_list.append(company)
-            logger.debug("Finished {}".format(self))
-        except:
-            self.company_failed_count += 1
-            logger.error("Failed   {}".format(self))
-
-def scrape_companies_with_threads(company_names, company_list, company_failed_count):
-    assert isinstance(company_names, dict), "Invalid company_names"
-    assert len(company_names) > 0, "No company_names"
-    assert company_list == [], "Invalid company_list"
-    assert company_failed_count == 0, "Invalid company_failed_count"
-    thread_list = []
-    thread_index = 1
-    for company_id in company_names:
-        thread = scrapeCompanyThread(company_id, company_names[company_id],
-                                     company_list, company_failed_count, thread_index)
-        thread_list.append(thread)
-        thread_index += 1
-    for thread in thread_list:
-        thread.start()
-    for thread in thread_list:
-        thread.join()
-
-
-def scrape_func_for_process(company_queue, company_id, company_name):
+def scrape_company_target_function(company_queue, company_id, company_name):
+    # Used as target function for multitreading.Process
     try:
         company = Company(c_id=company_id, c_name=company_name)
         company.scrape()
         company_queue.put(company.json_metrics)
-    except: # ScrapeException:
+    except:
         company_queue.put("\n{" + "'company_id': {}, 'company_name': '{}'".format(
             company_id, company_name.replace("\"", "").replace("'", "")
         ) + "}")
 
-def scrape_companies_with_processes(in_company_names, out_json_metrics_list):
-    assert isinstance(in_company_names, dict), "Invalid company_names"
-    assert len(in_company_names) > 0, "No company_names"
-    assert out_json_metrics_list == [], "Invalid json_metrics_list"
-
-    expected_companies = len(in_company_names)
+def scrape_companies_with_processes(company_names):
     json_metrics_queue = Queue() # json_metrics stings are stored here
-
     process_list = []
-    for company_id in in_company_names:
+    for company_id in company_names:
         process = Process(
-            target=scrape_func_for_process,
-            args=(json_metrics_queue, company_id, in_company_names[company_id]),
-            name="({}, {})".format(company_id, in_company_names[company_id])
+            target=scrape_company_target_function,
+            args=(json_metrics_queue, company_id, company_names[company_id]),
+            name="({}, {})".format(company_id, company_names[company_id])
         )
         process_list.append(process)
 
@@ -100,15 +51,18 @@ def scrape_companies_with_processes(in_company_names, out_json_metrics_list):
         logger.debug("Starting {}".format(process))
         process.start()
 
+    json_metrics_list = []
+    expected_company_count = len(company_names)
     while True:
-        if len(out_json_metrics_list) == expected_companies:
+        if len(json_metrics_list) == expected_company_count:
             break
-        #logger.debug("json_metrics_list len: {}".format(len(out_json_metrics_list)))
-        out_json_metrics_list.append(json_metrics_queue.get()) # waits on the next value
+        json_metrics_list.append(json_metrics_queue.get()) # waits on the next value
+        logger.info("Progress: {}/{}".format(len(json_metrics_list), expected_company_count))
 
     for process in process_list:
-        #logger.debug("Wait on processes: {}".format(process))
         process.join()
+
+    return json_metrics_list
 
 
 class Company():

@@ -4,7 +4,7 @@ import scraping
 import scrapeKL
 
 
-SHOW_DEBUG = True
+SHOW_DEBUG = False
 
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
@@ -23,78 +23,35 @@ kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid=
 storage_directory = "scrapes"
 
 
-company_names = {
-    2048: "talenom",
-    1102: "cramo",
-    1091: "sanoma"
-}
-company_names = {2048: "talenom"}
-company_names = {1196: "afarak group"}
-company_names = {
-    2048: "talenom",
-    1102: "cramo",
-    1091: "sanoma",
-    1196: "afarak group"
-}
-company_names = {}
-
-
 class Test(unittest.TestCase):
 
-    def test_scrape_companies_sequentially(self):
-        time0 = time.time()
-        scrapeKL.scrape_companies_sequentially(storage_directory, company_names)
-        print("\nSEQUENTIALLY\ttime: {:.2f} s".format(time.time() - time0))
-
-        """
-        self.assertTrue(os.path.isfile(filename))
-        output_str = scrapeKL.print_companies(filename, return_output=True)
-        self.assertGreater(len(output_str), 0)
-        output_str = scrapeKL.print_company_metrics(filename, "metrics", return_output=True)
-        self.assertGreater(len(output_str), 0)
-        output_str = scrapeKL.print_company_metrics(filename, "metrics_simple", return_output=True)
-        self.assertGreater(len(output_str), 0)
-        output_str = scrapeKL.print_company_metrics(filename, "calculations", return_output=True)
-        self.assertGreater(len(output_str), 0)
-        os.remove(filename)
-        """
-
-    def test_scrape_companies_with_threads(self):
-        company_list = []
-        company_failed_count = 0
-        filename_metrics = ""
+    def test_scrape_companies(self):
+        company_names = {
+            2048: "talenom",
+            1102: "cramo",
+            1091: "sanoma",
+            1196: "afarak group"
+        }
+        company_names = {} # For scraping every company
 
         time0 = time.time()
-        scrapeKL.scrape_companies_with_threads(storage_directory, filename_metrics,
-                                               company_names, company_list, company_failed_count)
-        print("\nTHREADS\t\ttime: {:.2f} s".format(time.time() - time0))
+        json_metrics_list, failed_company_dict, metricsfilename = scrapeKL.scrape_companies(storage_directory, company_names)
+        print("\nScraping time: {:.2f} s".format(time.time() - time0))
 
-        #self.assertEqual(len(company_list), 3)
-        self.assertGreater(len(company_list), 0)
-        for company in company_list:
-            self.assertIsInstance(company, scraping.Company)
-            self.assertIsInstance(company.json_metrics, str)
-            self.assertGreater(len(company.json_metrics), 1000)
-
-    def test_scrape_companies_with_processes(self):
-        json_metrics_list = []
-
-        time0 = time.time()
-        scrapeKL.scrape_companies_with_processes(storage_directory, company_names, json_metrics_list)
-        print("\nPROCESSES\ttime: {:.2f} s".format(time.time() - time0))
-
-        #self.assertEqual(len(json_metrics_list), 3)
-        self.assertGreater(len(json_metrics_list), 0)
-        #print("json_metrics_list:")
+        self.assertIsInstance(metricsfilename, str)
         for json_metrics in json_metrics_list:
             self.assertIsInstance(json_metrics, str)
             self.assertGreater(len(json_metrics), 35)
-            """
-            if len(json_metrics) < 81:
-                print(json_metrics)
+        """
+            if len(json_metrics) < 100:
+                print("Failed: " + json_metrics[1:])
             else:
                 print(json_metrics[1:80] + "...")
-            """
+        for company_id in failed_company_dict:
+            print("Failed list: ({}, {})".format(company_id, failed_company_dict[company_id]))
+        """
+        self.assertEqual(len(failed_company_dict), 1)
+        self.assertEqual(len(json_metrics_list), 4)
 
 
 if __name__ == '__main__':
