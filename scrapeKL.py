@@ -3,9 +3,6 @@ import traceback, logging
 import scraping
 import storage
 
-import time
-
-from PyQt5.Qt import QThread, pyqtSignal
 
 
 logger = logging.getLogger('root')
@@ -17,61 +14,7 @@ and the company is not stored again.
 """
 
 
-def scrape_and_store_companies(storage_directory, company_names, company_list,
-                               company_failed_count, filename_metrics):
-    # No return values so function can be used as threads target.
-    # Explains also the strict input values
-    assert isinstance(storage_directory, str)
-    assert isinstance(company_names, dict)
-    assert company_list == []
-    assert company_failed_count == 0
-    assert filename_metrics == ""
-    logger.debug("Scraping starts")
-    if len(company_names) == 0:
-        company_names = get_company_names(storage_directory)
-    scraping.scrape_companies(company_names, company_list, company_failed_count)
-    logger.info("Scraping done: {}/{}\tFailed: {}".format(
-        len(company_list) + company_failed_count,
-        len(company_names), company_failed_count)
-    )
-    filename_metrics += storage.store_company_list(company_list, storage_directory)
-
-def monitor_scraping(company_names, company_list, company_failed_count):
-    while len(company_names) == 0:
-        time.sleep(1)
-        logger.error("looping")
-        logger.error("len(company_names): {}".format(len(company_names)))
-        logger.error("company_list: {}".format(company_list))
-        logger.error("company_failed_count: {}".format(company_failed_count))
-    companies_to_scrape = len(company_names)
-    while True:
-        done_companies = len(company_list) + company_failed_count
-        logger.debug("Progress: {}/{}\tFailed: {}".format(
-            done_companies, companies_to_scrape, company_failed_count)
-        )
-        if done_companies == companies_to_scrape:
-            break
-        logger.debug("Progress: {}/{}\tFailed: {}".format(
-            done_companies, companies_to_scrape, company_failed_count)
-        )
-        time.sleep(2)
-
-"""
-class scrapeMaster(QThread):
-    def __init__(self, storage_directory, company_names=None):
-        QThread.__init__(self)
-        self.storage_directory = storage_directory
-        self.company_names = company_names
-
-    def __del__(self): # TODO: Is this needed?
-        self.wait()
-
-    def run(self):
-        self.filename_metrics, self.company_list = scrape_and_store_companies(self.storage_directory, self.company_names)
-"""
-
-def scrape_companies_OLD(storage_directory, company_names=None):
-    # OLD WAY TO SCRAPE
+def scrape_companies_sequentially(storage_directory, company_names=None):
     try:
         if not company_names:
             company_names = get_company_names(storage_directory)
@@ -89,6 +32,48 @@ def scrape_companies_OLD(storage_directory, company_names=None):
         logger.info("Scraping done")
     except:
         traceback.print_exc()
+
+
+def scrape_companies_with_threads(storage_directory, filename_metrics,
+                                  company_names, company_list, company_failed_count):
+    # No return values so function can be used as threads target.
+    # Explains also the strict input values
+    assert isinstance(storage_directory, str)
+    assert isinstance(company_names, dict)
+    assert company_list == []
+    assert company_failed_count == 0
+    assert filename_metrics == ""
+    logger.debug("Scraping starts")
+    if len(company_names) == 0:
+        company_names = get_company_names(storage_directory)
+    scraping.scrape_companies_with_threads(company_names, company_list, company_failed_count)
+    logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
+        len(company_list) + company_failed_count,
+        len(company_names), company_failed_count)
+    )
+    filename_metrics += storage.store_company_list(company_list, storage_directory)
+
+
+def scrape_companies_with_processes(storage_directory, filename_metrics,
+                                    company_names, company_list, company_failed_count):
+    # No return values so function can be used as threads target.
+    # Explains also the strict input values
+    assert isinstance(storage_directory, str)
+    assert isinstance(company_names, dict)
+    assert company_list == []
+    assert company_failed_count == 0
+    assert filename_metrics == ""
+    logger.debug("Scraping starts")
+    if len(company_names) == 0:
+        company_names = get_company_names(storage_directory)
+    scraping.scrape_companies_with_processes(company_names, company_list, company_failed_count)
+    logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
+        len(company_list) + company_failed_count,
+        len(company_names), company_failed_count)
+    )
+    filename_metrics += storage.store_company_list(company_list, storage_directory)
+
+
 
 def print_companies(filename, return_output=False):
     company_list = storage.load_company_list(filename)

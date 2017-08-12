@@ -1,7 +1,9 @@
 import requests, re, logging
 from bs4 import BeautifulSoup
 from datetime import date
+
 from threading import Thread
+from multiprocessing import Process, Queue
 
 logger = logging.getLogger('root')
 
@@ -39,18 +41,18 @@ class scrapeCompanyThread(Thread):
         return "scrapeCompanyThread({})".format(self.name)
 
     def run(self):
-        #logger.debug("Starting {}".format(self))
+        logger.debug("Starting {}".format(self))
         company = Company(c_id=self.company_id, c_name=self.company_name)
         try:
             company.scrape()
             self.company_list.append(company)
-            #logger.debug("Finished {}".format(self))
-        except ScrapeException:
+            logger.debug("Finished {}".format(self))
+        except:
             self.company_failed_count += 1
             logger.error("Failed   {}".format(self))
 
 
-def scrape_companies(company_names, company_list, company_failed_count):
+def scrape_companies_with_threads(company_names, company_list, company_failed_count):
     assert isinstance(company_names, dict), "Invalid company_names"
     assert len(company_names) > 0, "No company_names"
     assert company_list == [], "Invalid company_list"
@@ -61,10 +63,67 @@ def scrape_companies(company_names, company_list, company_failed_count):
         thread = scrapeCompanyThread(company_id, company_names[company_id],
                                      company_list, company_failed_count, thread_index)
         thread_list.append(thread)
-        thread.start()
         thread_index += 1
     for thread in thread_list:
+        thread.start()
+    for thread in thread_list:
         thread.join()
+
+
+class scrapeCompanyProcess(Process):
+    def __init__(self, company_id, company_name, company_queue,
+                 company_failed_queue, process_index=-1):
+        Process.__init__(self)
+        assert isinstance(company_id, int)
+        assert isinstance(company_name, str)
+        self.company_id = company_id
+        self.company_name = company_name
+        self.company_queue = company_queue
+        self.company_failed_queue = company_failed_queue
+        self.name = "({}, {}, {})".format(process_index, self.company_id, self.company_name)
+        logger.debug(self)
+
+    def __repr__(self):
+        return "scrapeCompanyProcess({})".format(self.name)
+
+    def run(self):
+        logger.debug(self)
+        logger.debug("Starting {}".format(self))
+        company = Company(c_id=self.company_id, c_name=self.company_name)
+        try:
+            company.scrape()
+            self.company_queue.put(company)
+            logger.debug("Finished {}".format(self))
+        except:
+            self.company_failed_queue.put(str(self))
+            logger.error("Failed   {}".format(self))
+
+
+def scrape_companies_with_processes(company_names, company_list, company_failed_count):
+    assert isinstance(company_names, dict), "Invalid company_names"
+    assert len(company_names) > 0, "No company_names"
+    assert company_list == [], "Invalid company_list"
+    assert company_failed_count == 0, "Invalid company_failed_count"
+
+    logger.debug("beginning")
+    company_queue = Queue()
+    company_failed_queue = Queue()
+
+    process_list = []
+    process_index = 1
+    for company_id in company_names:
+        process = scrapeCompanyProcess(company_id, company_names[company_id],
+                                       company_queue, company_failed_queue, process_index)
+        process_list.append(process)
+        process_index += 1
+    for process in process_list:
+        process.start()
+        logger.debug("process strated")
+    for process in process_list:
+        process.join()
+
+    company_list.append(company_queue.get())
+    company_failed_count += len(company_failed_queue)
 
 
 class Company():
