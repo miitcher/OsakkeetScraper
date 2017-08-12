@@ -58,6 +58,8 @@ def scrape_companies_with_threads(storage_directory, filename_metrics,
     scraping.scrape_companies_with_threads(company_names, company_list, company_failed_count)
 
     company_count = len(company_names)
+    company_pass_count = len(company_list)
+    company_failed_count = company_count - company_pass_count
     logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
         company_count - company_failed_count,
         company_count, company_failed_count)
@@ -98,13 +100,13 @@ def scrape_companies_with_processes(storage_directory, company_names, json_metri
 
     failed_companies_str = "\n\tFailed Companies ({}):\n".format(len(failed_company_dict)) + "-"*40
     c = 1
-    for company_id in failed_company_dict:
+    for company_id in sorted(failed_company_dict, key=failed_company_dict.get):
         failed_companies_str += "\n\t{:3}. ({}, {})".format(c, company_id, failed_company_dict[company_id])
         c += 1
     failed_companies_str += "\n" + "-"*40
     logger.info(failed_companies_str)
 
-    _ = storage.store_company_list_json(json_metrics_list, storage_directory)
+    _metricsfilename = storage.store_company_list_json(json_metrics_list, storage_directory)
 
 
 
