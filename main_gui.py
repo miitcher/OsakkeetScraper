@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.Qt import pyqtSignal
 from datetime import date
 
-import scrape_KL
+import scrapeKL
 import scraping
 
 import time, traceback
@@ -33,7 +33,7 @@ class Window(QWidget):
         company_names = None
         #company_names = {2048:"talenom", 1906:"cargotec"} # TODO: safe company to scrape
         company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
-        self.scrapeThread = scrape_KL.scrapeThread(self.storage_directory, company_names, self.terminate_all_scrapeThreads_sig)
+        self.scrapeThread = scrapeKL.scrapeThread(self.storage_directory, company_names, self.terminate_all_scrapeThreads_sig)
         self.scrapeThread.company_names_len_sig.connect(self.set_company_names_len)
         self.scrapeThread.company_processed_sig.connect(self.company_scraped)
         self.scrapeThread.finished.connect(self.scrapingDone)
@@ -206,11 +206,11 @@ class Window(QWidget):
             company_id = None
             company_name = None
             if sender.text() == self.filter_str:
-                scrape_KL.filter_companies(self.tsv_filename)
+                scrapeKL.filter_companies(self.tsv_filename)
             elif sender.text() == self.organize_str:
-                scrape_KL.organize_companies(self.tsv_filename)
+                scrapeKL.organize_companies(self.tsv_filename)
             elif sender.text() == self.printCompanies_str:
-                scrape_KL.print_companies(self.tsv_filename)
+                scrapeKL.print_companies(self.tsv_filename)
             elif sender.text() == self.printMetrics_str:
                 print_type = "metrics"
             elif sender.text() == self.printMetricsSimple_str:
@@ -226,7 +226,7 @@ class Window(QWidget):
                         company_id = int(search_line_str)
                     except ValueError:
                         company_name = search_line_str
-                scrape_KL.print_company_metrics(self.tsv_filename, print_type, company_id, company_name)
+                scrapeKL.print_company_metrics(self.tsv_filename, print_type, company_id, company_name)
         else:
             logger.info("No TSV-file selected")
 

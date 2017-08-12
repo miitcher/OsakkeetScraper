@@ -3,6 +3,8 @@ import traceback, logging
 import scraping
 import storage
 
+import time
+
 from PyQt5.Qt import QThread, pyqtSignal
 
 
@@ -15,16 +17,44 @@ and the company is not stored again.
 """
 
 
-def scrape_and_store_companies(storage_directory, company_names, company_list, filename_metrics):
+def scrape_and_store_companies(storage_directory, company_names, company_list,
+                               company_failed_count, filename_metrics):
     # No return values so function can be used as threads target.
-    assert company_list == [] and filename_metrics == "", "Wrong input"
+    # Explains also the strict input values
+    assert isinstance(storage_directory, str)
+    assert isinstance(company_names, dict)
+    assert company_list == []
+    assert company_failed_count == 0
+    assert filename_metrics == ""
     logger.debug("Scraping starts")
-    if company_names is None:
+    if len(company_names) == 0:
         company_names = get_company_names(storage_directory)
-    scraping.scrape_companies(company_names, company_list)
-    logger.debug("Companies scraped: {}/{}".format(len(company_list), len(company_names)))
+    scraping.scrape_companies(company_names, company_list, company_failed_count)
+    logger.info("Scraping done: {}/{}\tFailed: {}".format(
+        len(company_list) + company_failed_count,
+        len(company_names), company_failed_count)
+    )
     filename_metrics += storage.store_company_list(company_list, storage_directory)
-    logger.info("Scraping done")
+
+def monitor_scraping(company_names, company_list, company_failed_count):
+    while len(company_names) == 0:
+        time.sleep(1)
+        logger.error("looping")
+        logger.error("len(company_names): {}".format(len(company_names)))
+        logger.error("company_list: {}".format(company_list))
+        logger.error("company_failed_count: {}".format(company_failed_count))
+    companies_to_scrape = len(company_names)
+    while True:
+        done_companies = len(company_list) + company_failed_count
+        logger.debug("Progress: {}/{}\tFailed: {}".format(
+            done_companies, companies_to_scrape, company_failed_count)
+        )
+        if done_companies == companies_to_scrape:
+            break
+        logger.debug("Progress: {}/{}\tFailed: {}".format(
+            done_companies, companies_to_scrape, company_failed_count)
+        )
+        time.sleep(2)
 
 """
 class scrapeMaster(QThread):

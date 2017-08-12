@@ -24,34 +24,42 @@ class ScrapeException(Exception):
 
 
 class scrapeCompanyThread(Thread):
-    def __init__(self, company_id, company_name, company_list, thread_index=-1):
+    def __init__(self, company_id, company_name, company_list,
+                 company_failed_count, thread_index=-1):
         Thread.__init__(self)
         assert isinstance(company_id, int)
         assert isinstance(company_name, str)
         self.company_id = company_id
         self.company_name = company_name
         self.company_list = company_list
+        self.company_failed_count = company_failed_count
         self.name = "({}, {}, {})".format(thread_index, self.company_id, self.company_name)
 
     def __repr__(self):
         return "scrapeCompanyThread({})".format(self.name)
 
     def run(self):
-        logger.debug("Starting {}".format(self))
+        #logger.debug("Starting {}".format(self))
         company = Company(c_id=self.company_id, c_name=self.company_name)
         try:
             company.scrape()
             self.company_list.append(company)
-            logger.debug("Finished {}".format(self))
+            #logger.debug("Finished {}".format(self))
         except ScrapeException:
+            self.company_failed_count += 1
             logger.error("Failed   {}".format(self))
 
 
-def scrape_companies(company_names, company_list):
+def scrape_companies(company_names, company_list, company_failed_count):
+    assert isinstance(company_names, dict), "Invalid company_names"
+    assert len(company_names) > 0, "No company_names"
+    assert company_list == [], "Invalid company_list"
+    assert company_failed_count == 0, "Invalid company_failed_count"
     thread_list = []
     thread_index = 1
     for company_id in company_names:
-        thread = scrapeCompanyThread(company_id, company_names[company_id], company_list, thread_index)
+        thread = scrapeCompanyThread(company_id, company_names[company_id],
+                                     company_list, company_failed_count, thread_index)
         thread_list.append(thread)
         thread.start()
         thread_index += 1

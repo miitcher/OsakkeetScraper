@@ -1,8 +1,8 @@
 import unittest, logging, os
-from threading import Thread
+from threading import Thread, Lock, Semaphore
 
 import scraping
-import scrape_KL
+import scrapeKL
 
 
 SHOW_DEBUG = True
@@ -27,22 +27,32 @@ storage_directory = "scrapes"
 class Test(unittest.TestCase):
 
     def test_scrape_and_store_companies_as_thread(self):
-        filename_metrics = ""
-        company_list = []
-        company_names = None
-        """
         company_names = {
             2048: "talenom",
             1102: "cramo",
             1091: "sanoma"
         }
         """
-        thread = Thread(
-            target=scrape_KL.scrape_and_store_companies,
-            args=(storage_directory, company_names, company_list, filename_metrics)
+        company_names = {}
+        """
+        company_list = []
+        company_failed_count = 0
+        c_failed_semaphore_counter = Semaphore(value=0)
+        filename_metrics = ""
+        scrapeThread = Thread(
+            target=scrapeKL.scrape_and_store_companies,
+            args=(storage_directory, company_names, company_list,
+                  company_failed_count, filename_metrics)
         )
-        thread.start()
-        thread.join()
+        monitoringThread = Thread(
+            target=scrapeKL.monitor_scraping,
+            args=(company_names, company_list, company_failed_count)
+        )
+
+        monitoringThread.start()
+        scrapeThread.start()
+        scrapeThread.join()
+        monitoringThread.join()
 
         self.assertIsInstance(filename_metrics, str)
         self.assertEqual(len(company_list), 3)
@@ -54,16 +64,16 @@ class Test(unittest.TestCase):
 
     """
     def test_scrape_companies_One_OLD(self):
-        filename = scrape_KL.scrape_companies(storage_directory, {2048:"talenom"})
+        filename = scrapeKL.scrape_companies(storage_directory, {2048:"talenom"})
         self.assertTrue(os.path.isfile(filename))
 
-        output_str = scrape_KL.print_companies(filename, return_output=True)
+        output_str = scrapeKL.print_companies(filename, return_output=True)
         self.assertGreater(len(output_str), 0)
-        output_str = scrape_KL.print_company_metrics(filename, "metrics", return_output=True)
+        output_str = scrapeKL.print_company_metrics(filename, "metrics", return_output=True)
         self.assertGreater(len(output_str), 0)
-        output_str = scrape_KL.print_company_metrics(filename, "metrics_simple", return_output=True)
+        output_str = scrapeKL.print_company_metrics(filename, "metrics_simple", return_output=True)
         self.assertGreater(len(output_str), 0)
-        output_str = scrape_KL.print_company_metrics(filename, "calculations", return_output=True)
+        output_str = scrapeKL.print_company_metrics(filename, "calculations", return_output=True)
         self.assertGreater(len(output_str), 0)
         # TODO: Better validation of print output.
 
