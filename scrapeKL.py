@@ -14,7 +14,7 @@ and the company is not stored again.
 """
 
 
-def scrape_companies(storage_directory, company_names, showProgress=True):
+def scrape_companies(storage_directory, company_names, showProgress=True, terminate_scraping_sig=None):
     # No return values so function can be used as threads target.
     # Explains also the strict input values
     assert isinstance(storage_directory, str)
@@ -23,7 +23,12 @@ def scrape_companies(storage_directory, company_names, showProgress=True):
     if len(company_names) == 0:
         company_names = get_company_names(storage_directory)
 
-    json_metrics_list = scraping.scrape_companies_with_processes(company_names, showProgress)
+    if terminate_scraping_sig is None:
+        json_metrics_list = scraping.scrape_companies_with_processes(company_names, showProgress)
+    else:
+        companyScraper = scraping.QCompanyScraper(terminate_scraping_sig, company_names, showProgress)
+        companyScraper.startScraping()
+        json_metrics_list = companyScraper.json_metrics_list
 
     # Find failed scrapes
     failed_company_dict = {}

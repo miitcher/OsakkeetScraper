@@ -4,6 +4,7 @@ from datetime import date
 
 from threading import Thread
 from multiprocessing import Process, Queue, Pipe
+from PyQt5.Qt import QObject
 
 logger = logging.getLogger('root')
 
@@ -60,11 +61,70 @@ def scrape_companies_with_processes(company_names, showProgress=True):
         if showProgress:
             logger.info("Progress: {}/{}".format(len(json_metrics_list), expected_company_count))
 
+    """ # TODO: is this needed?
     for process in process_list:
         process.join()
+    """
 
     return json_metrics_list
 
+
+
+def scrape_companies_with_processes_IN_PARTS(company_names, showProgress):
+    json_metrics_queue = Queue() # json_metrics stings are stored here
+    process_list = create_scraping_process_list(json_metrics_queue, company_names)
+    start_scraping_process_list(process_list)
+    json_metrics_list = collect_json_metrics_list(json_metrics_queue, len(company_names), showProgress)
+    return json_metrics_list
+
+
+def create_scraping_process_list(json_metrics_queue, company_names):
+    process_list = []
+    for company_id in company_names:
+        process = Process(
+            target=scrape_company_target_function,
+            args=(json_metrics_queue, company_id, company_names[company_id]),
+            name="({}, {})".format(company_id, company_names[company_id])
+        )
+        process_list.append(process)
+    return process_list
+
+def start_scraping_process_list(process_list):
+    for process in process_list:
+        logger.debug("Starting {}".format(process))
+        process.start()
+
+def collect_json_metrics_list(json_metrics_queue, expected_company_count, showProgress):
+    json_metrics_list = []
+    while True:
+        if len(json_metrics_list) == expected_company_count:
+            break
+        json_metrics_list.append(json_metrics_queue.get()) # waits on the next value
+        if showProgress:
+            logger.info("Progress: {}/{}".format(len(json_metrics_list), expected_company_count))
+    return json_metrics_list
+
+
+
+class QCompanyScraper(QObject):
+    def __init__(self, terminate_scraping_sig, company_names, showProgress):
+        QObject.__init__(self)
+        terminate_scraping_sig.connect(self.terminate_scraping)
+        self.company_names = company_names
+        self.showProgress = showProgress
+
+        self.json_metrics_queue = Queue() # json_metrics stings are stored here
+        self.process_list = create_scraping_process_list(self.json_metrics_queue, self.company_names)
+
+    def startScraping(self):
+        start_scraping_process_list(self.process_list)
+        self.json_metrics_list = collect_json_metrics_list(self.json_metrics_queue, len(self.company_names), self.showProgress)
+
+    def terminate_scraping(self):
+        for process in self.process_list:
+            logger.debug("Terminate {}".format(process))
+            process.terminate()
+        return None
 
 class Company():
     def __init__(self, c_metrics=None, c_id=None, c_name=None):

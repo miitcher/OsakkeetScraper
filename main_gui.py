@@ -1,7 +1,7 @@
 import os, sys, logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import *
-from PyQt5.Qt import QThread
+from PyQt5.Qt import QThread, pyqtSignal
 from datetime import date
 import time, traceback
 
@@ -15,11 +15,12 @@ class ScrapeGuiException(Exception):
 
 class scrapeThread(QThread):
 
-    def __init__(self, storage_directory, company_names, showProgress):
+    def __init__(self, storage_directory, company_names, showProgress, terminate_scraping_sig):
         QThread.__init__(self)
         self.storage_directory = storage_directory
         self.company_names = company_names
         self.showProgress = showProgress
+        self.terminate_scraping_sig = terminate_scraping_sig
 
     def __del__(self): # TODO: Is this needed?
         self.wait()
@@ -29,11 +30,15 @@ class scrapeThread(QThread):
         if not self.showProgress:
             logger.info("Hide progress")
         time0 = time.time()
-        _json_metrics_list, _failed_company_dict, _metricsfilename = scrapeKL.scrape_companies(self.storage_directory, self.company_names, self.showProgress)
+        _json_metrics_list, _failed_company_dict, _metricsfilename = scrapeKL.scrape_companies(
+            self.storage_directory, self.company_names,
+            self.showProgress, self.terminate_scraping_sig
+        )
         logger.info("Scraping took: {:.2f} s".format(time.time() - time0))
 
 
 class Window(QWidget):
+    terminate_scraping_sig = pyqtSignal()
 
     def __init__(self, storage_directory):
         super().__init__()
@@ -52,7 +57,10 @@ class Window(QWidget):
         self.scraping_terminated = False
         company_names = {}
         #company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
-        self.scrapeThread = scrapeThread(self.storage_directory, company_names, self.showProgress)
+        self.scrapeThread = scrapeThread(
+            self.storage_directory, company_names, self.showProgress,
+            self.terminate_scraping_sig
+        )
         self.scrapeThread.finished.connect(self.scrapingDone)
 
     def startScraping(self):
@@ -75,6 +83,7 @@ class Window(QWidget):
         self.ScrapeButton.setText(self.scrape_str)
         self.DebugCheckBox.setEnabled(True)
         self.ProgressCheckBox.setEnabled(True)
+        self.FileComboBox.setEnabled(True)
         self.scraping = False
 
     def setWindow(self):
@@ -204,7 +213,8 @@ class Window(QWidget):
             self.startScraping()
         elif sender.text() == self.during_scraping_str:
             self.scraping_terminated = True
-            self.scrapeThread.terminate()
+            self.terminate_scraping_sig.emit()
+            #self.scrapeThread.terminate()
         elif sender.text() == self.exit_str:
             self.scrapeThread.terminate()
             self.close()
