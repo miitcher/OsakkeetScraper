@@ -1,4 +1,4 @@
-import requests, re, logging
+import requests, re, logging, time
 from bs4 import BeautifulSoup
 from datetime import date
 
@@ -87,16 +87,21 @@ class scrapeCompanyProcess(Process):
         return "scrapeCompanyProcess({})".format(self.name)
 
     def run(self):
-        logger.debug(self)
-        logger.debug("Starting {}".format(self))
+        # Would need to modify the Process logger to use it, it is not worth it.
+        # Move the start and finished to outside process.
+        print("Starting {}".format(self))
         company = Company(c_id=self.company_id, c_name=self.company_name)
+        company.scrape()
+        self.company_queue.put(company)
+        """
         try:
             company.scrape()
             self.company_queue.put(company)
-            logger.debug("Finished {}".format(self))
+            print("Finished {}".format(self))
         except:
             self.company_failed_queue.put(str(self))
-            logger.error("Failed   {}".format(self))
+            print("Failed   {}".format(self))
+        """
 
 
 def scrape_companies_with_processes(company_names, company_list, company_failed_count):
@@ -105,9 +110,8 @@ def scrape_companies_with_processes(company_names, company_list, company_failed_
     assert company_list == [], "Invalid company_list"
     assert company_failed_count == 0, "Invalid company_failed_count"
 
-    logger.debug("beginning")
     company_queue = Queue()
-    company_failed_queue = Queue()
+    company_failed_queue = 1 #Queue()
 
     process_list = []
     process_index = 1
@@ -117,13 +121,18 @@ def scrape_companies_with_processes(company_names, company_list, company_failed_
         process_list.append(process)
         process_index += 1
     for process in process_list:
+        logger.debug("Starting {}".format(process))
         process.start()
-        logger.debug("process strated")
-    for process in process_list:
-        process.join()
 
+    logger.debug("Wait on processes")
+    for process in process_list:
+        logger.debug(process)
+        company = company_queue.get()
+        process.join()
+    """
     company_list.append(company_queue.get())
     company_failed_count += len(company_failed_queue)
+    """
 
 
 class Company():
