@@ -4,7 +4,7 @@ import scraping
 import scrapeKL
 
 
-SHOW_DEBUG = False
+SHOW_DEBUG = True
 
 logger = logging.getLogger('root')
 logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
@@ -22,18 +22,21 @@ kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid=
 
 storage_directory = "scrapes"
 
-"""
-company_names = {
-    2048: "talenom"}
-"""
+
 company_names = {
     2048: "talenom",
     1102: "cramo",
     1091: "sanoma"
 }
-"""
+company_names = {2048: "talenom"}
+company_names = {1196: "afarak group"}
+company_names = {
+    2048: "talenom",
+    1102: "cramo",
+    1091: "sanoma",
+    1196: "afarak group"
+}
 company_names = {}
-"""
 
 
 class Test(unittest.TestCase):
@@ -77,23 +80,24 @@ class Test(unittest.TestCase):
 
     def test_scrape_companies_with_processes(self):
         json_metrics_list = []
-        company_failed_count = 0
-        filename_metrics = ""
 
         time0 = time.time()
-        scrapeKL.scrape_companies_with_processes(storage_directory, filename_metrics,
-                                                 company_names, json_metrics_list, company_failed_count)
+        scrapeKL.scrape_companies_with_processes(storage_directory, company_names, json_metrics_list)
 
         print("\nPROCESSES\ttime: {:.2f} s".format(time.time() - time0))
 
-        self.assertIsInstance(filename_metrics, str)
         #self.assertEqual(len(company_list), 3)
         self.assertGreater(len(json_metrics_list), 0)
         #print("json_metrics_list:")
         for json_metrics in json_metrics_list:
             self.assertIsInstance(json_metrics, str)
-            self.assertGreater(len(json_metrics), 1000)
-            #print(json_metrics[1:80] + "...")
+            self.assertGreater(len(json_metrics), 35)
+            """
+            if len(json_metrics) < 81:
+                print(json_metrics)
+            else:
+                print(json_metrics[1:80] + "...")
+            """
 
 
 if __name__ == '__main__':

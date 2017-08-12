@@ -76,6 +76,11 @@ def _store_company_data(company_data, storage_directory, scrape_type, filename=N
         for company in company_data:
             assert isinstance(company, scraping.Company)
             assert isinstance(company.json_metrics, str)
+    elif scrape_type == "metrics_json":
+        assert isinstance(company_data, list)
+        for json_metrics in company_data:
+            assert isinstance(json_metrics, str)
+            assert len(json_metrics) > 35
     else:
         raise AssertionError("Invalid scrape_type")
 
@@ -93,6 +98,9 @@ def _store_company_data(company_data, storage_directory, scrape_type, filename=N
         elif scrape_type == "metrics":
             for company in sorted(company_data, key=lambda Company: Company.company_name):
                 f.write(company.json_metrics)
+        elif scrape_type == "metrics_json":
+            for json_metrics in sorted(company_data):
+                f.write(json_metrics)
         else:
             logger.error("Not a valid scrape_type: [{}]".format(scrape_type))
     logger.debug("Stored scrape_{} into: {}".format(scrape_type, filename))
@@ -103,3 +111,6 @@ def store_company_names(company_names, storage_directory, filename=None):
 
 def store_company_list(company_list, storage_directory, filename=None):
     return _store_company_data(company_list, storage_directory, "metrics", filename)
+
+def store_company_list_json(json_metrics_list, storage_directory, filename=None):
+    return _store_company_data(json_metrics_list, storage_directory, "metrics_json", filename)

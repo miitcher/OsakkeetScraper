@@ -51,7 +51,6 @@ class scrapeCompanyThread(Thread):
             self.company_failed_count += 1
             logger.error("Failed   {}".format(self))
 
-
 def scrape_companies_with_threads(company_names, company_list, company_failed_count):
     assert isinstance(company_names, dict), "Invalid company_names"
     assert len(company_names) > 0, "No company_names"
@@ -70,43 +69,15 @@ def scrape_companies_with_threads(company_names, company_list, company_failed_co
         thread.join()
 
 
-class scrapeCompanyProcess(Process):
-    def __init__(self, company_id, company_name, company_queue,
-                 company_failed_queue, process_index=-1):
-        Process.__init__(self)
-        assert isinstance(company_id, int)
-        assert isinstance(company_name, str)
-        self.company_id = company_id
-        self.company_name = company_name
-        self.company_queue = company_queue
-        self.company_failed_queue = company_failed_queue
-        self.name = "({}, {}, {})".format(process_index, self.company_id, self.company_name)
-        logger.debug(self)
-
-    def __repr__(self):
-        return "scrapeCompanyProcess({})".format(self.name)
-
-    def run(self):
-        # Would need to modify the Process logger to use it, it is not worth it.
-        # Move the start and finished to outside process.
-        print("Starting {}".format(self))
-        company = Company(c_id=self.company_id, c_name=self.company_name)
+def scrape_func_for_process(company_queue, company_id, company_name):
+    try:
+        company = Company(c_id=company_id, c_name=company_name)
         company.scrape()
-        self.company_queue.put(company)
-        """
-        try:
-            company.scrape()
-            self.company_queue.put(company)
-            print("Finished {}".format(self))
-        except:
-            self.company_failed_queue.put(str(self))
-            print("Failed   {}".format(self))
-        """
-
-def scrape_for_process(company_queue, company_id, company_name):
-    company = Company(c_id=company_id, c_name=company_name)
-    company.scrape()
-    company_queue.put(company.json_metrics)
+        company_queue.put(company.json_metrics)
+    except: # ScrapeException:
+        company_queue.put("\n{" + "'company_id': {}, 'company_name': '{}'".format(
+            company_id, company_name.replace("\"", "").replace("'", "")
+        ) + "}")
 
 def scrape_companies_with_processes(in_company_names, out_json_metrics_list):
     assert isinstance(in_company_names, dict), "Invalid company_names"
@@ -119,7 +90,7 @@ def scrape_companies_with_processes(in_company_names, out_json_metrics_list):
     process_list = []
     for company_id in in_company_names:
         process = Process(
-            target=scrape_for_process,
+            target=scrape_func_for_process,
             args=(json_metrics_queue, company_id, in_company_names[company_id]),
             name="({}, {})".format(company_id, in_company_names[company_id])
         )
@@ -130,13 +101,13 @@ def scrape_companies_with_processes(in_company_names, out_json_metrics_list):
         process.start()
 
     while True:
-        logger.debug("json_metrics_list len: {}".format(len(out_json_metrics_list)))
-        out_json_metrics_list.append(json_metrics_queue.get()) # waits on the next value
         if len(out_json_metrics_list) == expected_companies:
             break
+        #logger.debug("json_metrics_list len: {}".format(len(out_json_metrics_list)))
+        out_json_metrics_list.append(json_metrics_queue.get()) # waits on the next value
 
     for process in process_list:
-        logger.debug("Wait on processes: {}".format(process))
+        #logger.debug("Wait on processes: {}".format(process))
         process.join()
 
 
@@ -157,7 +128,7 @@ class Company():
             assert not c_metrics
             self.metrics = {}
             self.company_id = c_id
-            self.company_name = c_name
+            self.company_name = c_name.replace("\"", "").replace("'", "")
         assert self.company_id
         assert isinstance(self.company_id, int)
         assert isinstance(self.company_name, str)
@@ -434,6 +405,8 @@ def pretty_val(v, expected_type):
         else:
             try:
                 v = str(v).strip().lower()
+                # possible confusing in string
+                v = v.replace("\"", "").replace("'", "")
                 # the scandinavian letters:
                 v = v.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
                 # remove noncompatibel characters in unicode (\x80-\xFF):

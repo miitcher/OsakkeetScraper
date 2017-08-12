@@ -1,4 +1,4 @@
-import traceback, logging
+import traceback, logging, json
 
 import scraping
 import storage
@@ -23,16 +23,21 @@ def scrape_companies_sequentially(storage_directory, company_names=None):
         for company_id in company_names:
             logger.debug("Scrape: company_id:{}, company_name:{}".format(company_id, company_names[company_id]))
             company = scraping.Company(c_id=company_id, c_name=company_names[company_id])
-            company.scrape()
-            company_list.append(company)
+            try:
+                company.scrape()
+                company_list.append(company)
+            except: # scraping.ScrapeException:
+                pass
         if len(company_list) == 0:
             raise scraping.ScrapeException("Scraping failed")
         logger.debug("Number of companies scraped: {}".format(len(company_list)))
         _filename_metrics = storage.store_company_list(company_list, storage_directory)
+
         company_failed_count = len(company_names) - len(company_list)
+        company_count = len(company_names)
         logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
-            len(company_list) + company_failed_count,
-            len(company_names), company_failed_count)
+            company_count - company_failed_count,
+            company_count, company_failed_count)
         )
     except:
         traceback.print_exc()
@@ -51,55 +56,55 @@ def scrape_companies_with_threads(storage_directory, filename_metrics,
     if len(company_names) == 0:
         company_names = get_company_names(storage_directory)
     scraping.scrape_companies_with_threads(company_names, company_list, company_failed_count)
+
+    company_count = len(company_names)
     logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
-        len(company_list) + company_failed_count,
-        len(company_names), company_failed_count)
+        company_count - company_failed_count,
+        company_count, company_failed_count)
     )
     filename_metrics += storage.store_company_list(company_list, storage_directory)
 
 
-def scrape_companies_with_processes_fail(storage_directory, filename_metrics,
-                                    company_names, company_list, company_failed_count):
-    # No return values so function can be used as threads target.
-    # Explains also the strict input values
-    assert isinstance(storage_directory, str)
-    assert isinstance(company_names, dict)
-    assert company_list == []
-    assert company_failed_count == 0
-    assert filename_metrics == ""
-    logger.debug("Scraping starts")
-    if len(company_names) == 0:
-        company_names = get_company_names(storage_directory)
-    scraping.scrape_companies_with_processes(company_names, company_list, company_failed_count)
-    logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
-        len(company_list) + company_failed_count,
-        len(company_names), company_failed_count)
-    )
-    filename_metrics += storage.store_company_list(company_list, storage_directory)
-
-
-def scrape_companies_with_processes(storage_directory, filename_metrics,
-                                    company_names, json_metrics_list, company_failed_count):
+def scrape_companies_with_processes(storage_directory, company_names, json_metrics_list):
     # No return values so function can be used as threads target.
     # Explains also the strict input values
     assert isinstance(storage_directory, str)
     assert isinstance(company_names, dict)
     assert json_metrics_list == []
-    assert company_failed_count == 0
-    assert filename_metrics == ""
     logger.debug("Scraping starts")
     if len(company_names) == 0:
         company_names = get_company_names(storage_directory)
-    
-    
+
     scraping.scrape_companies_with_processes(company_names, json_metrics_list)
+
+    # Find failed scrapes
+    failed_company_dict = {}
+    company_failed_count = 0
+    for json_metrics in json_metrics_list:
+        if len(json_metrics) < 100:
+            json_acceptable_string = json_metrics.replace("'", "\"")
+            #logger.debug("json_acceptable_string: {}".format(json_acceptable_string))
+            metrics = json.loads(json_acceptable_string)
+            failed_company_dict[metrics["company_id"]] = metrics["company_name"]
+            #logger.debug("Failed: Company({}, {})".format(metrics["company_id"], metrics["company_name"]))
+            company_failed_count += 1
+
+    company_count = len(company_names)
+    assert company_count == len(json_metrics_list)
     logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
-        len(json_metrics_list) + company_failed_count,
-        len(company_names), company_failed_count)
+        company_count - company_failed_count,
+        company_count, company_failed_count)
     )
-    
-    
-    #filename_metrics += storage.store_company_list(company_list, storage_directory)
+
+    failed_companies_str = "\n\tFailed Companies ({}):\n".format(len(failed_company_dict)) + "-"*40
+    c = 1
+    for company_id in failed_company_dict:
+        failed_companies_str += "\n\t{:3}. ({}, {})".format(c, company_id, failed_company_dict[company_id])
+        c += 1
+    failed_companies_str += "\n" + "-"*40
+    logger.info(failed_companies_str)
+
+    _ = storage.store_company_list_json(json_metrics_list, storage_directory)
 
 
 
