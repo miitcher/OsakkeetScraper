@@ -1,7 +1,7 @@
 import os
 from PyQt5.Qt import Qt
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, \
-    QPushButton, QLabel, QComboBox, QLineEdit, QCheckBox
+    QPushButton, QLabel, QComboBox, QLineEdit, QCheckBox, QGridLayout
 
 
 
@@ -136,8 +136,7 @@ class Window(QWidget):
         vboxTrimCBs = self.set_vboxTrimCBs()
         vboxToimialaCBs = self.set_vboxToimialaCBs()
         vboxOtherCBs = self.set_vboxOtherCBs()
-        vboxCT = self.set_vboxCT()
-        
+        vboxCT = self.set_vboxCTandSortCBs()
         
         hboxCB=QHBoxLayout()
         hboxCB.addLayout(vboxTrimCBs)
@@ -266,46 +265,69 @@ class Window(QWidget):
         
         return vboxOtherCBs
     
-    def set_vboxCT(self):
-        #Costum thresholds
+    def set_vboxCTandSortCBs(self):
+        #Costum thresholds Fields
         self.CTGearing=QLineEdit()
         self.CTOVA=QLineEdit()
         self.CTPB=QLineEdit()
         self.CTPE=QLineEdit()
         self.CTOT=QLineEdit()
         self.CTROE=QLineEdit()
+        self.CTOTKA=QLineEdit()
         
-        hb=QHBoxLayout()
-        hb.addWidget(QLabel("Gearing MAX"))
-        hb.addWidget(self.CTGearing)
-        hb1=QHBoxLayout()
-        hb1.addWidget(QLabel("OVA MIN"))
-        hb1.addWidget(self.CTOVA)
-        hb2=QHBoxLayout()
-        hb2.addWidget(QLabel("P/B MAX"))
-        hb2.addWidget(self.CTPB)
-        hb3=QHBoxLayout()
-        hb3.addWidget(QLabel("P/E MAX"))
-        hb3.addWidget(self.CTPE)
-        hb4=QHBoxLayout()
-        hb4.addWidget(QLabel("Osinkot. MIN"))
-        hb4.addWidget(self.CTOT)
-        hb5=QHBoxLayout()
-        hb5.addWidget(QLabel("ROE MIN"))
-        hb5.addWidget(self.CTROE)
+        #Sort by Checkboxes
+        self.SBgearingCB=QCheckBox()
+        self.SBovaCB=QCheckBox()
+        self.SBpbCB=QCheckBox()
+        self.SBpeCB=QCheckBox()
+        self.SBotCB=QCheckBox()
+        self.SBroeCB=QCheckBox()
+        self.SBotkaCB=QCheckBox()
+        
+        self.SBpbCB.setCheckState(Qt.Checked)
+        self.SBpeCB.setCheckState(Qt.Checked)
+        self.SBotCB.setCheckState(Qt.Checked)
+        self.SBroeCB.setCheckState(Qt.Checked)
         
         
-        vboxCT=QVBoxLayout()
-        vboxCT.addWidget(QLabel("Costum Thresholds:"))
-        vboxCT.addLayout(hb)
-        vboxCT.addLayout(hb1)
-        vboxCT.addLayout(hb2)
-        vboxCT.addLayout(hb3)
-        vboxCT.addLayout(hb4)
-        vboxCT.addLayout(hb5)
-        vboxCT.addStretch(1)
+        grid=QGridLayout()
+        grid.addWidget(QLabel("Costum Thresholds:"), 0, 1)
+        grid.addWidget(QLabel("Sorted by:"), 0, 2)
         
-        return vboxCT
+        grid.addWidget(QLabel("Gearing\t(MAX)"), 1, 0)
+        grid.addWidget(self.CTGearing, 1, 1)
+        grid.addWidget(self.SBgearingCB, 1, 2)
+        
+        grid.addWidget(QLabel("OVA\t(MIN)"), 2, 0)
+        grid.addWidget(self.CTOVA, 2, 1)
+        grid.addWidget(self.SBovaCB, 2, 2)
+        
+        grid.addWidget(QLabel("P/B\t(MAX)"), 3, 0)
+        grid.addWidget(self.CTPB, 3, 1)
+        grid.addWidget(self.SBpbCB, 3, 2)
+        
+        grid.addWidget(QLabel("P/E\t(MAX)"), 4, 0)
+        grid.addWidget(self.CTPE, 4, 1)
+        grid.addWidget(self.SBpeCB, 4, 2)
+        
+        grid.addWidget(QLabel("Osinkot.\t(MIN)"), 5, 0)
+        grid.addWidget(self.CTOT, 5, 1)
+        grid.addWidget(self.SBotCB, 5, 2)
+        
+        grid.addWidget(QLabel("ROE\t(MIN)"), 6, 0)
+        grid.addWidget(self.CTROE, 6, 1)
+        grid.addWidget(self.SBroeCB, 6, 2)
+        
+        grid.addWidget(QLabel("Osinkot. ka5 (MIN)"), 7, 0)
+        grid.addWidget(self.CTOTKA, 7, 1)
+        grid.addWidget(self.SBotkaCB, 7, 2)
+        
+        
+        vbox=QVBoxLayout()
+        vbox.addLayout(grid)
+        vbox.addStretch(1)
+        
+        return vbox
     
     
     def CheckAllCBs(self, CBsList):
@@ -328,7 +350,8 @@ class Window(QWidget):
     
     def set_conditions(self):
         self.get_Costum_Thresholds_conditions()
-        self.get_Checkboxes_conditions()
+        self.get_Show_CB_conditions()
+        self.get_Sort_CB_conditions()
     
     def get_Costum_Thresholds_conditions(self):
         try:
@@ -361,11 +384,16 @@ class Window(QWidget):
         except ValueError:
             CTROE=-1000
         
+        try:
+            CTOTKA=float(self.CTOTKA.text())
+        except ValueError:
+            CTOTKA=-1000
+        
         
         self.kaytetaan.Conditions.set_Threshold_conditions(\
-                        CTGearing, CTOVA, CTPB, CTPE, CTOT, CTROE)
+                        CTGearing, CTOVA, CTPB, CTPE, CTOT, CTROE, CTOTKA)
     
-    def get_Checkboxes_conditions(self):
+    def get_Show_CB_conditions(self):
         ShowGearingFail =       self.ShowGFailCB.checkState() == Qt.Checked
         ShowOVAFail =           self.ShowOFailCB.checkState() == Qt.Checked
         ShowROEFail =           self.ShowRFailCB.checkState() == Qt.Checked
@@ -390,12 +418,26 @@ class Window(QWidget):
         ShowPassedSort = self.ShowPassedSortCB.checkState() == Qt.Checked
         
         
-        self.kaytetaan.Conditions.set_Checkbox_conditions(\
+        self.kaytetaan.Conditions.set_Show_CB_conditions(\
             ShowGearingFail, ShowOVAFail, ShowROEFail, ShowViisiOsinkoaFail, \
             ShowTulosNousuFail, ShowPassedTrimFail, ShowHandpicked, \
             ShowTaKuPa, ShowTaKuTa, ShowTaPeTe, ShowTaRaho, ShowTaTekn, ShowTaTePa, \
             ShowTaTeHu, ShowTaTiLiPa, ShowTaYlPa, ShowTaOlKa, ShowTaUnknown, \
             ShowFailedSort, ShowPassedSort)
+    
+    def get_Sort_CB_conditions(self):
+        # SB = Sort by
+        SBgearing = self.SBgearingCB.checkState() == Qt.Checked
+        SBova =     self.SBovaCB.checkState() == Qt.Checked
+        SBpb =      self.SBpbCB.checkState() == Qt.Checked
+        SBpe =      self.SBpeCB.checkState() == Qt.Checked
+        SBot =      self.SBotCB.checkState() == Qt.Checked
+        SBroe =     self.SBroeCB.checkState() == Qt.Checked
+        SBotka =    self.SBotkaCB.checkState() == Qt.Checked
+        
+        
+        self.kaytetaan.Conditions.set_Sort_CB_conditions(\
+            SBgearing, SBova, SBpb, SBpe, SBot, SBroe, SBotka)
     
     def set_cond_AND_print_comp(self):
             self.set_conditions()

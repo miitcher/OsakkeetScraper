@@ -30,10 +30,13 @@ class Yritys():
         
         
         #FOR SORT
-        self.PB_listing=-1
-        self.PE_listing=-1
-        self.osinkotuotto_listing=-1
-        self.ROE_listing=-1
+        self.Gearing_listing=0
+        self.OVA_listing=0
+        self.PB_listing=0
+        self.PE_listing=0
+        self.OT_listing=0
+        self.ROE_listing=0
+        self.OT_ka_listing=0
         
         self.listing_FINAL=-1
         self.RANK=-1
@@ -284,6 +287,8 @@ class Yritys():
         self.P_muutos_kerroin
         self.nykyinen_PB_luku
         self.nykyinen_PE_luku
+        
+        self.osinkotuotto_keskiarvo_PROCENT
         """
         
         if self.viime_osinko and self.nykyinen_kurssi:
@@ -311,6 +316,16 @@ class Yritys():
             self.nykyinen_PE_luku = round( self.P_muutos_kerroin * self.PE_luku, 2)
         else:
             self.nykyinen_PE_luku=False
+        
+        #keskiarvo osinkotuotolle 5 vuoden ajalta
+        if self.vuoden_osingot_lista and self.nykyinen_kurssi:
+            su=0
+            for i in self.vuoden_osingot_lista:
+                su += i
+            self.osinkotuotto_keskiarvo_PROCENT = round( 100*su / (5*self.nykyinen_kurssi), 2)
+            self.osinkotuotto_keskiarvo_PROCENT = float(self.osinkotuotto_keskiarvo_PROCENT)
+        else:
+            self.osinkotuotto_keskiarvo_PROCENT=False
     
     def set_kaytto_tunnusluvut(self):
         """SAADUT TUNNUSLUVUT
@@ -387,6 +402,7 @@ class Yritys():
                     break
         else:
             self.KAR_viisi_vuotta_osinkoa=False
+            self.osinkotuotto_keskiarvo_PROCENT=False
         
         #TULOS (korkeintaan 1 tuloksen heikennys viitena vuotena)
         c_heik=0
@@ -537,6 +553,7 @@ class Yritys():
         print("P_muutos_kerroin: ", self.P_muutos_kerroin)
         print("nykyinen_PB_luku: ", self.nykyinen_PB_luku)
         print("nykyinen_PE_luku: ", self.nykyinen_PE_luku)
+        print("osinkotuotto_keskiarvo_PROCENT: ", self.osinkotuotto_keskiarvo_PROCENT)
         print("+++++\n")
         
         
@@ -582,10 +599,13 @@ class Yritys():
     def SORTED_print(self):
         print("\n+++++SORT TIEDOT:")
         print("\t\tLISTING\tTUNNUSLUKU")
+        print("Gearing\t\t{}\t{}".format(self.Gearing_listing, self.gearing))
+        print("OVA\t\t{}\t{}".format(self.OVA_listing, self.omavaraisuusaste))
         print("P/B\t\t{}\t{}".format(self.PB_listing, self.PB_kaytto))
         print("P/E\t\t{}\t{}".format(self.PE_listing, self.PE_kaytto))
-        print("Osinkot.\t{}\t{} %".format(self.osinkotuotto_listing, self.nykyinen_osinkotuotto_PROCENT))
+        print("Osinkot.\t{}\t{} %".format(self.OT_listing, self.nykyinen_osinkotuotto_PROCENT))
         print("ROE\t\t{}\t{}".format(self.ROE_listing, self.ROE))
+        print("Osinkot. ka 5v\t{}\t{}".format(self.OT_ka_listing, self.osinkotuotto_keskiarvo_PROCENT))
         
         print("\nListing_FINAL\t{}".format(self.listing_FINAL))
         print("RANK\t\t{}".format(self.RANK))
@@ -599,19 +619,30 @@ class Yritys():
     
     
     def LINE_print(self):
+        """
         if self.trimFailCount == 0:
             trimFailSTR = ""
         else:
             trimFailSTR = str(self.trimFailCount) +":"+ self.trimFail
+        """
         
         if self.Failed_sort:
-            failedSortSTR="Fail"
+            failedSortSTR="Fa"
         else:
             failedSortSTR=""
         
+        """
+        pre_str="{}\t{}\t{}\t{}\t{}\t{:<22}".format(\
+            self.ID, self.RANK, self.listing_FINAL, trimFailSTR, failedSortSTR, self.nimi[:22])
+        """
+        pre_str="{:<5}{:<5}{:>3}-{:<2}-{:<6}\t{:<22}".format(\
+            self.ID, self.RANK, self.listing_FINAL, failedSortSTR, self.trimFail, self.nimi[:22])
+        TL_karsinta_str="\t{}\t{}".format(\
+            self.gearing, self.omavaraisuusaste)
+        TL_sort_str="\t{}\t{}\t{}\t{}\t{}".format(\
+            self.PB_kaytto, self.PE_kaytto, self.nykyinen_osinkotuotto_PROCENT,\
+            self.ROE, self.osinkotuotto_keskiarvo_PROCENT)
+        muut_str="\t\t{}\t{}\t{}".format(\
+            self.toimiala_lyhenne, self.P_muutos_kerroin, self.toimialaluokka)
         
-        print("{}\t{}\t{}\t{}\t{}\t{:<22}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(\
-            self.ID, self.RANK, self.listing_FINAL, trimFailSTR, failedSortSTR, self.nimi[:22],\
-            self.gearing, self.omavaraisuusaste,\
-            self.PB_kaytto, self.PE_kaytto, self.nykyinen_osinkotuotto_PROCENT, self.ROE,\
-            self.toimiala_lyhenne, self.P_muutos_kerroin, self.toimialaluokka))
+        print(pre_str + TL_karsinta_str + TL_sort_str + muut_str)

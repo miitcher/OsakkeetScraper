@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+from math import floor
 from PyQt5.QtWidgets import QApplication
 
 from window import Window
@@ -102,9 +104,13 @@ class Kaytetaan():
     
     def scrape_and_save(self):
         print("\nTIEDOT scraping from Kauppalehti.")
+        start = time.time()
         self.ID_TO_NAME_DICT = scrape_ID_TO_NAME_DICT()
+        middle = time.time()
         self.YRITYS_OLIO_DICT = scrape_YRITYS_OLIO_DICT(self.ID_TO_NAME_DICT)
+        end = time.time()
         print("TIEDOT scraped from Kauppalehti.")
+        self.time_intervalls_print(start, middle, end)
         
         self.prosess_yritykset()
         self.Error_check_SCRAPE()
@@ -125,9 +131,10 @@ class Kaytetaan():
             
             self.companies_header_print()
             
-            descriptive_str =   "ID\tRank\tLF\tTFC:WFT\tFS\tName\t\t\t"+\
+            descriptive_str =   "ID   Rank LiF-SF-TF    \tName\t\t\t"+\
                                 "Gearing\tOVA\t"+\
                                 "P/B\tP/E\tOT\tROE\t"+\
+                                "OT ka5\t\t"+\
                                 "Toimia.\tP_ker.\tToimialaluokka"
             
             print(descriptive_str)
@@ -138,8 +145,8 @@ class Kaytetaan():
             print(descriptive_str)
             
             self.set_averages_FOR_sorted_yritys_olio_list()
-            print("\t"*6 + "AVERAGES:\t{}\t{}\t{}\t{}\t{}\t{}".format(\
-                self.gearing_avg, self.OVA_avg, self.PB_avg, self.PE_avg, self.OT_avg, self.ROE_avg))
+            print("\t"*4 + "AVERAGES:\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format(\
+                self.gearing_avg, self.OVA_avg, self.PB_avg, self.PE_avg, self.OT_avg, self.ROE_avg, self.OT_ka_avg))
         else:
             print("The DATA is not set!")
     
@@ -151,9 +158,8 @@ class Kaytetaan():
         
         for ID in self.YRITYS_OLIO_DICT:
             self.sorted_yritys_olio_list.append(self.YRITYS_OLIO_DICT[ID])
-        self.SORT_sorted_yritys_olio_list()
         
-        print("Companies prosessed. (format, validate, trim, sort)")
+        print("Companies prosessed. (format, validate, trim)")
         
         print("\tvalidate NOT READY!")
         
@@ -167,7 +173,7 @@ class Kaytetaan():
         """
     
     def APPEND_COSTUM_IN_sorted_yritys_olio_list(self):
-        if not self.Conditions.Checkbox_conditions_set:
+        if not self.Conditions.set_Show_CB_conditions:
             print("\nCheckbox conditions are not set!")
             return
         
@@ -253,16 +259,22 @@ class Kaytetaan():
             if y.ROE:
                 if y.ROE < con.CTROE:
                     continue
+            if y.osinkotuotto_keskiarvo_PROCENT:
+                if y.osinkotuotto_keskiarvo_PROCENT < con.CTOTKA:
+                    continue
             
             
             self.sorted_yritys_olio_list.append(self.YRITYS_OLIO_DICT[ID])
     
     def SORT_sorted_yritys_olio_list(self):
         """YRITYS-OLIOT SAAVAT KAR-TUNNUSLUVUT
+        yritys.Gearing_listing
+        yritys.OVA_listing
         yritys.PB_listing
         yritys.PE_listing
-        yritys.osinkotuotto_listing
+        yritys.OT_listing
         yritys.ROE_listing
+        yritys.OT_ka_listing
         
         yritys.listing_FINAL
         yritys.RANK
@@ -272,53 +284,121 @@ class Kaytetaan():
         MAX_listing = len(self.sorted_yritys_olio_list) +1
         Failed_sort_number = MAX_listing
         
+        con = self.Conditions
+        
+        
+        #Gearing matala
+        if con.SBgearing:
+            self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.gearing)
+            c=1
+            for yritys in self.sorted_yritys_olio_list:
+                if yritys.gearing:
+                    yritys.Gearing_listing = c
+                    c+=1
+                else:
+                    yritys.Gearing_listing = Failed_sort_number
+                    yritys.Failed_sort = True
+        else:
+            for y in self.sorted_yritys_olio_list:
+                y.Gearing_listing = 0
+        
+        #Omavaraisuusaste korkea
+        if con.SBova:
+            self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.omavaraisuusaste, reverse=True)
+            c=1
+            for yritys in self.sorted_yritys_olio_list:
+                if yritys.omavaraisuusaste:
+                    yritys.OVA_listing = c
+                    c+=1
+                else:
+                    yritys.OVA_listing = Failed_sort_number
+                    yritys.Failed_sort = True
+        else:
+            for y in self.sorted_yritys_olio_list:
+                y.OVA_listing = 0
+        
         #P/B matala
-        self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.PB_kaytto)
-        c=1
-        for yritys in self.sorted_yritys_olio_list:
-            if yritys.PB_kaytto >0:
-                yritys.PB_listing = c
-                c+=1
-            else:
-                yritys.PB_listing = Failed_sort_number
-                yritys.Failed_sort = True
+        if con.SBpb:
+            self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.PB_kaytto)
+            c=1
+            for yritys in self.sorted_yritys_olio_list:
+                if yritys.PB_kaytto >0:
+                    yritys.PB_listing = c
+                    c+=1
+                else:
+                    yritys.PB_listing = Failed_sort_number
+                    yritys.Failed_sort = True
+        else:
+            for y in self.sorted_yritys_olio_list:
+                y.PB_listing = 0
         
         #P/E matala
-        self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.PE_kaytto)
-        c=1
-        for yritys in self.sorted_yritys_olio_list:
-            if yritys.PE_kaytto >0:
-                yritys.PE_listing = c
-                c+=1
-            else:
-                yritys.PE_listing = Failed_sort_number
-                yritys.Failed_sort = True
+        if con.SBpe:
+            self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.PE_kaytto)
+            c=1
+            for yritys in self.sorted_yritys_olio_list:
+                if yritys.PE_kaytto >0:
+                    yritys.PE_listing = c
+                    c+=1
+                else:
+                    yritys.PE_listing = Failed_sort_number
+                    yritys.Failed_sort = True
+        else:
+            for y in self.sorted_yritys_olio_list:
+                y.PE_listing = 0
         
-        #OSINKOTUOTTO korkea
-        self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.nykyinen_osinkotuotto_PROCENT, reverse=True)
-        c=1
-        for yritys in self.sorted_yritys_olio_list:
-            if yritys.nykyinen_osinkotuotto_PROCENT >0:
-                yritys.osinkotuotto_listing = c
-                c+=1
-            else:
-                yritys.osinkotuotto_listing = Failed_sort_number
-                yritys.Failed_sort = True
+        #Osinkotuotto korkea
+        if con.SBot:
+            self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.nykyinen_osinkotuotto_PROCENT, reverse=True)
+            c=1
+            for yritys in self.sorted_yritys_olio_list:
+                if yritys.nykyinen_osinkotuotto_PROCENT >0:
+                    yritys.OT_listing = c
+                    c+=1
+                else:
+                    yritys.OT_listing = Failed_sort_number
+                    yritys.Failed_sort = True
+        else:
+            for y in self.sorted_yritys_olio_list:
+                y.OT_listing = 0
         
-        #ROE korkea and Listing SUM
-        self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.ROE, reverse=True)
-        c=1
-        for yritys in self.sorted_yritys_olio_list:
-            if yritys.ROE >0:
-                yritys.ROE_listing = c
-                c+=1
-            else:
-                yritys.ROE_listing = Failed_sort_number
-                yritys.Failed_sort = True
-            
-            yritys.listing_FINAL = yritys.PB_listing+yritys.PE_listing+yritys.osinkotuotto_listing+yritys.ROE_listing
+        #ROE korkea
+        if con.SBroe:
+            self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.ROE, reverse=True)
+            c=1
+            for yritys in self.sorted_yritys_olio_list:
+                if yritys.ROE >0:
+                    yritys.ROE_listing = c
+                    c+=1
+                else:
+                    yritys.ROE_listing = Failed_sort_number
+                    yritys.Failed_sort = True
+        else:
+            for y in self.sorted_yritys_olio_list:
+                y.ROE_listing = 0
         
-        #SORT by listing_FINAL and RANK
+        #Osinkotuotto keskiarvo 5v korkea
+        if con.SBotka:
+            self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.osinkotuotto_keskiarvo_PROCENT, reverse=True)
+            c=1
+            for yritys in self.sorted_yritys_olio_list:
+                if yritys.osinkotuotto_keskiarvo_PROCENT >0:
+                    yritys.OT_ka_listing = c
+                    c+=1
+                else:
+                    yritys.OT_ka_listing = Failed_sort_number
+                    yritys.Failed_sort = True
+        else:
+            for y in self.sorted_yritys_olio_list:
+                y.OT_ka_listing = 0
+        
+        
+        #Listing SUM
+        for y in self.sorted_yritys_olio_list:
+            y.listing_FINAL = y.Gearing_listing +y.OVA_listing +y.PB_listing +\
+                    y.PE_listing +y.OT_listing +y.ROE_listing +y.OT_ka_listing
+        
+        #RANK
         self.sorted_yritys_olio_list = sorted(self.sorted_yritys_olio_list, key=lambda yritys: yritys.listing_FINAL)
         c=1
         for yritys in self.sorted_yritys_olio_list:
@@ -328,19 +408,31 @@ class Kaytetaan():
     
     def companies_header_print(self):
         print("\n\tINFO about Companies in YRITYS_OLIO_DICT")
-        print("LF=Listing Final; TFC=Trim Fail Count; WFT=What Failed in Trim; FS=Failed Sort; OVA=Omavaraisuusaste; OT=Osinkotuotto-%")
+        print("LiF=Listing Final; SF=Sort Fail; TF=Trim Fail;\t\tOVA=Omavaraisuusaste; OT=Osinkotuotto-%; ka5=keskiarvo viidelle vuodelle")
         print("What failed in TRIM: H=HANDPICKED; G=gearing; O=omavaraisuusaste; R=ROE; J=jaettu viisi vuotta osinkoa; T=tulokset nousee viisi vuotta")
         print("Toimialat:\tKuPa=Kulutuspalvelut; KuTa=Kulutustavarat; PeTe=Perusteollisuus; Raho=Rahoitus;")
         print("\t\tTekn=Teknologia; TePa=Teollisuustuotteet ja -palvelut; TeHu=Terveydenhuolto;")
         print("\t\tTiLiPa=Tietoliikennepalvelut; YlPa=Yleishyodylliset palvelut; OlKa=Oljy ja kaasu")
         
-        if self.Conditions.Threshold_conditions_set:
-            print("\n"+"\t"*5 + "Costum threasholds:\t<{}\t>{}\t<{}\t<{}\t>{}\t>{}"\
-                  .format(self.Conditions.CTGearing, self.Conditions.CTOVA, self.Conditions.CTPB,\
-                          self.Conditions.CTPE, self.Conditions.CTOT, self.Conditions.CTROE))
+        con = self.Conditions
         
-        print("\t"*5 +  "Prefered (sort):\t\t\tLow\tLow\tHigh\tHigh")
-        print("\t"*5 +  "Trimm threasholds:\t<100\t>40\t\t\t\t>10")
+        if con.Sort_CB_conditions_set:
+            print("\n"+"\t"*3 + "Sort by:\t\t{}\t{}\t{}\t{}\t{}\t{}\t{}"\
+                  .format(con.SBgearing, con.SBova, con.SBpb, \
+                          con.SBpe, con.SBot, con.SBroe, con.SBotka))
+        else:
+            print("Sort by NOT SET")
+        
+        if con.Threshold_conditions_set:
+            print("\t"*3 + "Costum threasholds:\t<{}\t>{}\t<{}\t<{}\t>{}\t>{}\t>{}"\
+                  .format(con.CTGearing, con.CTOVA, con.CTPB,\
+                          con.CTPE, con.CTOT, con.CTROE,\
+                          con.CTOTKA))
+        else:
+            print("Costum threasholds NOT SET")
+        
+        print("\t"*3 +  "Prefered:\t\tLow\tHigh\tLow\tLow\tHigh\tHigh\tHigh")
+        print("\t"*3 +  "Trimm threasholds:\t<100\t>40\t\t\t\t>10")
     
     def set_averages_FOR_sorted_yritys_olio_list(self):
         
@@ -356,6 +448,8 @@ class Kaytetaan():
         OT_c = 0
         ROE_sum = 0
         ROE_c = 0
+        OT_ka_sum = 0
+        OT_ka_c = 0
         
         for y in self.sorted_yritys_olio_list:
             if type(y.gearing)==float:
@@ -376,6 +470,9 @@ class Kaytetaan():
             if type(y.ROE)==float:
                 ROE_sum += y.ROE
                 ROE_c +=1
+            if type(y.osinkotuotto_keskiarvo_PROCENT)==float:
+                OT_ka_sum += y.osinkotuotto_keskiarvo_PROCENT
+                OT_ka_c +=1
         
         self.gearing_avg =  safeAverageDivide(gearing_sum, gearing_c)
         self.OVA_avg =      safeAverageDivide(OVA_sum, OVA_c)
@@ -383,6 +480,22 @@ class Kaytetaan():
         self.PE_avg =       safeAverageDivide(PE_sum, PE_c)
         self.OT_avg =       safeAverageDivide(OT_sum, OT_c)
         self.ROE_avg =      safeAverageDivide(ROE_sum, ROE_c)
+        self.OT_ka_avg =       safeAverageDivide(OT_ka_sum, OT_ka_c)
+    
+    def time_intervalls_print(self, start, middle, end):
+        tID = middle - start
+        tCOM = end - middle
+        
+        tID_s  = round(tID  %60, 2) +10
+        tCOM_s = round(tCOM %60, 2)
+        
+        tID_m  = floor(tID  /60)
+        tCOM_m = floor(tCOM /60)
+        
+        
+        print("\tTime to scrape:")
+        print("IDs:\t\t{} m {:5} s".format(tID_m, tID_s))
+        print("Companies:\t{} m {:5} s".format(tCOM_m, tCOM_s))
     
     
     def Error_check_SCRAPE(self):
