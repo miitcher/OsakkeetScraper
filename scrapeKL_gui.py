@@ -1,13 +1,20 @@
-import os, sys, logging
+import os, sys, logging, time, traceback
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, \
     QPushButton, QCheckBox, QComboBox, QLineEdit, QLabel
 from PyQt5.Qt import QThread
 from datetime import date
-import time, traceback
+from multiprocessing import Queue
 
+from scraping import date_format
 import scrapeKL
-import scraping
+
+
+logger_format_long = \
+    "%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"
+logger_format_short = '%(message)s'
+
+logger = logging.getLogger('root')
 
 
 class ScrapeGuiException(Exception):
@@ -16,25 +23,29 @@ class ScrapeGuiException(Exception):
 
 class scrapeThread(QThread):
 
-    def __init__(self, storage_directory, company_names, showProgress):
+    def __init__(self, storage_directory, company_names,
+                 showProgress, queue):
         QThread.__init__(self)
         self.storage_directory = storage_directory
         self.company_names = company_names
         self.showProgress = showProgress
-
-    def __del__(self): # TODO: Is this needed?
-        self.wait()
+        self.queue = queue
 
     def run(self):
         logger.debug("Starting scraping from QThread")
         if not self.showProgress:
-            logger.info("Hide progress")
+            logger.debug("Hide progress")
         try:
             time0 = time.time()
-            _json_metrics_list, _failed_company_dict, _metricsfilename = scrapeKL.scrape_companies(
-                self.storage_directory, self.company_names, self.showProgress
+            json_metrics_list, failed_company_dict, metricsfilename \
+                = scrapeKL.scrape_companies(
+                    self.storage_directory, self.company_names,
+                    self.showProgress
+                )
+            logger.debug("Scraping took: {:.2f} s".format(time.time() - time0))
+            self.queue.put(
+                (json_metrics_list, failed_company_dict, metricsfilename)
             )
-            logger.info("Scraping took: {:.2f} s".format(time.time() - time0))
         except:
             traceback.print_exc()
 
@@ -54,12 +65,16 @@ class Window(QWidget):
         self.setScraping()
 
     def setScraping(self):
+        self.json_metrics_list = None
+        self.failed_company_dict = None
+        self.metricsfilename = None
+
         self.currently_scraping = False
+        self.scrape_queue = Queue()
         #company_names = {}
         company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
-        self.scrapeThread = scrapeThread(
-            self.storage_directory, company_names, self.showProgress
-        )
+        self.scrapeThread = scrapeThread(self.storage_directory, company_names,
+                                         self.showProgress, self.scrape_queue)
         self.scrapeThread.finished.connect(self.scrapingDone)
 
     def startScraping(self):
@@ -74,6 +89,10 @@ class Window(QWidget):
         self.scrapeThread.start()
 
     def scrapingDone(self):
+        # TODO: The metrics are not used at the moment...
+        self.json_metrics_list, self.failed_company_dict, \
+            self.metricsfilename = self.scrape_queue.get()
+
         self.refreshFileComboBox()
         self.FileComboBox.setCurrentIndex(1)
 
@@ -168,12 +187,10 @@ class Window(QWidget):
 
     def setLoggingLevel(self):
         if self.DebugCheckBox.isChecked():
-            logger_handler.setFormatter(logging.Formatter(
-                "%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
-            )
+            logger_handler.setFormatter(logging.Formatter(logger_format_long))
             logger.setLevel(logging.DEBUG)
         else:
-            logger_handler.setFormatter(logging.Formatter('%(message)s'))
+            logger_handler.setFormatter(logging.Formatter(logger_format_short))
             logger.setLevel(logging.INFO)
     
     def setShowProgress(self):
@@ -199,7 +216,7 @@ class Window(QWidget):
     def setNewestFileFromToday(self):
         if len(self.FileComboBox) > 1:
             # YYYY-MM-DD
-            s = "scrape_metrics_" + date.today().strftime(scraping.date_format)
+            s = "scrape_metrics_" + date.today().strftime(date_format)
             if self.FileComboBox.itemText(1).startswith(s):
                 self.FileComboBox.setCurrentIndex(1)
 
@@ -258,9 +275,7 @@ if __name__ == '__main__':
     logger = logging.getLogger('root')
     logger_handler = logging.StreamHandler()
     logger.addHandler(logger_handler)
-    logger_handler.setFormatter(logging.Formatter(
-        "%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
-    )
+    logger_handler.setFormatter(logging.Formatter(logger_format_long))
     logger.setLevel(logging.DEBUG)
 
     # Storage

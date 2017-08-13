@@ -21,3 +21,5 @@ Time parts in program
             Unittests should test the timing-functionality
 
 Handle missing metrics for companies
+
+Setup of logger be in its own place, from where it is called.

@@ -8,7 +8,9 @@ import scraping
 SHOW_DEBUG = False
 
 logger = logging.getLogger('root')
-logging.basicConfig(format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
+logging.basicConfig(
+    format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"
+)
 if not SHOW_DEBUG:
     logger.setLevel(logging.INFO)
 else:
@@ -16,10 +18,11 @@ else:
 
 
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
-osingot_url             = url_basic + "osingot/osinkohistoria.jsp"
-osingot_yritys_url      = url_basic + "osingot/osinkohistoria.jsp?klid={}"
-kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
-kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
+osingot_url            = url_basic + "osingot/osinkohistoria.jsp"
+osingot_yritys_url     = url_basic + "osingot/osinkohistoria.jsp?klid={}"
+kurssi_url             = url_basic + "porssikurssit/osake/index.jsp?klid={}"
+kurssi_tulostiedot_url = url_basic + \
+    "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 some_company_ids = [2048, 1032, 1135, 1120, 1105]
 
@@ -46,7 +49,9 @@ class Test(unittest.TestCase):
         }
         showProgress = False
 
-        json_metrics_list = scraping.scrape_companies_with_processes(company_names, showProgress)
+        json_metrics_list = scraping.scrape_companies_with_processes(
+            company_names, showProgress
+        )
 
         for json_metrics in json_metrics_list:
             self.assertIsInstance(json_metrics, str)
@@ -69,14 +74,16 @@ class Test(unittest.TestCase):
         test_pretty_val_Equal(self, int, "100milj.eur", 1e8)
         test_pretty_val_Equal(self, int, "3.4milj.eur", 34e5)
         for v in ["38.2", " ", "", None, "he", "3,5", 2.1, "2miljard.eur"]:
-            self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, int)
+            self.assertRaises(scraping.ScrapeException,
+                              scraping.pretty_val, v, int)
 
         test_pretty_val_Equal(self, float, 38.23, 38.23)
         test_pretty_val_Equal(self, float, "38.23", 38.23)
         test_pretty_val_Equal(self, float, "3.4milj.eur", 34e5)
         test_pretty_val_Equal(self, float, 2.1, 2.1)
         for v in [" ", "", None, "he", "3,5"]:
-            self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, float)
+            self.assertRaises(scraping.ScrapeException,
+                              scraping.pretty_val, v, float)
 
         test_pretty_val_Equal(self, str, "38.23", "38.23")
         test_pretty_val_Equal(self, str, "fooBar\n", "foobar")
@@ -85,7 +92,8 @@ class Test(unittest.TestCase):
         test_pretty_val_Equal(self, str, "", "")
         test_pretty_val_Equal(self, str, " ", "")
         for v in ["\x9a"]:
-            self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, str)
+            self.assertRaises(scraping.ScrapeException,
+                              scraping.pretty_val, v, str)
 
         # DD.MM.YYYY --> YYYY-MM-DD
         test_pretty_val_Equal(self, date, "2016-02-01", "2016-02-01")
@@ -93,10 +101,13 @@ class Test(unittest.TestCase):
         test_pretty_val_Equal(self, date, "01.02.2016", "2016-02-01")
         for v in ["01.20.2015", "01-02-2016", "01022016",
                   "1.1.1aaaaa", "i01.02.2011i", "", None, " "]:
-            self.assertRaises(scraping.ScrapeException, scraping.pretty_val, v, date)
+            self.assertRaises(scraping.ScrapeException,
+                              scraping.pretty_val, v, date)
 
-        self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", datetime)
-        self.assertRaises(scraping.ScrapeException, scraping.pretty_val, "value", "type")
+        self.assertRaises(scraping.ScrapeException,
+                          scraping.pretty_val, "value", datetime)
+        self.assertRaises(scraping.ScrapeException,
+                          scraping.pretty_val, "value", "type")
 
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
@@ -184,15 +195,19 @@ class Test(unittest.TestCase):
             'listattu': '1996-05-02',
             'isin-koodi': 'fi0009005987',
         }
-        test_get_perustiedot_Controll(self, 2048, part_of_expected_perustiedot_2048)
-        test_get_perustiedot_Controll(self, 1032, part_of_expected_perustiedot_1032)
-        test_get_perustiedot_Controll(self, 1135, part_of_expected_perustiedot_1135)
+        test_get_perustiedot_Controll(self, 2048,
+                                      part_of_expected_perustiedot_2048)
+        test_get_perustiedot_Controll(self, 1032,
+                                      part_of_expected_perustiedot_1032)
+        test_get_perustiedot_Controll(self, 1135,
+                                      part_of_expected_perustiedot_1135)
 
     def test_get_tunnuslukuja(self):
         for company_id in some_company_ids:
             test_get_tunnuslukuja_Controll(self, company_id)
 """
     def test_get_tulostiedot_Toiminnan_laajuus(self):
+        # TODO: Fix too long lines
         company_id = 2048
         url = kurssi_tulostiedot_url.format(company_id)
         
@@ -272,15 +287,16 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
     for top_key in osingot:
         tester.assertIsInstance(top_key, str)
         tester.assertEqual(len(osingot[top_key]), 7)
-        if osingot[top_key]["irtoaminen"] == one_expected_osinko["irtoaminen"] and \
-           osingot[top_key]["maara"] == one_expected_osinko["maara"]:
+        if osingot[top_key]["irtoaminen"] == one_expected_osinko["irtoaminen"] \
+        and osingot[top_key]["maara"] == one_expected_osinko["maara"]:
             tester.assertDictEqual(osingot[top_key], one_expected_osinko)
             matches += 1
         for key in osingot[top_key]:
             tester.assertIsInstance(osingot[top_key][key], type_dict[key])
     tester.assertEqual(matches, 1)
 
-def test_get_perustiedot_Controll(tester, company_id, part_of_expected_perustiedot):
+def test_get_perustiedot_Controll(tester, company_id,
+                                  part_of_expected_perustiedot):
     type_dict = {
         "porssi": str,
         "listattu": str,
@@ -299,7 +315,8 @@ def test_get_perustiedot_Controll(tester, company_id, part_of_expected_perustied
     for key in perustiedot:
         tester.assertIsInstance(perustiedot[key], type_dict[key])
         if type_dict[key] == str:
-            tester.assertEqual(perustiedot[key], part_of_expected_perustiedot[key])
+            tester.assertEqual(perustiedot[key],
+                               part_of_expected_perustiedot[key])
 
 def test_get_tunnuslukuja_Controll(tester, company_id):
     url = kurssi_url.format(company_id)

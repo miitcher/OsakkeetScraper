@@ -10,7 +10,8 @@ url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
 osingot_url             = url_basic + "osingot/osinkohistoria.jsp"
 osingot_yritys_url      = url_basic + "osingot/osinkohistoria.jsp?klid={}"
 kurssi_url              = url_basic + "porssikurssit/osake/index.jsp?klid={}"
-kurssi_tulostiedot_url  = url_basic + "porssikurssit/osake/tulostiedot.jsp?klid={}"
+kurssi_tulostiedot_url  = url_basic + \
+    "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 date_format = "%Y-%m-%d" # YYYY-MM-DD
 date_short_format = "%y-%m-%d" # YY-MM-DD
@@ -23,14 +24,14 @@ class ScrapeException(Exception):
     pass
 
 
-def scrape_company_target_function(company_queue, company_id, company_name):
+def scrape_company_target_function(queue, company_id, company_name):
     # Used as target function for multitreading.Process
     try:
         company = Company(c_id=company_id, c_name=company_name)
         company.scrape()
-        company_queue.put(company.json_metrics)
+        queue.put(company.json_metrics)
     except:
-        company_queue.put("\n{" + "'company_id': {}, 'company_name': '{}'".format(
+        queue.put("\n{" + "'company_id': {}, 'company_name': '{}'".format(
             company_id, company_name.replace("\"", "").replace("'", "")
         ) + "}")
 
@@ -94,6 +95,8 @@ class Company():
         return "Company({}, {})".format(self.company_id, self.company_name)
 
     def scrape(self):
+        # TODO: Shorten too long lines
+        #  Done after the old functions are fixed
         url_os = osingot_yritys_url.format(self.company_id)
         url_ku = kurssi_url.format(self.company_id)
         url_ku_tu = kurssi_tulostiedot_url.format(self.company_id)
@@ -368,7 +371,9 @@ def pretty_val(v, expected_type):
                 # possible confusing in string
                 v = v.replace("\"", "").replace("'", "")
                 # the scandinavian letters:
-                v = v.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
+                # TODO: Is this needed? Test if no problems.
+                v = v.replace("\xe4", "a").replace("\xe5", "a")
+                v = v.replace("\xf6", "o")
                 # remove noncompatibel characters in unicode (\x80-\xFF):
                 len_v = len(v)
                 v = re.sub(r'[^\x00-\x7F]+','', v)
@@ -389,7 +394,9 @@ def pretty_val(v, expected_type):
         elif not date_pattern_0.match(v): # YYYY-MM-DD
             raise ScrapeException(exception_str)
     else:
-        raise ScrapeException("Not an accepted type: [{}]".format(expected_type))
+        raise ScrapeException(
+            "Not an accepted type: [{}]".format(expected_type)
+        )
     return v
 
 

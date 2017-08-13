@@ -1,6 +1,7 @@
 import unittest, logging, os, time
+from multiprocessing import Queue
 
-import scrapeKL
+import scrapeKL_gui
 
 
 SHOW_DEBUG = False
@@ -20,7 +21,7 @@ storage_directory = "scrapes"
 
 class Test(unittest.TestCase):
 
-    def test_scrape_companies(self):
+    def test_scrapeThread(self):
         company_names = {
             2048: "talenom",
             1102: "cramo",
@@ -29,13 +30,18 @@ class Test(unittest.TestCase):
         }
         #company_names = {} # For scraping every company
         showProgress = False
+        queue = Queue()
 
         time0 = time.time()
-        json_metrics_list, failed_company_dict, metricsfilename \
-            = scrapeKL.scrape_companies(
-                storage_directory, company_names, showProgress
-            )
+        qThread = scrapeKL_gui.scrapeThread(storage_directory, company_names,
+                                            showProgress, queue)
+        qThread.start()
+        qThread.wait()
         logger.debug("\nScraping time: {:.2f} s".format(time.time() - time0))
+
+        # .get() waits on the next value.
+        # Then .join() is not needed for processes.
+        json_metrics_list, failed_company_dict, metricsfilename = queue.get()
 
         self.assertIsInstance(metricsfilename, str)
         for json_metrics in json_metrics_list:

@@ -61,7 +61,6 @@ def load_company_list(filename):
             elif in_body and line:
                 # body
                 json_acceptable_string = line.replace("'", "\"")
-                #logger.debug("json_acceptable_string: [{}]".format(json_acceptable_string))
                 company_list.append(
                     scraping.Company(
                         c_metrics=json.loads(json_acceptable_string)
@@ -106,7 +105,8 @@ def _store_company_data(company_data, storage_directory,
             for company_id in sorted(company_data, key=company_data.get):
                 f.write("\n{}\t{}".format(company_id, company_data[company_id]))
         elif scrape_type == "metrics":
-            for company in sorted(company_data, key=lambda Company: Company.company_name):
+            for company in sorted(company_data,
+                                  key=lambda Company: Company.company_name):
                 f.write(company.json_metrics)
         elif scrape_type == "metrics_json":
             for json_metrics in sorted(company_data):
@@ -117,10 +117,14 @@ def _store_company_data(company_data, storage_directory,
     return filename
 
 def store_company_names(company_names, storage_directory, filename=None):
-    return _store_company_data(company_names, storage_directory, "names", filename)
+    return _store_company_data(company_names, storage_directory,
+                               "names", filename)
 
 def store_company_list(company_list, storage_directory, filename=None):
-    return _store_company_data(company_list, storage_directory, "metrics", filename)
+    return _store_company_data(company_list, storage_directory,
+                               "metrics", filename)
 
-def store_company_list_json(json_metrics_list, storage_directory, filename=None):
-    return _store_company_data(json_metrics_list, storage_directory, "metrics_json", filename)
+def store_company_list_json(json_metrics_list, storage_directory,
+                            filename=None):
+    return _store_company_data(json_metrics_list, storage_directory,
+                               "metrics_json", filename)

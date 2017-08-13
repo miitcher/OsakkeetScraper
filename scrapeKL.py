@@ -29,10 +29,11 @@ def scrape_companies(storage_directory, company_names, showProgress=True):
     for json_metrics in json_metrics_list:
         if len(json_metrics) < 100:
             json_acceptable_string = json_metrics.replace("'", "\"")
-            #logger.debug("json_acceptable_string: {}".format(json_acceptable_string))
             metrics = json.loads(json_acceptable_string)
             failed_company_dict[metrics["company_id"]] = metrics["company_name"]
-            #logger.debug("Failed: Company({}, {})".format(metrics["company_id"], metrics["company_name"]))
+            logger.debug("Failed: Company({}, {})".format(
+                metrics["company_id"], metrics["company_name"]
+            ))
 
     company_count = len(company_names)
     company_failed_count = len(failed_company_dict)
@@ -43,15 +44,19 @@ def scrape_companies(storage_directory, company_names, showProgress=True):
     )
 
     if company_failed_count > 0:
-        failed_companies_str = "\n\tFailed Companies ({}):\n".format(len(failed_company_dict)) + "-"*40
-        c = 1
-        for company_id in sorted(failed_company_dict, key=failed_company_dict.get):
-            failed_companies_str += "\n\t{:3}. ({}, {})".format(c, company_id, failed_company_dict[company_id])
-            c += 1
+        failed_companies_str = "\n\tFailed Companies ({}):\n".format(
+            len(failed_company_dict)) + "-"*40
+        i = 1
+        for c_id in sorted(failed_company_dict, key=failed_company_dict.get):
+            failed_companies_str += "\n\t{:3}. ({}, {})".format(
+                i, c_id, failed_company_dict[c_id]
+            )
+            i += 1
         failed_companies_str += "\n" + "-"*40
         logger.info(failed_companies_str)
 
-    metricsfilename = storage.store_company_list_json(json_metrics_list, storage_directory)
+    metricsfilename = storage.store_company_list_json(json_metrics_list,
+                                                      storage_directory)
 
     return json_metrics_list, failed_company_dict, metricsfilename
 
@@ -70,9 +75,10 @@ def print_company_metrics(filename, print_type, company_id=None,
     company_list = storage.load_company_list(filename)
     output_str = ""
     for company in company_list:
-        if ( not company_id and not company_name ) or \
-           ( company_id and company_id == company.company_id ) or \
-           ( company_name and str(company_name).lower() in str(company.company_name).lower() ):
+        if ( not company_id and not company_name ) \
+        or ( company_id and company_id == company.company_id ) \
+        or ( company_name and str(company_name).lower() \
+                                in str(company.company_name).lower() ):
             if print_type == "metrics":
                 output_str += company.str_metrics
             elif print_type == "metrics_simple":
@@ -81,9 +87,13 @@ def print_company_metrics(filename, print_type, company_id=None,
                 output_str += company.str_calculations
     if len(output_str) == 0:
         if company_id:
-            logger.info("Found no company with company_id: [{}]".format(company_id))
+            logger.info("Found no company with company_id: [{}]".format(
+                company_id
+            ))
         if company_name:
-            logger.info("Found no company with company_name: [{}]".format(company_name))
+            logger.info("Found no company with company_name: [{}]".format(
+                company_name
+            ))
     elif return_output:
         return output_str
     else:
