@@ -6,7 +6,7 @@ from window import Window
 from costum_conditions import Costum_conditions
 
 from csv_save_and_load import YRITYKSIEN_TIEDOT_csv_file_WRITE, YRITYKSIEN_TIEDOT_csv_file_READ
-from scrape_ID_jees import scrape_ID_TO_NAME_DICT, scrape_YRITYS_OLIO_DICT
+from scrape_basic import scrape_ID_TO_NAME_DICT, scrape_YRITYS_OLIO_DICT
 
 
 
@@ -107,6 +107,7 @@ class Kaytetaan():
         print("TIEDOT scraped from Kauppalehti.")
         
         self.prosess_yritykset()
+        self.Error_check_SCRAPE()
         
         YRITYKSIEN_TIEDOT_csv_file_WRITE(self.YRITYS_OLIO_DICT)
     
@@ -115,6 +116,7 @@ class Kaytetaan():
         print("\nTIEDOT has been loaded from the file: {}".format(filename))
         
         self.prosess_yritykset()
+        self.Error_check_LOAD()
     
     def companies_print(self):
         if self.DATA_SET:
@@ -155,9 +157,14 @@ class Kaytetaan():
         
         print("\tvalidate NOT READY!")
         
-        self.Unexpected_ERROR_list_print()
-        
+        """
         self.All_ERROR_list_print()
+        print("\nTest Error Check")
+        print("MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG")
+        print("POP: ", self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG.pop())
+        self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG.append(1901)
+        print("APPEND: 1901")
+        """
     
     def APPEND_COSTUM_IN_sorted_yritys_olio_list(self):
         if not self.Conditions.Checkbox_conditions_set:
@@ -377,11 +384,43 @@ class Kaytetaan():
         self.OT_avg =       safeAverageDivide(OT_sum, OT_c)
         self.ROE_avg =      safeAverageDivide(ROE_sum, ROE_c)
     
+    
+    def Error_check_SCRAPE(self):
+        self.Unexpected_ERROR_list_print()
+        self.Expected_ERRORS_list_print_SCRAPE()
+    
+    def Error_check_LOAD(self):
+        self.Unexpected_ERROR_list_print()
+        self.Expected_ERRORS_list_print_LOAD()
+    
+    def All_ERROR_list_print(self):
+        print("\n\tALL ERRORS:")
+        print("MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG:\n", self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG)
+        print("MISSING_TUNNUSLUKUJA_TABLE_TAG:\n", self.MISSING_TUNNUSLUKUJA_TABLE_TAG)
+        print("MISSING_KURSSI_KUVAUS_YRITYKSESTA:\n", self.MISSING_KURSSI_KUVAUS_YRITYKSESTA, "\n")
+        
+        Error_count = 0
+        Yritys_count = 0
+        
+        for ID in self.YRITYS_OLIO_DICT:
+            E_list = self.YRITYS_OLIO_DICT[ID].ERROR_list
+            
+            if len(E_list) > 0:
+                print("{} All Errors:".format(ID))
+                Yritys_count += 1
+                for e in E_list:
+                    print("\t" + e)
+                    Error_count += 1
+            
+        if Error_count > 0:
+            print("\nAll Errors:")
+            print("\tCompanies with Errors:\t{}".format(Yritys_count))
+            print("\tErrors Sum:\t\t{}".format(Error_count))
+        else:
+            print("None")
+    
     def Unexpected_ERROR_list_print(self):
         print("\n\tUNEXPECTED ERRORS:")
-        
-        print("Tulostiedot  POP: ", self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG.pop())
-        print("Tunnuslukuja POP: ", self.MISSING_TUNNUSLUKUJA_TABLE_TAG.pop())
         
         Error_count = 0
         Yritys_count = 0
@@ -435,37 +474,144 @@ class Kaytetaan():
                     Error_count += 1
         
         if Error_count > 0:
+            print("\nMISSING_KURSSI_TULOSTIEDOT_TABLE_TAG:\n", self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG)
+            print("MISSING_TUNNUSLUKUJA_TABLE_TAG:\n", self.MISSING_TUNNUSLUKUJA_TABLE_TAG)
+            print("MISSING_KURSSI_KUVAUS_YRITYKSESTA:\n", self.MISSING_KURSSI_KUVAUS_YRITYKSESTA)
+            
             print("\nUnexpected Errors:")
             print("\tCompanies with Errors:\t{}".format(Yritys_count))
             print("\tErrors Sum:\t\t{}".format(Error_count))
         else:
-            print("No Unexpected Errors")
+            print("None")
     
-    def All_ERROR_list_print(self):
-        print("\n\tALL ERRORS:")
-        print("MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG:\n", self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG)
-        print("MISSING_TUNNUSLUKUJA_TABLE_TAG:\n", self.MISSING_TUNNUSLUKUJA_TABLE_TAG)
-        print("MISSING_KURSSI_KUVAUS_YRITYKSESTA:\n", self.MISSING_KURSSI_KUVAUS_YRITYKSESTA, "\n")
+    def Expected_ERRORS_list_print_SCRAPE(self):
+        print("\n\tEXPECTED ERRORS THAT DID NOT OCCUR:")
         
-        Error_count = 0
+        Unoccured_Error_count = 0
         Yritys_count = 0
         
         for ID in self.YRITYS_OLIO_DICT:
             E_list = self.YRITYS_OLIO_DICT[ID].ERROR_list
             
-            if len(E_list) > 0:
-                print("{} All Errors:".format(ID))
-                Yritys_count += 1
-                for e in E_list:
-                    print("\t" + e)
-                    Error_count += 1
             
-        if Error_count > 0:
-            print("\nAll Errors:")
-            print("\tCompanies with Errors:\t{}".format(Yritys_count))
-            print("\tErrors Sum:\t\t{}".format(Error_count))
+            """ EXPECTED ERRORS
+            MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG; Expected Errors:
+                FormatError:
+                    kannattavuus_mat
+                    vakavaraisuus_mat
+                    sijoittajan_tunnuslukuja_mat
+                ScrapeError:
+                    toiminnan_laajuus_mat
+                    kannattavuus_mat
+                    vakavaraisuus_mat
+                    maksuvalmius_mat
+                    sijoittajan_tunnuslukuja_mat
+            
+            MISSING_TUNNUSLUKUJA_TABLE_TAG; Expected Errors:
+                ScrapeError:
+                    tunnuslukuja_dict
+            
+            MISSING_KURSSI_KUVAUS_YRITYKSESTA; Expected Errors:
+                ScrapeError:
+                    kuvaus_yrityksesta
+            """
+            
+            EEOdict = {}    # EEO = Expected Errors Occured
+            
+            if ID in self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG:
+                EEOdict["FormatError: kannattavuus_mat"] = False
+                EEOdict["FormatError: vakavaraisuus_mat"] = False
+                EEOdict["FormatError: sijoittajan_tunnuslukuja_mat"] = False
+                
+                EEOdict["ScrapeError: toiminnan_laajuus_mat"] = False
+                EEOdict["ScrapeError: kannattavuus_mat"] = False
+                EEOdict["ScrapeError: vakavaraisuus_mat"] = False
+                EEOdict["ScrapeError: maksuvalmius_mat"] = False
+                EEOdict["ScrapeError: sijoittajan_tunnuslukuja_mat"] = False
+            
+            if ID in self.MISSING_TUNNUSLUKUJA_TABLE_TAG:
+                EEOdict["ScrapeError: tunnuslukuja_dict"] = False
+            
+            if ID in self.MISSING_KURSSI_KUVAUS_YRITYKSESTA:
+                EEOdict["ScrapeError: kuvaus_yrityksesta"] = False
+            
+            
+            Unoccured_Errors_for_company = False
+            for e in EEOdict:
+                if e in E_list:
+                    EEOdict[e]=True
+                else:
+                    Unoccured_Errors_for_company = True
+            
+            if Unoccured_Errors_for_company:
+                print("{} Expected Errors that did not occur:".format(ID))
+                Yritys_count += 1
+                for e in EEOdict:
+                    if not EEOdict[e]:
+                        print("\t" + e)
+                        Unoccured_Error_count += 1
+        
+        if Unoccured_Error_count > 0:
+            print("\nMISSING_KURSSI_TULOSTIEDOT_TABLE_TAG:\n", self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG)
+            print("MISSING_TUNNUSLUKUJA_TABLE_TAG:\n", self.MISSING_TUNNUSLUKUJA_TABLE_TAG)
+            print("MISSING_KURSSI_KUVAUS_YRITYKSESTA:\n", self.MISSING_KURSSI_KUVAUS_YRITYKSESTA)
+            
+            print("\nExpected Errors that did not occur:")
+            print("\tCompanies with Expected Errors, not occuring:\t{}".format(Yritys_count))
+            print("\tExpected Errors, not occuring Sum:\t\t{}".format(Unoccured_Error_count))
         else:
-            print("No Errors")
+            print("None")
+    
+    def Expected_ERRORS_list_print_LOAD(self):
+        print("\n\tEXPECTED ERRORS THAT DID NOT OCCUR:")
+        
+        Unoccured_Error_count = 0
+        Yritys_count = 0
+        
+        for ID in self.YRITYS_OLIO_DICT:
+            E_list = self.YRITYS_OLIO_DICT[ID].ERROR_list
+            
+            
+            """ EXPECTED ERRORS
+            MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG; Expected Errors:
+                FormatError:
+                    kannattavuus_mat
+                    vakavaraisuus_mat
+                    sijoittajan_tunnuslukuja_mat
+            """
+            
+            EEOdict = {}    # EEO = Expected Errors Occured
+            
+            if ID in self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG:
+                EEOdict["FormatError: kannattavuus_mat"] = False
+                EEOdict["FormatError: vakavaraisuus_mat"] = False
+                EEOdict["FormatError: sijoittajan_tunnuslukuja_mat"] = False
+            
+            
+            Unoccured_Errors_for_company = False
+            for e in EEOdict:
+                if e in E_list:
+                    EEOdict[e]=True
+                else:
+                    Unoccured_Errors_for_company = True
+            
+            
+            if Unoccured_Errors_for_company:
+                print("{} Expected Errors that did not occur:".format(ID))
+                Yritys_count += 1
+                for e in EEOdict:
+                    if not EEOdict[e]:
+                        print("\t" + e)
+                        Unoccured_Error_count += 1
+        
+        if Unoccured_Error_count > 0:
+            print("\nMISSING_KURSSI_TULOSTIEDOT_TABLE_TAG:\n", self.MISSING_KURSSI_TULOSTIEDOT_TABLE_TAG)
+            
+            print("\nExpected Errors that did not occur:")
+            print("\tCompanies with Expected Errors, not occuring:\t{}".format(Yritys_count))
+            print("\tExpected Errors, not occuring Sum:\t\t{}".format(Unoccured_Error_count))
+        else:
+            print("None")
 
 
 

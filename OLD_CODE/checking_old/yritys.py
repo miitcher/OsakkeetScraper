@@ -1,10 +1,11 @@
-"""
-from scraping_functions import get_raw_soup, \
-get_yrityksen_osingot, get_kurssi, get_kuvaus_yrityksesta, \
-get_perustiedot_dict, get_tunnuslukuja_dict, get_KURSSI_TULOSTIEDOT_mat
-"""
+from scrape_yritys import Yritys_scraper
 
-from scraping_functions import Yritys_scraper
+
+
+def dict_print(dic):
+    print("KEY\tVALUE")
+    for KEY in dic:
+        print("[{}]\t[{}]".format(KEY, dic[KEY]))
 
 
 
@@ -268,7 +269,7 @@ class Yritys():
                     #Kun val on "-"; niin silloin tieto puuttuu. Tama ei ole virhe.
                     return False
                 else:
-                    self.ERROR_list.append("FormatError: {}".format("{} (Wrong Value)".format(header)))
+                    self.ERROR_list.append("FormatError: {}".format("{} (Wrong Value), Val=[{}], Type=[{}]".format(header, val, type(val))))
                     return False
             elif vuosi=="-":
                 #Kun vuoden kohdalla on "-"; niin silloin tiedot puuttuvat sarakkeesta. Tama ei ole virhe.
@@ -333,7 +334,6 @@ class Yritys():
         pass
     
     
-    # def karsi(self)
     def trim(self):
         """SAADUT BOOLEAANIT
         self.KAR_gearing
@@ -348,6 +348,7 @@ class Yritys():
         GEARING_MAX = 100
         OVA_MIN     = 40
         ROE_MIN     = 10
+        
         
         #RAHOITUSRAKENNE (gearing <100%, omavaraisuusaste >40%)
         #RAHOITUSRAKENNE (gearing <GEARING_MAX%, omavaraisuusaste >OVA_MIN%)
@@ -614,8 +615,3 @@ class Yritys():
             self.gearing, self.omavaraisuusaste,\
             self.PB_kaytto, self.PE_kaytto, self.nykyinen_osinkotuotto_PROCENT, self.ROE,\
             self.toimiala_lyhenne, self.P_muutos_kerroin, self.toimialaluokka))
-
-def dict_print(dic):
-    print("KEY\tVALUE")
-    for KEY in dic:
-        print("[{}]\t[{}]".format(KEY, dic[KEY]))
