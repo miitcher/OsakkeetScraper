@@ -1,18 +1,25 @@
-for multiprocessing and threads:
-    https://www.slideshare.net/dabeaz/an-introduction-to-python-concurrency
+Finalize the multithreading.Process usage
+    Will not add termination of started processes
+    Simple to call scraping
 
-go trough old functions at end of scraping.py and add tests
-    make them return pretty_dictionaries
-Remove "tsv" and make file end to ".data"
-try scraping every company
-implement funcions in scrape_KL
-time parts in program
-    maby use cpython...
-    maby get_raw_soup less often...
+Go trough old functions at end of scraping.py
+    Add tests
+    Make functions return pretty_dictionaries
+    Collect scraping functions into a Scraper class
+    Check if raw_soup could be gotten fewer times
+        This would mean less to download
+        Some of the scraping functions use the same raw_soup
+            Functions could take the raw_soup as input
+            All raw_soup:s could be first gotten, and then be analyzed
+                Timing the code, could make things clearer, if it is good to do
 
+Modify storage
+    Make storage format into json-files (.json)
 
-    Maby useful:
+Time parts in program
+    Check if there are some convention how to time your code (maby there is a module already)
+    Add a new code-file that times the running of the program
+        This does not feel appropriate to have in the unittests
+            Unittests should test the timing-functionality
 
-# Can maby use the ID:s below to something, in some form...
-KNOWN_MISSING_tunnuslukuja_table_tag_LIST=[2048,1025,2050,2055,2025,2045,1953,2040,2026,2027,2033,2034,2035,2042,2046]
-KNOWN_MISSING_KURSSI_TULOSTIEDOT_table_TAG=[1971,1083,1089,1104,1105,1970]  #Nama ovat pankkeja, ja niilla on erilaiset tunnusluvut.
+Handle missing metrics for companies
