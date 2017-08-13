@@ -23,3 +23,6 @@ Time parts in program
 Handle missing metrics for companies
 
 Setup of logger be in its own place, from where it is called.
+
+Make the command line interface better
+    Could use the thing at work...
