@@ -1,7 +1,6 @@
 
 
 class Yritys():
-
     
     def karsi(self):
         #RAHOITUSRAKENNE (gearing <100%, omavaraisuusaste >40%)
@@ -80,11 +79,10 @@ class Yritys():
     def sort_print(self):
         print("\n+++++SORT TIEDOT:")
         print("\t\tLISTING\tTUNNUSLUKU")
-        print("P/B\t\t{}\t{}".format(self.PB_listing, self.nykyinen_PB_luku))
-        print("P/E\t\t{}\t{}".format(self.PE_listing, self.nykyinen_PE_luku))
+        print("P/B\t\t{}\t{}".format(self.PB_listing, self.PB_kaytto))
+        print("P/E\t\t{}\t{}".format(self.PE_listing, self.PE_kaytto))
         print("Osinkot.\t{}\t{} %".format(self.osinkotuotto_listing, self.nykyinen_osinkotuotto_PROCENT))
         print("ROE\t\t{}\t{}".format(self.ROE_listing, self.ROE))
         print("Listing_FINAL\t{}".format(self.listing_FINAL))
+        print("RANK\t\t{}".format(self.RANK))
         print("+++++\n")
-    
-    
