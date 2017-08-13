@@ -1,4 +1,4 @@
-import logging, json
+import logging, json, sys, os
 
 import scraping
 import storage
@@ -60,15 +60,35 @@ def scrape_companies(storage_directory, company_names, showProgress=True):
 
     return json_metrics_list, failed_company_dict, metricsfilename
 
-def print_companies(filename, return_output=False):
-    company_list = storage.load_company_list(filename)
-    output_str = ""
-    for company in company_list:
-        output_str += str(company)
-    if return_output:
-        return output_str
+def print_companies(storage_directory, filename=None, return_output=False):
+    if filename is None:
+        company_names = get_company_names(storage_directory)
+        c_strings = []
+        for c_id in sorted(company_names, key=company_names.get):
+            c_strings.append("Company({}, {})".format(c_id,
+                                                      company_names[c_id]))
+
+        c_len = max(len(s) for s in c_strings) + 1
+        format_str = "{:" + str(c_len) + "." + str(c_len) + "}"
+
+        out_str = ""
+        i = 0
+        for c_str in c_strings:
+            if i%2 == 0 and i != 0:
+                out_str += "\n"
+            out_str += format_str.format(c_str)
+            i += 1
+        print(out_str)
     else:
-        print("Print all companies:\n" + output_str)
+        # TODO: Check that this works
+        company_list = storage.load_company_list(filename)
+        output_str = ""
+        for company in company_list:
+            output_str += str(company)
+        if return_output:
+            return output_str
+        else:
+            print("Print all companies:\n" + output_str)
 
 def print_company_metrics(filename, print_type, company_id=None,
                           company_name=None, return_output=False):
@@ -119,3 +139,33 @@ def get_company_names(storage_directory):
         company_names = scraping.scrape_company_names()
         storage.store_company_names(company_names, storage_directory)
     return company_names
+
+
+console_instructions = "-"*20 + \
+"\n|ScrapeKL Commands:\n\
+| scrape\n\
+| files\n\
+| companies <file>"
+
+if __name__ == '__main__':
+    storage_directory = "scrapes"
+
+    if len(sys.argv) == 1 or sys.argv[1] == "help":
+        print(console_instructions)
+    elif sys.argv[1] == "scrape":
+        print("Not implemneted")
+    elif sys.argv[1] == "files":
+        all_filenames = os.listdir(storage_directory)
+        stored_filenames = []
+        for f in reversed(all_filenames):
+            if f.endswith(".tsv") and f.startswith("scrape_metrics"):
+                print(f)
+    elif sys.argv[1] == "companies":
+        if len(sys.argv) == 3:
+            filename = sys.argv[2]
+            print("filename: " + filename)
+            print("Not implemneted")
+        else:
+            print_companies(storage_directory)
+    else:
+        print(console_instructions)
