@@ -1,5 +1,6 @@
 import unittest, logging
 from datetime import datetime, date
+from multiprocessing import Queue
 
 import scraping
 
@@ -25,33 +26,35 @@ some_company_ids = [2048, 1032, 1135, 1120, 1105]
 
 class Test(unittest.TestCase):
 
-    def test_scrapeCompanyThread(self):
-        # Create and start one scrapeCompanyThread
-        company_list = []
-        thread = scraping.scrapeCompanyThread(2048, "talenom", company_list)
-        thread.start()
-        thread.join()
+    def test_scrape_company_target_function(self):
+        json_metrics_queue = Queue() # json_metrics stings are stored here
+        scraping.scrape_company_target_function(
+            json_metrics_queue, 2048, "talenom"
+        )
+        json_metrics = json_metrics_queue.get() # waits on the next value
+        logger.debug(json_metrics[:75] + "...")
 
-        self.assertEqual(len(company_list), 1)
-        company = company_list[0]
-        self.assertIsInstance(company, scraping.Company)
-        self.assertIsInstance(company.json_metrics, str)
-        self.assertGreater(len(company.json_metrics), 1000)
+        self.assertIsInstance(json_metrics, str)
+        self.assertGreater(len(json_metrics), 1000)
 
-    def test_scrape_companies(self):
-        # Create and start three scrapeCompanyThreads
+    def test_scrape_companies_with_processes(self):
         company_names = {
             2048: "talenom",
             1102: "cramo",
-            1091: "sanoma"
+            1091: "sanoma",
+            1196: "afarak group"
         }
-        company_list = []
-        scraping.scrape_companies(company_names, company_list)
+        showProgress = False
 
-        for company in company_list:
-            self.assertIsInstance(company, scraping.Company)
-            self.assertIsInstance(company.json_metrics, str)
-            self.assertGreater(len(company.json_metrics), 1000)
+        json_metrics_list = scraping.scrape_companies_with_processes(company_names, showProgress)
+
+        for json_metrics in json_metrics_list:
+            self.assertIsInstance(json_metrics, str)
+            self.assertGreater(len(json_metrics), 35)
+            if len(json_metrics) < 78:
+                logger.debug(json_metrics)
+            else:
+                logger.debug(json_metrics[:75] + "...")
 
     def test_Company_scrape(self):
         company = scraping.Company(c_id=2048, c_name="talenom")
