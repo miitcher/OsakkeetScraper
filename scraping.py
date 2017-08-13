@@ -36,7 +36,9 @@ def scrape_company_target_function(company_queue, company_id, company_name):
 
 def scrape_companies_with_processes(company_names, showProgress=True):
     json_metrics_queue = Queue() # json_metrics stings are stored here
-    process_list = [] # TODO: Could instead use Pool. Would the code be simpler? Performance?
+    # TODO: Could use Pool instead of process_list.
+    #  Would the code be simpler? Performance?
+    process_list = []
     for company_id in company_names:
         process = Process(
             target=scrape_company_target_function,
@@ -54,9 +56,12 @@ def scrape_companies_with_processes(company_names, showProgress=True):
     while True:
         if len(json_metrics_list) == expected_company_count:
             break
-        json_metrics_list.append(json_metrics_queue.get()) # waits on the next value
+        # .get() waits on the next value.
+        # Then .join() is not needed for processes.
+        json_metrics_list.append(json_metrics_queue.get())
         if showProgress:
-            logger.info("Progress: {}/{}".format(len(json_metrics_list), expected_company_count))
+            logger.info("Progress: {}/{}".format(len(json_metrics_list),
+                                                 expected_company_count))
 
     return json_metrics_list
 
@@ -103,7 +108,8 @@ class Company():
         self.metrics["osingot"] = get_osingot(url_os)
 
         self.metrics["perustiedot"] = get_perustiedot(url_ku)
-        #self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja_OLD(url_ku)) # TODO: Remove when replacement tested!
+        # TODO: Remove when replacement tested!
+        #self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja_OLD(url_ku))
         self.metrics["tunnuslukuja"] = get_tunnuslukuja(url_ku)
 
         toiminnan_laajuus = get_kurssi_tulostiedot(url_ku_tu, "Toiminnan laajuus")
@@ -252,7 +258,8 @@ class Company():
         self.addCalc("steady_osinko_bool", steady_osinko_bool)
 
     def set_taloustiedot_current_key(self):
-        self.tt_current_key = None # "12/16", used for dictionaries scraped from the tulostiedot-page
+        # "12/16", used for dictionaries scraped from the tulostiedot-page
+        self.tt_current_key = None
         current_year = int(date.today().strftime("%y")) # YY
         key_dict = {} # keys_dict(year_int) = key_str
         for key in self.metrics["kannattavuus"]:
@@ -273,6 +280,7 @@ class Company():
         assert self.tt_current_key == "12/16"
 
     def collect_metrics(self):
+        # TODO: Could this be written some other way?
         # Sidenote: not using: toiminnan laajuus, maksuvalmius
         self.set_taloustiedot_current_key() # self.tt_current_key
         self.addCalc("tt_current_key", self.tt_current_key)
@@ -320,7 +328,9 @@ def pretty_val(v, expected_type):
         if there is a need:
             handle more string replacements (like miljard, etc.)
     """
-    exception_str = "Unexpected type: expected_type:[{}], value:[{}]".format(expected_type, v)
+    exception_str = "Unexpected type: expected_type:[{}], value:[{}]".format(
+        expected_type, v
+    )
     if not isinstance(expected_type, type):
         raise ScrapeException(exception_str)
     if expected_type != str and isinstance(v, expected_type):
@@ -404,7 +414,11 @@ def scrape_company_names():
             company_name = pretty_val(company_name, str)
             company_names[company_id] = company_name
         elif company_name != "Valitse osake":
-            raise ScrapeException("Unexpected: id:[{}], name:[{}]".format(company_id, company_name))
+            raise ScrapeException(
+                "Unexpected: id:[{}], name:[{}]".format(
+                    company_id, company_name
+                )
+            )
     return company_names
 
 def get_kurssi(url):
@@ -502,7 +516,9 @@ def get_perustiedot(url):
                 key = "kaupankaynti_valuutta"
                 val = pretty_val(val, str)
             else:
-                raise ScrapeException("Unrecognized key: {}, val: {}".format(key, val))
+                raise ScrapeException(
+                    "Unrecognized key: {}, val: {}".format(key, val)
+                )
             perustiedot[key] = val
     return perustiedot
 

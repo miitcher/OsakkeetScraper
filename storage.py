@@ -25,7 +25,9 @@ def _load_company_names(filename):
                     c_id = int(c_id)
                     company_names[c_id] = c_name
                 except ValueError:
-                    logger.error("Error in names file [{}] with line [{}]. Will scrape names.".format(filename, line))
+                    logger.error("Invalid line [{}] in names file [{}]".format(
+                        line, filename
+                    ))
                     return None
     return company_names
 
@@ -54,16 +56,23 @@ def load_company_list(filename):
                     scrape_type = line.split("scrape_")[1]
                 elif line.startswith("###"):
                     in_body = True
-                    assert scrape_type == "metrics", "Not a valid scrape_type: [{}]".format(str(scrape_type))
+                    assert scrape_type == "metrics", \
+                        "Not a valid scrape_type: [{}]".format(str(scrape_type))
             elif in_body and line:
                 # body
                 json_acceptable_string = line.replace("'", "\"")
                 #logger.debug("json_acceptable_string: [{}]".format(json_acceptable_string))
-                company_list.append(scraping.Company(c_metrics=json.loads(json_acceptable_string)))
-    logger.debug("Loaded {} companies from {}".format(len(company_list), filename))
+                company_list.append(
+                    scraping.Company(
+                        c_metrics=json.loads(json_acceptable_string)
+                    )
+                )
+    logger.debug("Loaded {} companies from {}".format(len(company_list),
+                                                      filename))
     return company_list
 
-def _store_company_data(company_data, storage_directory, scrape_type, filename=None):
+def _store_company_data(company_data, storage_directory,
+                        scrape_type, filename=None):
     # store company names or metrics to file
     # the data is stored in alphabetical order by the company_name
     if scrape_type == "names":
@@ -86,7 +95,8 @@ def _store_company_data(company_data, storage_directory, scrape_type, filename=N
 
     datetime_str = datetime.now().strftime(scraping.datetime_format)
     if not filename:
-        filename = storage_directory + "\\scrape_{}_{}.tsv".format(scrape_type, datetime_str)
+        filename = storage_directory + "\\scrape_{}_{}.tsv".format(scrape_type,
+                                                                   datetime_str)
     with open(filename, "w") as f:
         f.write("Companies scraped from www.kauppalehti.fi\n" +\
                 "scrape_{}\n".format(scrape_type) +\

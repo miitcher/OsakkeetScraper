@@ -1,12 +1,3 @@
-from scrape_yritys import Yritys_scraper
-
-
-
-def dict_print(dic):
-    print("KEY\tVALUE")
-    for KEY in dic:
-        print("[{}]\t[{}]".format(KEY, dic[KEY]))
-
 
 
 class Yritys():

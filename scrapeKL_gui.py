@@ -1,6 +1,7 @@
 import os, sys, logging
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QVBoxLayout, \
+    QPushButton, QCheckBox, QComboBox, QLineEdit, QLabel
 from PyQt5.Qt import QThread
 from datetime import date
 import time, traceback
@@ -54,7 +55,7 @@ class Window(QWidget):
 
     def setScraping(self):
         self.currently_scraping = False
-        company_names = {}
+        #company_names = {}
         company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
         self.scrapeThread = scrapeThread(
             self.storage_directory, company_names, self.showProgress
@@ -167,7 +168,9 @@ class Window(QWidget):
 
     def setLoggingLevel(self):
         if self.DebugCheckBox.isChecked():
-            logger_handler.setFormatter(logging.Formatter("%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"))
+            logger_handler.setFormatter(logging.Formatter(
+                "%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
+            )
             logger.setLevel(logging.DEBUG)
         else:
             logger_handler.setFormatter(logging.Formatter('%(message)s'))
@@ -195,7 +198,8 @@ class Window(QWidget):
 
     def setNewestFileFromToday(self):
         if len(self.FileComboBox) > 1:
-            s = "scrape_metrics_" + date.today().strftime(scraping.date_format) # YYYY-MM-DD
+            # YYYY-MM-DD
+            s = "scrape_metrics_" + date.today().strftime(scraping.date_format)
             if self.FileComboBox.itemText(1).startswith(s):
                 self.FileComboBox.setCurrentIndex(1)
 
@@ -203,7 +207,8 @@ class Window(QWidget):
         if self.FileComboBox.currentText() == self.null_filename:
             self.filename = None
         else:
-            self.filename = "{}\\{}".format(self.storage_directory, self.FileComboBox.currentText())
+            self.filename = "{}\\{}".format(self.storage_directory,
+                                            self.FileComboBox.currentText())
 
     def buttonClicked(self):
         sender = self.sender()
@@ -232,7 +237,9 @@ class Window(QWidget):
                 elif sender.text() == self.printCalculations_str:
                     print_type = "calculations"
                 else:
-                    raise ScrapeGuiException('Unexpected "sender.text()": [{}]'.format(sender.text()))
+                    raise ScrapeGuiException(
+                        'Unexpected "sender.text()": [{}]'.format(sender.text())
+                    )
                 if print_type != None:
                     search_line_str = self.CompanySearchLineEdit.text().strip()
                     if search_line_str != "":
@@ -240,7 +247,8 @@ class Window(QWidget):
                             company_id = int(search_line_str)
                         except ValueError:
                             company_name = search_line_str
-                    scrapeKL.print_company_metrics(self.filename, print_type, company_id, company_name)
+                    scrapeKL.print_company_metrics(self.filename, print_type,
+                                                   company_id, company_name)
             else:
                 logger.info("No file selected")
 
@@ -250,7 +258,9 @@ if __name__ == '__main__':
     logger = logging.getLogger('root')
     logger_handler = logging.StreamHandler()
     logger.addHandler(logger_handler)
-    logger_handler.setFormatter(logging.Formatter("%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"))
+    logger_handler.setFormatter(logging.Formatter(
+        "%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s")
+    )
     logger.setLevel(logging.DEBUG)
 
     # Storage

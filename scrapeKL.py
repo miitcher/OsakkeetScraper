@@ -20,7 +20,9 @@ def scrape_companies(storage_directory, company_names, showProgress=True):
     if len(company_names) == 0:
         company_names = get_company_names(storage_directory)
 
-    json_metrics_list = scraping.scrape_companies_with_processes(company_names, showProgress)
+    json_metrics_list = scraping.scrape_companies_with_processes(
+        company_names, showProgress
+    )
 
     # Find failed scrapes
     failed_company_dict = {}
@@ -63,7 +65,8 @@ def print_companies(filename, return_output=False):
     else:
         print("Print all companies:\n" + output_str)
 
-def print_company_metrics(filename, print_type, company_id=None, company_name=None, return_output=False):
+def print_company_metrics(filename, print_type, company_id=None,
+                          company_name=None, return_output=False):
     company_list = storage.load_company_list(filename)
     output_str = ""
     for company in company_list:

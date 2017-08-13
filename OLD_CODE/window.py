@@ -1,12 +1,13 @@
-import os
+import os, sys
 from PyQt5.Qt import Qt
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, \
-    QPushButton, QLabel, QComboBox, QLineEdit, QCheckBox, QGridLayout
+    QPushButton, QLabel, QComboBox, QLineEdit, QCheckBox, QGridLayout, \
+    QApplication
 
 
 
 class Window(QWidget):
-    def __init__(self, kaytetaan):
+    def __init__(self, kaytetaan=None):
         super().__init__()
         self.setWindowTitle('Osakkeiden loytaminen Kauppalehdesta')
         
@@ -74,7 +75,8 @@ class Window(QWidget):
         
         self.FileComboBox=QComboBox()
         self.FileComboBox.addItem('CSV-files in "Saved_data" folder')
-        SaveFiles = os.listdir("Saved_data")
+        #SaveFiles = os.listdir("Saved_data")
+        SaveFiles = ["dir1", "dir2"]
         self.FileComboBox.addItems(SaveFiles)
         
         self.RefreshButton=QPushButton("Refresh")
@@ -493,3 +495,10 @@ class Window(QWidget):
         elif sender == "DO TEST":
             #THIS IS HERE FOR POSSIBLE TESTING PURPOSES.
             print("HIDE THIS")
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    Window = Window()
+    Window.show()
+    sys.exit(app.exec_())
