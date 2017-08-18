@@ -23,8 +23,8 @@ storage_directory = "scrapes"
 class Test(unittest.TestCase):
 
     def test_load_company_names(self):
-        filename = "test\\scrape_names_test.tsv"
-        company_names = storage._load_company_names(filename)
+        names_filename = "test\\names_test1.tsv"
+        company_names = storage.load_company_names(names_filename)
 
         self.assertEqual(len(company_names), 157)
         self.assertIsInstance(company_names, dict)
@@ -33,9 +33,9 @@ class Test(unittest.TestCase):
             self.assertIsInstance(company_names[company_id], str)
 
     def test_load_todays_company_names(self):
-        # remove all scrape_names files from today
+        # remove all names files from today
         date_str = date.today().strftime(date_short_format) # YY-MM-DD
-        filename_start_today = "scrape_names_{}".format(date_str)
+        filename_start_today = "names_{}".format(date_str)
         files = os.listdir(storage_directory)
         for filename in files:
             if filename.startswith(filename_start_today):
@@ -47,9 +47,11 @@ class Test(unittest.TestCase):
         self.assertEqual(company_names_empty, None)
 
         # create company names file for today
-        company_names = {1:"a", 2:"b", 2048:"talenom"}
-        filename_today = storage.store_company_names(company_names,
-                                                     storage_directory)
+        names_filename = "test\\names_test1.tsv"
+        company_names = storage.load_company_names(names_filename)
+        filename_today = storage.store_company_names(
+            company_names, storage_directory
+        )
 
         company_names_loaded = storage.load_todays_company_names(
             storage_directory
@@ -58,23 +60,18 @@ class Test(unittest.TestCase):
 
         os.remove(filename_today)
 
-    def test_load_company_list(self):
-        # TODO: When the right format for metrics is done,
-        #  then this can be implemented.
-        pass
-
     def test_store_company_names(self):
-        filename_temp = "test\\scrape_names_temp.tsv"
+        names_filename_temp = "test\\scrape_names_temp.tsv"
         company_names = {1:"a", 2:"b", 2048:"talenom"}
         storage.store_company_names(company_names, storage_directory,
-                                    filename=filename_temp)
+                                    filename=names_filename_temp)
 
-        company_names_loaded = storage._load_company_names(filename_temp)
+        company_names_loaded = storage.load_company_names(names_filename_temp)
         self.assertDictEqual(company_names, company_names_loaded)
 
-        os.remove(filename_temp)
+        os.remove(names_filename_temp)
 
-    def test_store_company_list(self):
+    def test_store_company_metrics(self):
         # TODO: When the right format for metrics is done,
         #  then this can be implemented.
         pass

@@ -28,7 +28,7 @@ class Test(unittest.TestCase):
             1091: "sanoma",
             1196: "afarak group"
         }
-        #company_names = {} # For scraping every company
+        #company_names = None # For scraping every company
         showProgress = False
         queue = Queue()
 
@@ -56,7 +56,7 @@ class Test(unittest.TestCase):
                 company_id, failed_company_dict[company_id])
             )
 
-        self.assertEqual(len(failed_company_dict), 1)
+        self.assertEqual(len(failed_company_dict), 0)
         self.assertEqual(len(json_metrics_list), 4)
 
         os.remove(metricsfilename)

@@ -27,7 +27,7 @@ class Test(unittest.TestCase):
             1091: "sanoma",
             1196: "afarak group"
         }
-        #company_names = {} # For scraping every company
+        #company_names = None # For scraping every company
         showProgress = False
 
         time0 = time.time()
@@ -50,10 +50,30 @@ class Test(unittest.TestCase):
                 company_id, failed_company_dict[company_id])
             )
 
-        self.assertEqual(len(failed_company_dict), 1)
+        self.assertEqual(len(failed_company_dict), 0)
         self.assertEqual(len(json_metrics_list), 4)
 
         os.remove(metricsfilename)
+
+    def test_print_company_names1(self):
+        scrapeKL.print_company_names(storage_directory=storage_directory)
+
+    def test_print_company_names2(self):
+        names_filename = "test\\scrape_names_test1.tsv"
+        scrapeKL.print_company_names(names_filename=names_filename)
+
+    def test_print_company_names3(self):
+        company_names = {
+            2048: "talenom",
+            1102: "cramo",
+            1091: "sanoma",
+            1196: "afarak group",
+            9999: "foobar"
+        }
+        scrapeKL.print_company_names(company_names=company_names)
+
+    def test_print_company_metrics(self):
+        pass
 
 
 if __name__ == '__main__':

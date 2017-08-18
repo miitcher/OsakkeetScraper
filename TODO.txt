@@ -1,5 +1,7 @@
 Add tests for printing in scrapeKL.py
 
+Remove old metrics and rename metrics_json with metrics.
+
 Check if there is any usable code in OLD_CODE
 
 Go trough old functions at end of scraping.py

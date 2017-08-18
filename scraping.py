@@ -53,16 +53,20 @@ def scrape_companies_with_processes(company_names, showProgress=True):
         process.start()
 
     json_metrics_list = []
-    expected_company_count = len(company_names)
+    all_c = len(company_names) # all companies expected count
+    c = 0 # counter for len(json_metrics_list)
     while True:
-        if len(json_metrics_list) == expected_company_count:
+        if len(json_metrics_list) == all_c:
             break
         # .get() waits on the next value.
         # Then .join() is not needed for processes.
         json_metrics_list.append(json_metrics_queue.get())
         if showProgress:
-            logger.info("Progress: {}/{}".format(len(json_metrics_list),
-                                                 expected_company_count))
+            c += 1
+            if c%5 == 0:
+                logger.info("\t{:3}/{} - {:2}%".format(
+                    c, all_c, round( 100*c/all_c )
+                ))
 
     return json_metrics_list
 
