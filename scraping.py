@@ -29,21 +29,19 @@ def scrape_company_target_function(queue, company_id, company_name):
     try:
         company = Company(c_id=company_id, c_name=company_name)
         company.scrape()
-        queue.put(company.json_metrics)
+        queue.put(company.metrics)
     except:
-        queue.put("\n{" + "'company_id': {}, 'company_name': '{}'".format(
-            company_id, company_name.replace("\"", "").replace("'", "")
-        ) + "}")
+        queue.put( {"company_id": company_id, "company_name": company_name} )
 
 def scrape_companies_with_processes(company_names, showProgress=True):
-    json_metrics_queue = Queue() # json_metrics stings are stored here
+    metrics_queue = Queue() # Company.metrics dicts are stored here
     # TODO: Could use Pool instead of process_list.
     #  Would the code be simpler? Performance?
     process_list = []
     for company_id in company_names:
         process = Process(
             target=scrape_company_target_function,
-            args=(json_metrics_queue, company_id, company_names[company_id]),
+            args=(metrics_queue, company_id, company_names[company_id]),
             name="({}, {})".format(company_id, company_names[company_id])
         )
         process_list.append(process)
@@ -52,15 +50,15 @@ def scrape_companies_with_processes(company_names, showProgress=True):
         logger.debug("Starting {}".format(process))
         process.start()
 
-    json_metrics_list = []
+    metrics_list = []
     all_c = len(company_names) # all companies expected count
-    c = 0 # counter for len(json_metrics_list)
+    c = 0 # counter for len(metrics_list)
     while True:
-        if len(json_metrics_list) == all_c:
+        if len(metrics_list) == all_c:
             break
         # .get() waits on the next value.
         # Then .join() is not needed for processes.
-        json_metrics_list.append(json_metrics_queue.get())
+        metrics_list.append(metrics_queue.get())
         if showProgress:
             c += 1
             if c%5 == 0:
@@ -68,7 +66,7 @@ def scrape_companies_with_processes(company_names, showProgress=True):
                     c, all_c, round( 100*c/all_c )
                 ))
 
-    return json_metrics_list
+    return metrics_list
 
 
 class Company():
@@ -92,8 +90,6 @@ class Company():
         assert self.company_id
         assert isinstance(self.company_id, int)
         assert isinstance(self.company_name, str)
-
-        self.json_metrics = None # for storage
 
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.company_name)
@@ -130,8 +126,6 @@ class Company():
         self.metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(vakavaraisuus)
         self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
         self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(sijoittajan_tunnuslukuja)
-
-        self.json_metrics = "\n{}".format(self.metrics)
 
     @staticmethod
     def make_value_pretty(v):

@@ -24,16 +24,15 @@ def scrape_companies(storage_directory, company_names=None, showProgress=True):
     if company_names is None or len(company_names) == 0:
         company_names = get_company_names(storage_directory)
 
-    json_metrics_list = scraping.scrape_companies_with_processes(
+    metrics_list = scraping.scrape_companies_with_processes(
         company_names, showProgress
     )
 
     # Find failed scrapes
     failed_company_dict = {}
-    for json_metrics in json_metrics_list:
-        if len(json_metrics) < 100:
-            json_acceptable_string = json_metrics.replace("'", "\"")
-            metrics = json.loads(json_acceptable_string)
+    for metrics in metrics_list:
+        if len(metrics) < 3:
+            assert len(metrics) == 2, "metrics entries: {}".format(len(metrics))
             failed_company_dict[metrics["company_id"]] = metrics["company_name"]
             logger.debug("Failed: Company({}, {})".format(
                 metrics["company_id"], metrics["company_name"]
@@ -41,7 +40,7 @@ def scrape_companies(storage_directory, company_names=None, showProgress=True):
 
     company_count = len(company_names)
     company_failed_count = len(failed_company_dict)
-    assert company_count == len(json_metrics_list)
+    assert company_count == len(metrics_list)
     logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
         company_count - company_failed_count,
         company_count, company_failed_count)
@@ -59,11 +58,10 @@ def scrape_companies(storage_directory, company_names=None, showProgress=True):
         failed_companies_str += "\n" + "-"*40
         logger.info(failed_companies_str)
 
-    metricsfilename = storage.store_company_list_json(json_metrics_list,
-                                                      storage_directory)
-    logger.info("Companies stored in file: {}".format(metricsfilename))
+    metrics_filename = storage.store_metrics(storage_directory, metrics_list)
+    logger.info("Companies stored in file: {}".format(metrics_filename))
 
-    return json_metrics_list, failed_company_dict, metricsfilename
+    return metrics_list, failed_company_dict, metrics_filename
 
 def print_company_names(storage_directory=None, names_filename=None,
                         company_names=None):
@@ -72,7 +70,7 @@ def print_company_names(storage_directory=None, names_filename=None,
         company_names = get_company_names(storage_directory)
     elif names_filename:
         assert storage_directory is None and company_names is None
-        company_names = storage.load_company_names(names_filename)
+        company_names = storage.load_names(names_filename)
     elif company_names:
         assert storage_directory is None and names_filename is None
     else:
@@ -94,16 +92,15 @@ def print_company_names(storage_directory=None, names_filename=None,
         i += 1
     print(out_str)
 
-def print_company_metrics(metrics_filename, print_type,
-                          company_id=None, company_name=None):
+def print_company_metrics(metrics_filename, company_id=None, company_name=None):
     metrics_list = storage.load_metrics(metrics_filename)
-    output_str = ""
     for metrics in metrics_list:
-        print(metrics)
+        print(json.dumps(metrics, indent=3))
         break
 
     # TODO: Not ready
     """
+    output_str = ""
         if ( not company_id and not company_name ) \
         or ( company_id and company_id == company.company_id ) \
         or ( company_name and str(company_name).lower() \
@@ -131,21 +128,21 @@ def print_company_metrics(metrics_filename, print_type,
         print(output_str)
     """
 
-def filter_companies(filename):
+def filter_companies(metrics_filename):
     # TODO: Done after metrics is scraped properly.
     pass
 
-def organize_companies(filename):
+def organize_companies(metrics_filename):
     # TODO: Done after metrics is scraped properly.
     pass
 
 
 def get_company_names(storage_directory):
-    company_names = storage.load_todays_company_names(storage_directory)
+    company_names = storage.load_todays_names(storage_directory)
     if not company_names:
         logger.debug("Company names are scraped from Kauppalehti")
         company_names = scraping.scrape_company_names()
-        storage.store_company_names(company_names, storage_directory)
+        storage.store_names(storage_directory, company_names)
     return company_names
 
 
@@ -154,7 +151,7 @@ console_instructions = \
  s, scrape\n\
  f, files\n\
  n, names [file]\n\
- m, metrics [--name=<name> | --id=<id>] <file>"
+ m, metrics <file> [--name=<name> | --id=<id>]"
 
 
 logger_format_long = \
@@ -169,6 +166,8 @@ if __name__ == '__main__':
     logger_handler.setFormatter(logging.Formatter(logger_format_short))
     logger.setLevel(logging.INFO)
 
+    logger_handler.setFormatter(logging.Formatter(logger_format_long))
+
     storage_directory = "scrapes"
 
     if len(sys.argv) == 1 or sys.argv[1] == "help":
@@ -179,7 +178,7 @@ if __name__ == '__main__':
         all_filenames = os.listdir(storage_directory)
         stored_filenames = []
         for f in sorted(all_filenames):
-            if f.endswith(".tsv") and f.startswith("scrape_metrics"):
+            if f.endswith(".json"):
                 print(f)
     elif sys.argv[1] == "names" or sys.argv[1] == "n":
         if len(sys.argv) == 3:
@@ -192,18 +191,18 @@ if __name__ == '__main__':
             print(console_instructions)
         elif len(sys.argv) == 3:
             metrics_filename = sys.argv[2]
-            print_company_metrics("scrapes\\" + metrics_filename, "metrics")
+            print_company_metrics("scrapes\\" + metrics_filename)
         else:
-            metrics_filename = sys.argv[3]
+            metrics_filename = sys.argv[2]
             company_id = None
             company_name = None
-            choice = sys.argv[2]
+            choice = sys.argv[3]
             try:
                 company_id = int(choice)
             except ValueError:
                 company_name = choice
             print_company_metrics(
-                "scrapes\\" + metrics_filename, "metrics",
+                "scrapes\\" + metrics_filename,
                 company_id=company_id, company_name=company_name
             )
     else:

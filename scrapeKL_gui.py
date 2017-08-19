@@ -37,14 +37,14 @@ class scrapeThread(QThread):
             logger.debug("Hide progress")
         try:
             time0 = time.time()
-            json_metrics_list, failed_company_dict, metricsfilename \
+            metrics_list, failed_company_dict, metricsfilename \
                 = scrapeKL.scrape_companies(
                     self.storage_directory, self.company_names,
                     self.showProgress
                 )
             logger.debug("Scraping took: {:.2f} s".format(time.time() - time0))
             self.queue.put(
-                (json_metrics_list, failed_company_dict, metricsfilename)
+                (metrics_list, failed_company_dict, metricsfilename)
             )
         except:
             traceback.print_exc()
@@ -65,7 +65,7 @@ class Window(QWidget):
         self.setScraping()
 
     def setScraping(self):
-        self.json_metrics_list = None
+        self.metrics_list = None
         self.failed_company_dict = None
         self.metricsfilename = None
 
@@ -90,7 +90,7 @@ class Window(QWidget):
 
     def scrapingDone(self):
         # TODO: The metrics are not used at the moment...
-        self.json_metrics_list, self.failed_company_dict, \
+        self.metrics_list, self.failed_company_dict, \
             self.metricsfilename = self.scrape_queue.get()
 
         self.refreshFileComboBox()
@@ -209,14 +209,14 @@ class Window(QWidget):
         all_filenames = os.listdir(self.storage_directory)
         stored_filenames = []
         for f in reversed(all_filenames):
-            if f.endswith(".tsv") and f.startswith("scrape_metrics"):
+            if f.endswith(".json"):
                 stored_filenames.append(f)
         self.FileComboBox.addItems(stored_filenames)
 
     def setNewestFileFromToday(self):
         if len(self.FileComboBox) > 1:
             # YYYY-MM-DD
-            s = "scrape_metrics_" + date.today().strftime(date_format)
+            s = "metrics_" + date.today().strftime(date_format)
             if self.FileComboBox.itemText(1).startswith(s):
                 self.FileComboBox.setCurrentIndex(1)
 
@@ -234,6 +234,8 @@ class Window(QWidget):
         else:
             if sender.text() == self.scrape_str:
                 self.startScraping()
+            elif sender.text() == self.printCompanies_str:
+                scrapeKL.print_company_names(self.storage_directory)
             elif sender.text() == self.exit_str:
                 self.close()
             elif self.filename:
@@ -245,8 +247,6 @@ class Window(QWidget):
                     scrapeKL.filter_companies(self.filename)
                 elif sender.text() == self.organize_str:
                     scrapeKL.organize_companies(self.filename)
-                elif sender.text() == self.printCompanies_str:
-                    scrapeKL.print_companies(self.filename)
                 elif sender.text() == self.printMetrics_str:
                     print_type = "metrics"
                 elif sender.text() == self.printMetricsSimple_str:

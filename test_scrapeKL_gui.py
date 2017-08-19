@@ -41,23 +41,20 @@ class Test(unittest.TestCase):
 
         # .get() waits on the next value.
         # Then .join() is not needed for processes.
-        json_metrics_list, failed_company_dict, metricsfilename = queue.get()
+        metrics_list, failed_company_dict, metricsfilename = queue.get()
 
         self.assertIsInstance(metricsfilename, str)
-        for json_metrics in json_metrics_list:
-            self.assertIsInstance(json_metrics, str)
-            self.assertGreater(len(json_metrics), 35)
-            if len(json_metrics) < 100:
-                logger.debug("Failed: " + json_metrics[1:])
-            else:
-                logger.debug(json_metrics[1:80] + "...")
+        for metrics in metrics_list:
+            self.assertIsInstance(metrics, dict)
+            self.assertGreater(len(metrics), 1)
+            logger.debug("company_name: {}".format(metrics['company_name']))
         for company_id in failed_company_dict:
             logger.debug("Failed list: ({}, {})".format(
                 company_id, failed_company_dict[company_id])
             )
 
         self.assertEqual(len(failed_company_dict), 0)
-        self.assertEqual(len(json_metrics_list), 4)
+        self.assertEqual(len(metrics_list), 4)
 
         os.remove(metricsfilename)
 

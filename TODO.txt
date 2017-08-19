@@ -1,6 +1,6 @@
 Add tests for printing in scrapeKL.py
 
-Remove old metrics and rename metrics_json with metrics.
+Setup of logger be in its own place, from where it is called.
 
 Check if there is any usable code in OLD_CODE
 
@@ -15,18 +15,13 @@ Go trough old functions at end of scraping.py
             All raw_soup:s could be first gotten, and then be analyzed
                 Timing the code, could make things clearer, if it is good to do
 
-Modify storage
-    Make storage format into json-files (.json)
+Handle missing metrics for companies
+
+Make the command line interface better
+    Could use the thing at work...
 
 Time parts in program
     Check if there are some convention how to time your code (maby there is a module already)
     Add a new code-file that times the running of the program
         This does not feel appropriate to have in the unittests
             Unittests should test the timing-functionality
-
-Handle missing metrics for companies
-
-Setup of logger be in its own place, from where it is called.
-
-Make the command line interface better
-    Could use the thing at work...
