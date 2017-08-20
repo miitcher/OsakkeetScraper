@@ -1,20 +1,14 @@
-import unittest, logging, os, json
+import unittest, os
 from datetime import date
 from scraping import date_short_format
+import scrape_logger
 
 import storage
 
 
-SHOW_DEBUG = False
-
-logger = logging.getLogger('root')
-logging.basicConfig(
-    format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"
-)
-if not SHOW_DEBUG:
-    logger.setLevel(logging.INFO)
-else:
-    logger.setLevel(logging.DEBUG)
+level = "INFO"
+#level = "DEBUG"
+logger = scrape_logger.setup_logger(level)
 
 
 storage_directory = "scrapes"

@@ -1,20 +1,14 @@
-import unittest, logging
+import unittest
 from datetime import datetime, date
 from multiprocessing import Queue
+import scrape_logger
 
 import scraping
 
 
-SHOW_DEBUG = False
-
-logger = logging.getLogger('root')
-logging.basicConfig(
-    format="%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"
-)
-if not SHOW_DEBUG:
-    logger.setLevel(logging.INFO)
-else:
-    logger.setLevel(logging.DEBUG)
+level = "INFO"
+#level = "DEBUG"
+logger = scrape_logger.setup_logger(level)
 
 
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"

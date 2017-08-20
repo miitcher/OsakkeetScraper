@@ -1,5 +1,3 @@
-Setup of logger be in its own place, from where it is called.
-
 Check if there is any usable code in OLD_CODE
 
 Go trough old functions at end of scraping.py

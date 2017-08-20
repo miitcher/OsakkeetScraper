@@ -8,11 +8,8 @@ from multiprocessing import Queue
 
 from scraping import date_format
 import scrapeKL
+import scrape_logger
 
-
-logger_format_long = \
-    "%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"
-logger_format_short = '%(message)s'
 
 logger = logging.getLogger('root')
 
@@ -183,12 +180,10 @@ class Window(QWidget):
 
     def setLoggingLevel(self):
         if self.DebugCheckBox.isChecked():
-            logger_handler.setFormatter(logging.Formatter(logger_format_long))
-            logger.setLevel(logging.DEBUG)
+            scrape_logger.set_logger_level(logger, "DEBUG")
         else:
-            logger_handler.setFormatter(logging.Formatter(logger_format_short))
-            logger.setLevel(logging.INFO)
-    
+            scrape_logger.set_logger_level(logger, "INFO")
+
     def setShowProgress(self):
         if self.ProgressCheckBox.isChecked():
             self.showProgress = True
@@ -269,12 +264,7 @@ class Window(QWidget):
 
 
 if __name__ == '__main__':
-    # Logging
-    logger = logging.getLogger('root')
-    logger_handler = logging.StreamHandler()
-    logger.addHandler(logger_handler)
-    logger_handler.setFormatter(logging.Formatter(logger_format_long))
-    logger.setLevel(logging.DEBUG)
+    logger = scrape_logger.setup_logger("DEBUG")
 
     # Storage
     storage_directory = "scrapes"

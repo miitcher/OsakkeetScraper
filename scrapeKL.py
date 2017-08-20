@@ -2,6 +2,7 @@ import logging, json, sys, os
 
 import scraping
 import storage
+import scrape_logger
 
 
 
@@ -171,19 +172,8 @@ console_instructions = \
  m, metrics <file> [--name=<name> | --id=<id>]"
 
 
-logger_format_long = \
-    "%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"
-logger_format_short = '%(message)s'
-
-
 if __name__ == '__main__':
-    logger = logging.getLogger('root')
-    logger_handler = logging.StreamHandler()
-    logger.addHandler(logger_handler)
-    logger_handler.setFormatter(logging.Formatter(logger_format_short))
-    logger.setLevel(logging.INFO)
-
-    logger_handler.setFormatter(logging.Formatter(logger_format_long))
+    logger = scrape_logger.setup_logger()
 
     storage_directory = "scrapes"
 
