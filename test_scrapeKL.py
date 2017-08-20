@@ -52,14 +52,14 @@ class Test(unittest.TestCase):
 
         os.remove(metricsfilename)
 
-    def test_print_company_names1(self):
-        scrapeKL.print_company_names(storage_directory=storage_directory)
+    def test_print_names1(self):
+        scrapeKL.print_names(storage_directory=storage_directory)
 
-    def test_print_company_names2(self):
+    def test_print_names2(self):
         names_filename = "test\\names_test1.tsv"
-        scrapeKL.print_company_names(names_filename=names_filename)
+        scrapeKL.print_names(names_filename=names_filename)
 
-    def test_print_company_names3(self):
+    def test_print_names3(self):
         company_names = {
             2048: "talenom",
             1102: "cramo",
@@ -67,10 +67,31 @@ class Test(unittest.TestCase):
             1196: "afarak group",
             9999: "foobar"
         }
-        scrapeKL.print_company_names(company_names=company_names)
+        scrapeKL.print_names(company_names=company_names)
 
-    def test_print_company_metrics(self):
-        pass
+    def test_print_metrics_working(self):
+        metrics_filename = "test\\metrics_test1.json"
+        scrapeKL.print_metrics(metrics_filename, None, "cramo")
+
+    def test_print_metrics_failed(self):
+        metrics_filename = "test\\metrics_test1.json"
+        scrapeKL.print_metrics(metrics_filename, 1081, None)
+
+    def test_print_metrics_bank(self):
+        metrics_filename = "test\\metrics_test1.json"
+        scrapeKL.print_metrics(metrics_filename, None, "aktia")
+
+    def test_print_calculations_working(self):
+        metrics_filename = "test\\metrics_test1.json"
+        scrapeKL.print_calculations(metrics_filename, 1902, None)
+
+    def test_print_calculations_failed(self):
+        metrics_filename = "test\\metrics_test1.json"
+        scrapeKL.print_calculations(metrics_filename, None, "basware")
+
+    def test_print_calculations_bank(self):
+        metrics_filename = "test\\metrics_test1.json"
+        scrapeKL.print_calculations(metrics_filename, None, "aktia")
 
 
 if __name__ == '__main__':

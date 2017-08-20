@@ -71,8 +71,8 @@ class Window(QWidget):
 
         self.currently_scraping = False
         self.scrape_queue = Queue()
-        #company_names = {}
-        company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
+        company_names = None
+        #company_names = {2048:"talenom", 1906:"cargotec", 1196:"afarak group"}
         self.scrapeThread = scrapeThread(self.storage_directory, company_names,
                                          self.showProgress, self.scrape_queue)
         self.scrapeThread.finished.connect(self.scrapingDone)
@@ -112,7 +112,6 @@ class Window(QWidget):
         self.during_scraping_str        = "Scraping..."
         self.printCompanies_str         = "Print companies"
         self.printMetrics_str           = "metrics"
-        self.printMetricsSimple_str     = "metrics simple"
         self.printCalculations_str      = "calculations"
         self.filter_str                 = "Filter companies"
         self.organize_str               = "Organize companies"
@@ -123,7 +122,6 @@ class Window(QWidget):
         self.ScrapeButton           = QPushButton(self.scrape_str)
         PrintCompaniesButton        = QPushButton(self.printCompanies_str)
         PrintMetricsButton          = QPushButton(self.printMetrics_str)
-        PrintMetricsSimpleButton    = QPushButton(self.printMetricsSimple_str)
         PrintCalculationsButton     = QPushButton(self.printCalculations_str)
         FilterButton                = QPushButton(self.filter_str)
         OrganizeButton              = QPushButton(self.organize_str)
@@ -142,7 +140,6 @@ class Window(QWidget):
         self.ScrapeButton.clicked.connect(self.buttonClicked)
         PrintCompaniesButton.clicked.connect(self.buttonClicked)
         PrintMetricsButton.clicked.connect(self.buttonClicked)
-        PrintMetricsSimpleButton.clicked.connect(self.buttonClicked)
         PrintCalculationsButton.clicked.connect(self.buttonClicked)
         FilterButton.clicked.connect(self.buttonClicked)
         OrganizeButton.clicked.connect(self.buttonClicked)
@@ -162,7 +159,6 @@ class Window(QWidget):
         hbox_PrintMetrics.addWidget(QLabel("Company Print:"))
         hbox_PrintMetrics.addWidget(self.CompanySearchLineEdit)
         hbox_PrintMetrics.addWidget(PrintMetricsButton)
-        hbox_PrintMetrics.addWidget(PrintMetricsSimpleButton)
         hbox_PrintMetrics.addWidget(PrintCalculationsButton)
 
         # layout
@@ -227,6 +223,17 @@ class Window(QWidget):
             self.filename = "{}\\{}".format(self.storage_directory,
                                             self.FileComboBox.currentText())
 
+    def getSearchFilters(self):
+        company_id = None
+        company_name = None
+        search_line_str = self.CompanySearchLineEdit.text().strip()
+        if search_line_str != "":
+            try:
+                company_id = int(search_line_str)
+            except ValueError:
+                company_name = search_line_str
+        return company_id, company_name
+
     def buttonClicked(self):
         sender = self.sender()
         if self.currently_scraping:
@@ -235,37 +242,28 @@ class Window(QWidget):
             if sender.text() == self.scrape_str:
                 self.startScraping()
             elif sender.text() == self.printCompanies_str:
-                scrapeKL.print_company_names(self.storage_directory)
+                scrapeKL.print_names(self.storage_directory)
             elif sender.text() == self.exit_str:
                 self.close()
+
             elif self.filename:
-                # TODO: These functions does not work atm
-                print_type = None
-                company_id = None
-                company_name = None
-                if sender.text() == self.filter_str:
+                if sender.text() == self.printMetrics_str:
+                    c_id, c_name = self.getSearchFilters()
+                    scrapeKL.print_metrics(self.filename, c_id, c_name)
+                elif sender.text() == self.printCalculations_str:
+                    c_id, c_name = self.getSearchFilters()
+                    scrapeKL.print_calculations(self.filename, c_id, c_name)
+
+                # TODO: Filter and organize functions does not work atm
+                elif sender.text() == self.filter_str:
                     scrapeKL.filter_companies(self.filename)
                 elif sender.text() == self.organize_str:
                     scrapeKL.organize_companies(self.filename)
-                elif sender.text() == self.printMetrics_str:
-                    print_type = "metrics"
-                elif sender.text() == self.printMetricsSimple_str:
-                    print_type = "metrics_simple"
-                elif sender.text() == self.printCalculations_str:
-                    print_type = "calculations"
+
                 else:
                     raise ScrapeGuiException(
                         'Unexpected "sender.text()": [{}]'.format(sender.text())
                     )
-                if print_type != None:
-                    search_line_str = self.CompanySearchLineEdit.text().strip()
-                    if search_line_str != "":
-                        try:
-                            company_id = int(search_line_str)
-                        except ValueError:
-                            company_name = search_line_str
-                    scrapeKL.print_company_metrics(self.filename, print_type,
-                                                   company_id, company_name)
             else:
                 logger.info("No file selected")
 

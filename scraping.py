@@ -77,14 +77,16 @@ class Company():
             assert not c_id
             assert not c_name
             self.metrics = c_metrics
+            self.calculations = {}
             self.company_id = self.metrics["company_id"]
             self.company_name = self.metrics["company_name"]
 
-            self.do_calculations()
-            self.set_representative_strings()
+            if len(self.metrics) > 2:
+                self.do_calculations()
         else:
             assert not c_metrics
             self.metrics = {}
+            self.calculations = {}
             self.company_id = c_id
             self.company_name = c_name.replace("\"", "").replace("'", "")
         assert self.company_id
@@ -94,38 +96,7 @@ class Company():
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.company_name)
 
-    def scrape(self):
-        # TODO: Shorten too long lines
-        #  Done after the old functions are fixed
-        url_os = osingot_yritys_url.format(self.company_id)
-        url_ku = kurssi_url.format(self.company_id)
-        url_ku_tu = kurssi_tulostiedot_url.format(self.company_id)
 
-        self.metrics["company_id"] = self.company_id
-        self.metrics["company_name"] = self.company_name
-        self.metrics["scrape_date"] = date.today().strftime(date_format)
-
-        self.metrics["kurssi"] = get_kurssi(url_ku)
-        self.metrics["kuvaus"] = get_kuvaus(url_ku)
-
-        self.metrics["osingot"] = get_osingot(url_os)
-
-        self.metrics["perustiedot"] = get_perustiedot(url_ku)
-        # TODO: Remove when replacement tested!
-        #self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja_OLD(url_ku))
-        self.metrics["tunnuslukuja"] = get_tunnuslukuja(url_ku)
-
-        toiminnan_laajuus = get_kurssi_tulostiedot(url_ku_tu, "Toiminnan laajuus")
-        kannattavuus = get_kurssi_tulostiedot(url_ku_tu, "Kannattavuus")
-        vakavaraisuus = get_kurssi_tulostiedot(url_ku_tu, "Vakavaraisuus")
-        maksuvalmius = get_kurssi_tulostiedot(url_ku_tu, "Maksuvalmius")
-        sijoittajan_tunnuslukuja = get_kurssi_tulostiedot(url_ku_tu, "Sijoittajan tunnuslukuja")
-
-        self.metrics["toiminnan_laajuus"] = self.list_to_pretty_dict_pivot(toiminnan_laajuus)
-        self.metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(kannattavuus)
-        self.metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(vakavaraisuus)
-        self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
-        self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(sijoittajan_tunnuslukuja)
 
     @staticmethod
     def make_value_pretty(v):
@@ -194,43 +165,44 @@ class Company():
                 d[k] = Company.make_value_pretty(v)
         return d
 
-    def add_dict_to_str(self, in_dict, in_str="", indent_str="", simple=False):
-        max_key_len = 0
-        for key in in_dict:
-            if len(key) > max_key_len:
-                max_key_len = len(key)
+    def scrape(self):
+        # TODO: Shorten too long lines
+        #  Done after the old functions are fixed
+        url_os = osingot_yritys_url.format(self.company_id)
+        url_ku = kurssi_url.format(self.company_id)
+        url_ku_tu = kurssi_tulostiedot_url.format(self.company_id)
 
-        line_str = "\n" + indent_str + "{:" + str(max_key_len) + "} : {}"
-        next_indent_str = indent_str + "\t"
+        self.metrics["company_id"] = self.company_id
+        self.metrics["company_name"] = self.company_name
+        self.metrics["scrape_date"] = date.today().strftime(date_format)
 
-        for key in sorted(in_dict):
-            val_type = type(in_dict[key])
-            if val_type == dict and not simple:
-                in_str += line_str.format(key, "{")
-                in_str = self.add_dict_to_str(in_dict[key], in_str, next_indent_str)
-                in_str += "\n" + indent_str + "}"
-            else:
-                line = line_str.format(key, str(in_dict[key]))
-                in_str += line[:80]
-                if len(line) > 80:
-                    in_str += "..."
-        return in_str
+        self.metrics["kurssi"] = get_kurssi(url_ku)
+        self.metrics["kuvaus"] = get_kuvaus(url_ku)
 
-    def set_representative_strings(self):
-        assert "calculations" in self.metrics
-        self.str_metrics = self.add_dict_to_str(self.metrics)
-        self.str_metrics_simple = self.add_dict_to_str(self.metrics, simple=True)
-        self.str_calculations = self.add_dict_to_str(self.metrics["calculations"])
+        self.metrics["osingot"] = get_osingot(url_os)
 
-    def do_calculations(self):
-        self.metrics["calculations"] = {}
-        self.calculate_osinko()
-        self.collect_metrics()
-        self.calculate_fresh()
+        self.metrics["perustiedot"] = get_perustiedot(url_ku)
+        # TODO: Remove when replacement tested!
+        #self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja_OLD(url_ku))
+        self.metrics["tunnuslukuja"] = get_tunnuslukuja(url_ku)
+
+        toiminnan_laajuus = get_kurssi_tulostiedot(url_ku_tu, "Toiminnan laajuus")
+        kannattavuus = get_kurssi_tulostiedot(url_ku_tu, "Kannattavuus")
+        vakavaraisuus = get_kurssi_tulostiedot(url_ku_tu, "Vakavaraisuus")
+        maksuvalmius = get_kurssi_tulostiedot(url_ku_tu, "Maksuvalmius")
+        sijoittajan_tunnuslukuja = get_kurssi_tulostiedot(url_ku_tu, "Sijoittajan tunnuslukuja")
+
+        self.metrics["toiminnan_laajuus"] = self.list_to_pretty_dict_pivot(toiminnan_laajuus)
+        self.metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(kannattavuus)
+        self.metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(vakavaraisuus)
+        self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
+        self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(sijoittajan_tunnuslukuja)
+
+
 
     def addCalc(self, key, value):
-        assert not str(key) in self.metrics["calculations"]
-        self.metrics["calculations"][str(key)] = value
+        assert not str(key) in self.calculations
+        self.calculations[str(key)] = value
 
     def calculate_osinko(self):
         # steady osinko: osinkotuotto > 0% for five years
@@ -258,7 +230,7 @@ class Company():
         self.addCalc("osinko_euro", osinko_euro)
         self.addCalc("steady_osinko_bool", steady_osinko_bool)
 
-    def set_taloustiedot_current_key(self):
+    def set_tt_current_key(self):
         # "12/16", used for dictionaries scraped from the tulostiedot-page
         self.tt_current_key = None
         current_year = int(date.today().strftime("%y")) # YY
@@ -278,13 +250,11 @@ class Company():
                 all_keys.append(key)
             raise ScrapeException("Unexpected keys: {}".format(str(all_keys)))
         assert self.tt_current_key
-        assert self.tt_current_key == "12/16"
+        assert self.tt_current_key == "12/16" # Changes when time passes
 
     def collect_metrics(self):
         # TODO: Could this be written some other way?
         # Sidenote: not using: toiminnan laajuus, maksuvalmius
-        self.set_taloustiedot_current_key() # self.tt_current_key
-        self.addCalc("tt_current_key", self.tt_current_key)
 
         self.addCalc("company_id", self.metrics["company_id"])
         self.addCalc("company_name", self.metrics["company_name"])
@@ -296,26 +266,42 @@ class Company():
         self.addCalc("toimialaluokka", self.metrics["perustiedot"]["toimialaluokka"])
         self.addCalc("osakkeet_kpl", self.metrics["perustiedot"]["osakkeet_kpl"])
 
-        self.addCalc("ROE", self.metrics["kannattavuus"][self.tt_current_key]["oman paaoman tuotto, %"])
-        self.addCalc("nettotulos", self.metrics["kannattavuus"][self.tt_current_key]["nettotulos"])
+        try:
+            self.set_tt_current_key() # taloustiedot_current_key: "12/16"
+        except ScrapeException:
+            logger.debug("Missing metrics")
+            self.tt_current_key = None
+        self.addCalc("tt_current_key", self.tt_current_key)
 
-        self.addCalc("omavaraisuusaste", self.metrics["vakavaraisuus"][self.tt_current_key]["omavaraisuusaste, %"])
-        self.addCalc("gearing", self.metrics["vakavaraisuus"][self.tt_current_key]["nettovelkaantumisaste, %"])
+        if self.tt_current_key:
+            self.addCalc("ROE", self.metrics["kannattavuus"][self.tt_current_key]["oman paaoman tuotto, %"])
+            self.addCalc("nettotulos", self.metrics["kannattavuus"][self.tt_current_key]["nettotulos"])
 
-        self.addCalc("PB", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["p/b-luku"])
-        self.addCalc("PE", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["p/e-luku"])
-        self.addCalc("E", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["tulos (e)"])
-        self.addCalc("P", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["markkina-arvo (p)"])
+            self.addCalc("omavaraisuusaste", self.metrics["vakavaraisuus"][self.tt_current_key]["omavaraisuusaste, %"])
+            self.addCalc("gearing", self.metrics["vakavaraisuus"][self.tt_current_key]["nettovelkaantumisaste, %"])
+
+            self.addCalc("PB", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["p/b-luku"])
+            self.addCalc("PE", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["p/e-luku"])
+            self.addCalc("E", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["tulos (e)"])
+            self.addCalc("P", self.metrics["sijoittajan_tunnuslukuja"][self.tt_current_key]["markkina-arvo (p)"])
 
     def calculate_fresh(self):
-        calc = self.metrics["calculations"]
+        calc = self.calculations
         current_year = date.today().strftime("%Y") # "YYYY"
         # the metrics below are fresher, because they are calculated with the current stock price
         self.addCalc("calc_osinkotuotto_percent", round( 100 * calc["osinko_euro"][current_year] / calc["kurssi"], 2))
         self.addCalc("calc_P", round( calc["osakkeet_kpl"] * calc["kurssi"] / 1e6, 4))
-        self.addCalc("calc_P_factor", round( calc["calc_P"] / calc["P"], 4))
-        self.addCalc("calc_PB", round( calc["calc_P_factor"] * calc["PB"], 2))
-        self.addCalc("calc_PE", round( calc["calc_P_factor"] * calc["PE"], 2))
+
+        if self.tt_current_key:
+            self.addCalc("calc_P_factor", round( calc["calc_P"] / calc["P"], 4))
+            self.addCalc("calc_PB", round( calc["calc_P_factor"] * calc["PB"], 2))
+            self.addCalc("calc_PE", round( calc["calc_P_factor"] * calc["PE"], 2))
+
+    def do_calculations(self):
+        self.calculate_osinko()
+        self.collect_metrics()
+        self.calculate_fresh()
+
 
 
 def get_raw_soup(link):

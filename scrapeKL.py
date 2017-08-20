@@ -63,8 +63,9 @@ def scrape_companies(storage_directory, company_names=None, showProgress=True):
 
     return metrics_list, failed_company_dict, metrics_filename
 
-def print_company_names(storage_directory=None, names_filename=None,
-                        company_names=None):
+def print_names(storage_directory=None, names_filename=None,
+                company_names=None):
+    # Only one input is allowed.
     if storage_directory:
         assert names_filename is None and company_names is None
         company_names = get_company_names(storage_directory)
@@ -90,51 +91,67 @@ def print_company_names(storage_directory=None, names_filename=None,
             out_str += "\n"
         out_str += format_str.format(c_str)
         i += 1
-    print(out_str)
+    logger.info("\n" + "-"*10 + "\tNAMES")
+    logger.info(out_str)
 
-def print_company_metrics(metrics_filename, company_id=None, company_name=None):
+def print_metrics(metrics_filename, company_id=None, company_name=None):
+    # Only one of company_id and company_name is allowed.
+    if company_id is not None:
+        assert company_name is None, "Too many filters"
+    if company_name is not None:
+        assert company_id is None, "Too many filters"
+    logger.debug("Filters: id={}; name={}".format(company_id, company_name))
+
     metrics_list = storage.load_metrics(metrics_filename)
+    metrics_printed = False
+    logger.info("\n" + "-"*10 + "\tMETRICS"
+                + "\n\tfile:    {}".format(metrics_filename))
     for metrics in metrics_list:
-        print(json.dumps(metrics, indent=3))
-        break
-
-    # TODO: Not ready
-    """
-    output_str = ""
-        if ( not company_id and not company_name ) \
-        or ( company_id and company_id == company.company_id ) \
+        if ( company_id and company_id == metrics["company_id"] ) \
         or ( company_name and str(company_name).lower() \
-                                in str(company.company_name).lower() ):
-            if print_type == "metrics":
-                output_str += company.str_metrics
-            elif print_type == "metrics_simple":
-                output_str += company.str_metrics_simple
-            elif print_type == "calculations":
-                output_str += company.str_calculations
-    if len(output_str) == 0:
-        if company_id:
-            logger.info("Found no company with company_id: [{}]".format(
-                company_id
+                                in str(metrics["company_name"]).lower() ):
+            logger.info("\tcompany: {}, {}".format(
+                metrics["company_id"], metrics["company_name"]
             ))
-        if company_name:
-            logger.info("Found no company with company_name: [{}]".format(
-                company_name
+            logger.info(json.dumps(metrics, indent=3))
+            metrics_printed = True
+
+    if not metrics_printed:
+        logger.info("Nothing found")
+
+def print_calculations(metrics_filename, company_id=None, company_name=None):
+    # Only one of company_id and company_name is allowed.
+    if company_id is not None:
+        assert company_name is None, "Too many filters"
+    if company_name is not None:
+        assert company_id is None, "Too many filters"
+    logger.debug("Filters: id={}; name={}".format(company_id, company_name))
+
+    metrics_list = storage.load_metrics(metrics_filename)
+    calculations_printed = False
+    logger.info("\n" + "-"*10 + "\tCALCULATIONS"
+                + "\n\tfile:    {}".format(metrics_filename))
+    for metrics in metrics_list:
+        if ( company_id and company_id == metrics["company_id"] ) \
+        or ( company_name and str(company_name).lower() \
+                                in str(metrics["company_name"]).lower() ):
+            logger.info("\tcompany: {}, {}".format(
+                metrics["company_id"], metrics["company_name"]
             ))
-    else:
-        if not company_id and not company_name:
-            print("Print all companies metrics:")
-        else:
-            print("Print company metrics:")
-        print(output_str)
-    """
+            company = scraping.Company(c_metrics=metrics)
+            logger.info(json.dumps(company.calculations, indent=3))
+            calculations_printed = True
+
+    if not calculations_printed:
+        logger.info("Nothing found")
 
 def filter_companies(metrics_filename):
     # TODO: Done after metrics is scraped properly.
-    pass
+    logger.info("Not implemented")
 
 def organize_companies(metrics_filename):
     # TODO: Done after metrics is scraped properly.
-    pass
+    logger.info("Not implemented")
 
 
 def get_company_names(storage_directory):
@@ -183,15 +200,15 @@ if __name__ == '__main__':
     elif sys.argv[1] == "names" or sys.argv[1] == "n":
         if len(sys.argv) == 3:
             names_filename = sys.argv[2]
-            print_company_names(names_filename=names_filename)
+            print_names(names_filename=names_filename)
         else:
-            print_company_names(storage_directory=storage_directory)
+            print_names(storage_directory=storage_directory)
     elif sys.argv[1] == "metrics" or sys.argv[1] == "m":
         if not ( len(sys.argv) == 3 or len(sys.argv) == 4 ):
             print(console_instructions)
         elif len(sys.argv) == 3:
             metrics_filename = sys.argv[2]
-            print_company_metrics("scrapes\\" + metrics_filename)
+            print_metrics("scrapes\\" + metrics_filename)
         else:
             metrics_filename = sys.argv[2]
             company_id = None
@@ -201,7 +218,7 @@ if __name__ == '__main__':
                 company_id = int(choice)
             except ValueError:
                 company_name = choice
-            print_company_metrics(
+            print_metrics(
                 "scrapes\\" + metrics_filename,
                 company_id=company_id, company_name=company_name
             )

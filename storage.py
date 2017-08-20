@@ -59,7 +59,9 @@ def load_names(names_filename):
 def load_todays_names(storage_directory):
     date_str = date.today().strftime(scraping.date_short_format) # YY-MM-DD
     filename_start_today = "names_{}".format(date_str)
+    logger.debug("filename_start_today: {}".format(filename_start_today))
     files = os.listdir(storage_directory)
+    logger.debug("files: {}".format(files))
     for filename_end in files:
         if filename_end.startswith(filename_start_today):
             filename = storage_directory +'\\'+ filename_end
