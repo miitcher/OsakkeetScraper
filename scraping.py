@@ -2,6 +2,7 @@ import requests, re, logging
 from bs4 import BeautifulSoup
 from datetime import date
 from multiprocessing import Process, Queue
+import json
 
 logger = logging.getLogger('root')
 
@@ -182,17 +183,17 @@ class Company():
         self.metrics["osingot"] = get_osingot(url_os)
 
         self.metrics["perustiedot"] = get_perustiedot(url_ku)
-        # TODO: Remove when replacement tested!
-        #self.metrics["tunnuslukuja"] = self.dict_to_pretty_dict(get_tunnuslukuja_OLD(url_ku))
         self.metrics["tunnuslukuja"] = get_tunnuslukuja(url_ku)
 
-        toiminnan_laajuus = get_kurssi_tulostiedot(url_ku_tu, "Toiminnan laajuus")
+        self.metrics["toiminnan_laajuus"] = get_toiminnan_laajuus(url_ku_tu)
+
+        # TODO: HERE
+
         kannattavuus = get_kurssi_tulostiedot(url_ku_tu, "Kannattavuus")
         vakavaraisuus = get_kurssi_tulostiedot(url_ku_tu, "Vakavaraisuus")
         maksuvalmius = get_kurssi_tulostiedot(url_ku_tu, "Maksuvalmius")
         sijoittajan_tunnuslukuja = get_kurssi_tulostiedot(url_ku_tu, "Sijoittajan tunnuslukuja")
 
-        self.metrics["toiminnan_laajuus"] = self.list_to_pretty_dict_pivot(toiminnan_laajuus)
         self.metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(kannattavuus)
         self.metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(vakavaraisuus)
         self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
@@ -326,18 +327,25 @@ def pretty_val(v, expected_type):
         raise ScrapeException(exception_str)
 
     if expected_type == int or expected_type == float:
+        if isinstance(v, str) and v.strip() == "-":
+            return None
         coefficient = 1
         if not isinstance(v, int) and not isinstance(v, float):
             v = v.lower().replace("€", "").replace("eur", "")
             # remove noncompatibel characters in unicode (\x80-\xFF):
             v = re.sub(r'[^\x00-\x7F]+','', v)
+            v = v.replace("\x00", "") # Remove empty character
             if "milj." in v:
                 coefficient *= 1e6
                 v = v.replace("milj.", "")
         try:
             v = float(v) * coefficient
         except ValueError:
-            raise ScrapeException(exception_str)
+            if "," in v:
+                v = float(v.replace(".", "").replace(",", ".")) \
+                        * coefficient
+            else:
+                raise ScrapeException(exception_str)
         if expected_type == int:
             try:
                 v_float = v
@@ -362,7 +370,9 @@ def pretty_val(v, expected_type):
                 len_v = len(v)
                 v = re.sub(r'[^\x00-\x7F]+','', v)
                 if len_v != len(v):
-                    raise ScrapeException("Weird character(s)!")
+                    pass
+                    # TODO: Fix this
+                    #raise ScrapeException("Weird character(s)!")
             except ValueError:
                 raise ScrapeException(exception_str)
         if v == "-":
@@ -513,11 +523,6 @@ def get_perustiedot(url):
             perustiedot[key] = val
     return perustiedot
 
-# TODO: Go trough old functions here under and write tests for them
-# USE FUNCTION: pretty_val()
-
-
-# TODO: Run all tests and remove OLD-function.
 def get_tunnuslukuja(url):
     tunnuslukuja = {}
     soup = get_raw_soup(url)
@@ -550,118 +555,87 @@ def get_tunnuslukuja(url):
         c += 1
     return tunnuslukuja
 
-""" TODO: Remove when replacement tested!
-def get_tunnuslukuja_table_TAG(url):
-    soup = get_raw_soup(url)
-    try:
-        table_tags=soup.find_all('table')
-        
-        for tag in table_tags:
-            try:
-                if tag.parent.p.text.strip() == "Tunnuslukuja":
-                    return tag
-            except:
-                pass
-        logger.debug("tunnuslukuja_table_TAG EI LOYTYNYT")
-    except:
-        logger.debug("tunnuslukuja_table_TAG")
-    return -1
 
-def get_tunnuslukuja_OLD(url):
-    tunnuslukuja_dict={}
-    try:
-        TAG=get_tunnuslukuja_table_TAG(url)
-        
-        if TAG == -1:
-            tunnuslukuja_dict[0]=False
-            return tunnuslukuja_dict
-        
-        tr_tags=TAG.find_all('tr')
-        c=0
-        for i in tr_tags:
-            td_tags=i.find_all('td')
-            
-            if c==0:
-                strs=td_tags[0].text.split("(")
-                key=strs[0].strip()
-                val=strs[1].replace(")","")
-            else:
-                key=td_tags[0].text
-                val=td_tags[1].text
-            
-            if c==3:
-                try:
-                    val=float(val)
-                except:
-                    logger.debug("float({})".format(key))
-            elif c==5:
-                try:
-                    parts=val.split()
-                    val=float(parts[0])
-                    k=parts[1].split(".")
-                    key=key + " ({}. EUR)".format(k[0])
-                except:
-                    logger.debug("float({})".format(key))
-            else:
-                try:
-                    parts=val.split()
-                    val=float(parts[0])
-                    key=key + " (EUR)"
-                except:
-                    logger.debug("float({})".format(key))
-            
-            tunnuslukuja_dict[fix_str_OLD(key)]=val
-            c+=1
-        
-        tunnuslukuja_dict[0]=True
-    except:
-        logger.debug("tunnuslukuja_dict")
-        tunnuslukuja_dict[0]=False
-    return tunnuslukuja_dict
-"""
-
-""" get_kurssi_tulostiedot usecase:
-
-toiminnan_laajuus = get_kurssi_tulostiedot(url_ku_tu, "Toiminnan laajuus")
-kannattavuus = get_kurssi_tulostiedot(url_ku_tu, "Kannattavuus")
-vakavaraisuus = get_kurssi_tulostiedot(url_ku_tu, "Vakavaraisuus")
-maksuvalmius = get_kurssi_tulostiedot(url_ku_tu, "Maksuvalmius")
-sijoittajan_tunnuslukuja = get_kurssi_tulostiedot(url_ku_tu, "Sijoittajan tunnuslukuja")
-
-"""
-
-
-def get_tulostiedot(url, header):
+def get_tulostiedot(url, header, head):
     tulostiedot = {}
     soup = get_raw_soup(url)
     table_tags = soup.find_all(class_="table_stockexchange")
     tulostiedot_tag = None
     for tag in table_tags:
-        if tag.parent.h3 and tag.parent.h3.text.strip() == header:
+        if tag.parent.h3 and tag.parent.h3.text.strip().lower() == header.lower():
             tulostiedot_tag = tag
             break
+    if not tulostiedot_tag:
+        return None
     tr_tags = tulostiedot_tag.find_all('tr')
-    # HERE
-    r = 0 # row
+    # Go trough rows, and store them before populating tulostiedot.
+    type_row_list = []
+    r = 0 # row counter
     for i in tr_tags:
         td_tags = i.find_all('td')
-        rivi = []
-        c = 0 # column
+        type_row = []
+        c = 0 # column counter
         for j in td_tags:
-            if r == 0:
-                rivi.append("VUOSI")
-                r += 1
+            if c == 0 or r == 0:
+                val = pretty_val(j.text, str)
             else:
-                if c == 0:
-                    val = pretty_val(j.text, str)
-                else:
-                    val = pretty_val(j.text, float)
-                rivi.append(val)
-        tulostiedot[pretty_val(i, str)] = rivi
+                val = pretty_val(j.text, float)
+            type_row.append(val)
+            c += 1
+        r += 1
+        type_row_list.append(type_row)
+    # Reorganize data
+    row_count = len(type_row_list)
+    col_count = len(type_row_list[0])
+    # type_row_list[0] is like: "12/16"
+    for col in range(1, col_count):
+        if type_row_list[0][col].strip():
+            sub_dict = {}
+            for row in range(1, row_count):
+                #sub_dict[type_row_list[row][0]] = type_row_list[row][col]
+                sub_dict[head[row - 1]] = type_row_list[row][col]
+            tulostiedot[pretty_val(type_row_list[0][col], str)] = sub_dict
     return tulostiedot
 
+def get_toiminnan_laajuus(url):
+    head = [
+        "liikevaihto",
+        "liikevaihdon_muutos_%",
+        "ulkomaantoiminta_%",
+        "oikaistun_taseen_loppusumma",
+        "investoinnit",
+        "investointiaste_%",
+        "henkilosto_keskimaarin"
+    ]
+    return get_tulostiedot(url, "toiminnan laajuus", head)
 
 
+# TODO: Go trough old functions here under and write tests for them
+# USE FUNCTION: pretty_val()
+
+# TODO: Run all tests and remove OLD-function.
+
+
+def get_kannattavuus(url):
+    # TODO: make proper heads...
+    head = []
+    return get_tulostiedot(url, "kannattavuus", head)
+
+def get_vakavaraisuus(url):
+    head = []
+    return get_tulostiedot(url, "vakavaraisuus", head)
+
+def get_maksuvalmius(url):
+    head = []
+    return get_tulostiedot(url, "maksuvalmius", head)
+
+def get_sijoittajan_tunnuslukuja(url):
+    head = []
+    return get_tulostiedot(url, "sijoittajan tunnuslukuja", head)
+
+
+
+# OLD
 def get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko):
     soup = get_raw_soup(url)
     try:

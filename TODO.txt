@@ -21,3 +21,5 @@ Time parts in program
     Add a new code-file that times the running of the program
         This does not feel appropriate to have in the unittests
             Unittests should test the timing-functionality
+
+Should I use unicode instead of strings?
