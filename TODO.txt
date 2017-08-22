@@ -1,5 +1,3 @@
-Collect scraping functions into a Scraper class
-
 Check if raw_soup could be gotten fewer times
     This would mean less to download
     Some of the scraping functions use the same raw_soup
@@ -21,3 +19,5 @@ Time parts in program
             Unittests should test the timing-functionality
 
 Should I use unicode instead of strings?
+
+Change logger.info() to just print() where apropriate.

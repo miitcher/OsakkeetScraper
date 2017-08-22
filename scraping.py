@@ -69,6 +69,10 @@ def scrape_companies_with_processes(company_names, showProgress=True):
 
     return metrics_list
 
+def scrape_company_names():
+    scraper = Scraper()
+    return scraper.scrape_company_names()
+
 
 class Company():
     def __init__(self, c_metrics=None, c_id=None, c_name=None):
@@ -98,12 +102,13 @@ class Company():
         return "Company({}, {})".format(self.company_id, self.company_name)
 
     def scrape(self):
-        url_os = osingot_yritys_url.format(self.company_id)
-        url_ku = kurssi_url.format(self.company_id)
-        url_ku_tu = kurssi_tulostiedot_url.format(self.company_id)
+        scraper = Scraper(self.company_id)
+        self.metrics = scraper.scrape()
 
         self.metrics["company_id"] = self.company_id
         self.metrics["company_name"] = self.company_name
+
+        """
         self.metrics["scrape_date"] = date.today().strftime(date_format)
 
         self.metrics["kurssi"] = get_kurssi(url_ku)
@@ -120,6 +125,7 @@ class Company():
         self.metrics["maksuvalmius"] = get_maksuvalmius(url_ku_tu)
         self.metrics["sijoittajan_tunnuslukuja"] = \
             get_sijoittajan_tunnuslukuja(url_ku_tu)
+        """
 
     def addCalc(self, key, value):
         assert not str(key) in self.calculations
@@ -224,353 +230,384 @@ class Company():
         self.calculate_fresh()
 
 
-def get_raw_soup(link):
-    r = requests.get(link)
-    soup = BeautifulSoup(r.text, "html.parser")
-    return soup
+class Scraper():
+    def __init__(self, company_id=None):
+        if company_id:
+            self.url_osingot = osingot_yritys_url.format(company_id)
+            self.url_kurssi = kurssi_url.format(company_id)
+            self.url_tulostiedot = kurssi_tulostiedot_url.format(company_id)
+        self.metrics = {}
 
-def pretty_val(v, expected_type):
-    """ expected_type can be:
-            int, float, str, date
-        if there is a need:
-            handle more string replacements (like miljard, etc.)
-    """
-    exception_str = "Unexpected type: expected_type:[{}], value:[{}]".format(
-        expected_type, v
-    )
-    if not isinstance(expected_type, type):
-        raise ScrapeException(exception_str)
-    if expected_type != str and isinstance(v, expected_type):
-        return v
-    if expected_type != str and not v:
-        raise ScrapeException(exception_str)
+    @staticmethod
+    def get_raw_soup(link):
+        r = requests.get(link)
+        soup = BeautifulSoup(r.text, "html.parser")
+        return soup
 
-    if expected_type == int or expected_type == float:
-        if isinstance(v, str) and v.strip() == "-":
-            return None
-        coefficient = 1
-        if not isinstance(v, int) and not isinstance(v, float):
-            v = v.lower().replace("€", "").replace("eur", "")
-            # remove noncompatibel characters in unicode (\x80-\xFF):
-            v = re.sub(r'[^\x00-\x7F]+','', v)
-            v = v.replace("\x00", "") # Remove empty character
-            if "milj." in v:
-                coefficient *= 1e6
-                v = v.replace("milj.", "")
-        try:
-            v = float(v) * coefficient
-        except ValueError:
-            if "," in v:
-                v = float(v.replace(".", "").replace(",", ".")) \
-                        * coefficient
-            else:
-                raise ScrapeException(exception_str)
-        if expected_type == int:
-            try:
-                v_float = v
-                v = int(v)
-            except ValueError:
-                raise ScrapeException(exception_str)
-            if v != v_float:
-                raise ScrapeException(exception_str)
-    elif expected_type == str:
-        if v == None:
-            v = ""
-        else:
-            try:
-                v = str(v).strip().lower()
-                # possible confusing in string
-                v = v.replace("\"", "").replace("'", "")
-                # the scandinavian letters:
-                # TODO: Is this needed? Test if no problems.
-                v = v.replace("\xe4", "a").replace("\xe5", "a")
-                v = v.replace("\xf6", "o")
-                # remove noncompatibel characters in unicode (\x80-\xFF):
-                len_v = len(v)
-                v = re.sub(r'[^\x00-\x7F]+','', v)
-                if len_v != len(v):
-                    pass
-                    # TODO: Fix this
-                    #raise ScrapeException("Weird character(s)!")
-            except ValueError:
-                raise ScrapeException(exception_str)
-        if v == "-":
-            v = ""
-    elif expected_type == date:
-        v = v.strip()
-        if date_pattern_1.match(v): # DD.MM.YYYY
-            dd, mm, yyyy = v.split(".")
-            if int(dd) > 31 or int(mm) > 12 or \
-              int(dd) < 1 or int(mm) < 1 or int(yyyy) < 1:
-                raise ScrapeException(exception_str)
-            v = "{}-{}-{}".format(yyyy, mm, dd) # YYYY-MM-DD
-        elif not date_pattern_0.match(v): # YYYY-MM-DD
-            raise ScrapeException(exception_str)
-    else:
-        raise ScrapeException(
-            "Not an accepted type: [{}]".format(expected_type)
+    @staticmethod
+    def pretty_val(v, expected_type):
+        """ expected_type can be:
+                int, float, str, date
+            if there is a need:
+                handle more string replacements (like miljard, etc.)
+        """
+        exception_str = "Unexpected type: expected_type:[{}], value:[{}]".format(
+            expected_type, v
         )
-    return v
+        if not isinstance(expected_type, type):
+            raise ScrapeException(exception_str)
+        if expected_type != str and isinstance(v, expected_type):
+            return v
+        if expected_type != str and not v:
+            raise ScrapeException(exception_str)
 
-def scrape_company_names():
-    soup = get_raw_soup(osingot_url)
-    form_tags = soup.find_all('form')
-    option_tags = form_tags[2].find_all('option')
-    company_names = {}
-    for i in option_tags:
-        company_id = i.attrs['value']
-        company_name = i.string
-        if company_id and company_name:
-            company_id = int(company_id)
-            company_name = pretty_val(company_name, str)
-            company_names[company_id] = company_name
-        elif company_name != "Valitse osake":
-            raise ScrapeException(
-                "Unexpected: id:[{}], name:[{}]".format(
-                    company_id, company_name
-                )
-            )
-    return company_names
-
-def get_kurssi(url):
-    soup = get_raw_soup(url)
-    table_tags = soup.find_all('table')
-    kurssi = table_tags[5].find('span').text
-    kurssi = pretty_val(kurssi, float)
-    return kurssi
-
-def get_kuvaus(url):
-    soup = get_raw_soup(url)
-    class_padding_tags = soup.find_all(class_="paddings")
-    kuvaus = None
-    for tag in class_padding_tags:
-        if tag.parent.h3.text == "Yrityksen perustiedot":
-            kuvaus = tag.p.text.strip().replace("\n"," ").replace("\r"," ")
-            kuvaus = pretty_val(kuvaus, str)
-    if not kuvaus:
-        raise ScrapeException("Kuvaus not found")
-    return kuvaus
-
-def get_osingot(url):
-    soup = get_raw_soup(url)
-    table_tags = soup.find_all('table')
-    table_row_tags = table_tags[5].find_all('tr')
-    head = ["vuosi", "irtoaminen", "oikaistu_euroina", \
-            "maara", "valuutta", "tuotto_%", "lisatieto"]
-    osingot = {}
-    row_counter = 0
-    for row in table_row_tags:
-        sub_dict = {}
-        columns = row.find_all('td')
-        # if every metric (except "lisatieto") is empty it can be discarded
-        if not columns[0].string:
-            for i in range(1,6):
-                if columns[i].string:
-                    raise ScrapeException("Unexpected osinko row")
-            continue
-        for i in range(7):
-            val = columns[i].string
-            if i == 0:
-                val = pretty_val(val, int)
-            elif i == 1:
-                val = pretty_val(val, date)
-            elif i == 2 or i == 3 or i == 5:
-                val = pretty_val(val, float)
-            elif i == 4 or i == 6:
-                val = pretty_val(val, str)
-            sub_dict[head[i]] = val
-        osingot[str(row_counter)] = sub_dict
-        row_counter += 1
-    return osingot
-
-def get_perustiedot(url):
-    perustiedot = {}
-    soup = get_raw_soup(url)
-    class_is_TSBD = soup.find_all(class_="table_stock_basic_details")
-    perustiedot_tag = None
-    for tag in class_is_TSBD:
-        if tag.parent.parent.h3.text.strip() == "Osakkeen perustiedot":
-            perustiedot_tag = tag
-            break
-    tr_tags = perustiedot_tag.find_all('tr')
-    c = 0
-    for i in tr_tags:
-        td_tags = i.find_all('td')
-        if c == 0:
-            key = td_tags[0].text.replace(":","")
-            val = td_tags[1].text
-            perustiedot[pretty_val(key, str)] = pretty_val(val, str)
-
-            strs = td_tags[2].text.split("\n")
-            [key, val] = strs[1].split(":")
-            perustiedot[pretty_val(key, str)] = pretty_val(val, str)
-
-            [key, val] = strs[2].split(":")
-            perustiedot[pretty_val(key, str)] = pretty_val(val, str)
-            c += 1
-        else:
-            key = td_tags[0].text.strip().replace(":","")
-            val = td_tags[1].text.strip()
-            key = pretty_val(key, str)
-            if key == "osakkeet":
-                key = "{}_kpl".format(key)
-                val = val.replace("kpl","").replace("\xa0", "")
-                val = pretty_val(val, int)
-            elif key == "markkina-arvo":
-                val = pretty_val(val, float)
-            elif key == "listattu":
-                val = pretty_val(val, date)
-            elif key == "isin-koodi" or key == "porssi" or \
-                        key == "nimellisarvo":
-                val = pretty_val(val, str)
-            elif key == "kaupank. val.":
-                key = "kaupankaynti_valuutta"
-                val = pretty_val(val, str)
-            else:
-                raise ScrapeException(
-                    "Unrecognized key: {}, val: {}".format(key, val)
-                )
-            perustiedot[key] = val
-    return perustiedot
-
-def get_tunnuslukuja(url):
-    tunnuslukuja = {}
-    soup = get_raw_soup(url)
-    table_tags = soup.find_all('table')
-    tunnuslukuja_tag = None
-    for tag in table_tags:
-        if tag.parent.p and tag.parent.p.text.strip() == "Tunnuslukuja":
-            tunnuslukuja_tag = tag
-            break
-    tr_tags = tunnuslukuja_tag.find_all('tr')
-    head = [
-        "viimeisin_kurssi_eur",
-        "tulos/osake",
-        "oma_paaoma/osake_eur",
-        "p/e-luku_reaali",
-        "osinko/osake_eur",
-        "markkina-arvo_eur"
-    ]
-    c = 0
-    for i in tr_tags:
-        td_tags = i.find_all('td')
-        if c == 0:
-            strs = td_tags[0].text.split("(")
-            #key = strs[0].strip() # key could be used for debuging
-            val = strs[1].replace(")","")
-        else:
-            #key = td_tags[0].text
-            val = td_tags[1].text
-        tunnuslukuja[head[c]] = pretty_val(val, float)
-        c += 1
-    return tunnuslukuja
-
-
-def get_tulostiedot(url, header, head=None):
-    if head:
-        assert isinstance(head, list), "Invalid head type: {}".format(type(head))
-        for s in head:
-            assert isinstance(s, str), "Invalid name type: {}".format(type(s))
-    tulostiedot = {}
-    soup = get_raw_soup(url)
-    table_tags = soup.find_all(class_="table_stockexchange")
-    tulostiedot_tag = None
-    for tag in table_tags:
-        if tag.parent.h3 and tag.parent.h3.text.strip().lower() == header.lower():
-            tulostiedot_tag = tag
-            break
-    if not tulostiedot_tag:
-        return None
-    tr_tags = tulostiedot_tag.find_all('tr')
-    # Go trough rows, and store them before populating tulostiedot.
-    type_row_list = []
-    r = 0 # row counter
-    for i in tr_tags:
-        td_tags = i.find_all('td')
-        type_row = []
-        c = 0 # column counter
-        for j in td_tags:
-            if c == 0 or r == 0:
-                val = pretty_val(j.text, str)
-            else:
-                val = pretty_val(j.text, float)
-            type_row.append(val)
-            c += 1
-        r += 1
-        type_row_list.append(type_row)
-    # Reorganize data
-    row_count = len(type_row_list)
-    col_count = len(type_row_list[0])
-    if head:
-        assert len(head) == row_count - 1, "Wrong numer of names in head list."
-    # type_row_list[0] is like: "12/16"
-    for col in range(1, col_count):
-        if type_row_list[0][col].strip():
-            sub_dict = {}
-            for row in range(1, row_count):
-                if head:
-                    sub_dict[head[row - 1]] = type_row_list[row][col]
+        if expected_type == int or expected_type == float:
+            if isinstance(v, str) and v.strip() == "-":
+                return None
+            coefficient = 1
+            if not isinstance(v, int) and not isinstance(v, float):
+                v = v.lower().replace("€", "").replace("eur", "")
+                # remove noncompatibel characters in unicode (\x80-\xFF):
+                v = re.sub(r'[^\x00-\x7F]+','', v)
+                v = v.replace("\x00", "") # Remove empty character
+                if "milj." in v:
+                    coefficient *= 1e6
+                    v = v.replace("milj.", "")
+            try:
+                v = float(v) * coefficient
+            except ValueError:
+                if "," in v:
+                    v = float(v.replace(".", "").replace(",", ".")) \
+                            * coefficient
                 else:
-                    sub_dict[type_row_list[row][0]] = type_row_list[row][col]
-            tulostiedot[pretty_val(type_row_list[0][col], str)] = sub_dict
-    return tulostiedot
+                    raise ScrapeException(exception_str)
+            if expected_type == int:
+                try:
+                    v_float = v
+                    v = int(v)
+                except ValueError:
+                    raise ScrapeException(exception_str)
+                if v != v_float:
+                    raise ScrapeException(exception_str)
+        elif expected_type == str:
+            if v == None:
+                v = ""
+            else:
+                try:
+                    v = str(v).strip().lower()
+                    # possible confusing in string
+                    v = v.replace("\"", "").replace("'", "")
+                    # the scandinavian letters:
+                    # TODO: Is this needed? Test if no problems.
+                    v = v.replace("\xe4", "a").replace("\xe5", "a")
+                    v = v.replace("\xf6", "o")
+                    # remove noncompatibel characters in unicode (\x80-\xFF):
+                    len_v = len(v)
+                    v = re.sub(r'[^\x00-\x7F]+','', v)
+                    if len_v != len(v):
+                        pass
+                        # TODO: Fix this
+                        #raise ScrapeException("Weird character(s)!")
+                except ValueError:
+                    raise ScrapeException(exception_str)
+            if v == "-":
+                v = ""
+        elif expected_type == date:
+            v = v.strip()
+            if date_pattern_1.match(v): # DD.MM.YYYY
+                dd, mm, yyyy = v.split(".")
+                if int(dd) > 31 or int(mm) > 12 or \
+                  int(dd) < 1 or int(mm) < 1 or int(yyyy) < 1:
+                    raise ScrapeException(exception_str)
+                v = "{}-{}-{}".format(yyyy, mm, dd) # YYYY-MM-DD
+            elif not date_pattern_0.match(v): # YYYY-MM-DD
+                raise ScrapeException(exception_str)
+        else:
+            raise ScrapeException(
+                "Not an accepted type: [{}]".format(expected_type)
+            )
+        return v
 
-def get_toiminnan_laajuus(url):
-    head = [
-        "liikevaihto",
-        "liikevaihdon_muutos_%",
-        "ulkomaantoiminta_%",
-        "oikaistun_taseen_loppusumma",
-        "investoinnit",
-        "investointiaste_%",
-        "henkilosto_keskimaarin"
-    ]
-    return get_tulostiedot(url, "toiminnan laajuus", head)
+    def scrape_company_names(self):
+        soup = self.get_raw_soup(osingot_url)
+        form_tags = soup.find_all('form')
+        option_tags = form_tags[2].find_all('option')
+        company_names = {}
+        for i in option_tags:
+            company_id = i.attrs['value']
+            company_name = i.string
+            if company_id and company_name:
+                company_id = int(company_id)
+                company_name = self.pretty_val(company_name, str)
+                company_names[company_id] = company_name
+            elif company_name != "Valitse osake":
+                raise ScrapeException(
+                    "Unexpected: id:[{}], name:[{}]".format(
+                        company_id, company_name
+                    )
+                )
+        return company_names
 
-def get_kannattavuus(url):
-    head = [
-        "kayttokate",
-        "liiketulos",
-        "nettotulos",
-        "kokonaistulos",
-        "sijoitetun_paaoman_tuotto_%",
-        "oman_paaoman_tuotto_%",
-        "kokonaispaaoman_tuotto_%"
-    ]
-    return get_tulostiedot(url, "kannattavuus", head)
+    def scrape(self):
+        self.metrics["scrape_date"] = date.today().strftime(date_format)
 
-def get_vakavaraisuus(url):
-    head = [
-        "omavaraisuusaste_%",
-        "nettovelkaantumisaste_%",
-        "korollinen_nettovelka",
-        "nettorahoitus_kulut/liikevaihto_%",
-        "nettorahoitus_kulut/kayttokate_%",
-        "vieraan_paaoman_takaisin_maksuaika"
-    ]
-    return get_tulostiedot(url, "vakavaraisuus", head)
+        self.metrics["osingot"] = self.get_osingot()
 
-def get_maksuvalmius(url):
-    head = [
-        "quick_ratio",
-        "current_ratio",
-        "likvidit_varat"
-    ]
-    return get_tulostiedot(url, "maksuvalmius", head)
+        self.metrics["kurssi"] = self.get_kurssi()
+        self.metrics["kuvaus"] = self.get_kuvaus()
+        self.metrics["perustiedot"] = self.get_perustiedot()
+        self.metrics["tunnuslukuja"] = self.get_tunnuslukuja()
 
-def get_sijoittajan_tunnuslukuja(url):
-    head = [
-        "markkina-arvo_(p)",
-        "tasesubstanssi_ilman_vahennettya_osinkoa_(b)",
-        "yritysarvo_(ev)",
-        "tulos_(e)",
-        "p/b-luku",
-        "p/s-luku",
-        "p/e-luku",
-        "ev/ebit-luku",
-        "tulos/osake_(eps)_euroa",
-        "tulorahoitus/osake (cps)_euroa",
-        "oma_paaoma/osake_euroa",
-        "osinko/kokonaistulos_%"
-    ]
-    return get_tulostiedot(url, "sijoittajan tunnuslukuja", head)
+        self.metrics["toiminnan_laajuus"] = self.get_toiminnan_laajuus()
+        self.metrics["kannattavuus"] = self.get_kannattavuus()
+        self.metrics["vakavaraisuus"] = self.get_vakavaraisuus()
+        self.metrics["maksuvalmius"] = self.get_maksuvalmius()
+        self.metrics["sijoittajan_tunnuslukuja"] = \
+            self.get_sijoittajan_tunnuslukuja()
+
+        return self.metrics
+
+
+    def get_osingot(self):
+        soup = self.get_raw_soup(self.url_osingot)
+        table_tags = soup.find_all('table')
+        table_row_tags = table_tags[5].find_all('tr')
+        head = ["vuosi", "irtoaminen", "oikaistu_euroina", \
+                "maara", "valuutta", "tuotto_%", "lisatieto"]
+        osingot = {}
+        row_counter = 0
+        for row in table_row_tags:
+            sub_dict = {}
+            columns = row.find_all('td')
+            # if every metric (except "lisatieto") is empty it can be discarded
+            if not columns[0].string:
+                for i in range(1,6):
+                    if columns[i].string:
+                        raise ScrapeException("Unexpected osinko row")
+                continue
+            for i in range(7):
+                val = columns[i].string
+                if i == 0:
+                    val = self.pretty_val(val, int)
+                elif i == 1:
+                    val = self.pretty_val(val, date)
+                elif i == 2 or i == 3 or i == 5:
+                    val = self.pretty_val(val, float)
+                elif i == 4 or i == 6:
+                    val = self.pretty_val(val, str)
+                sub_dict[head[i]] = val
+            osingot[str(row_counter)] = sub_dict
+            row_counter += 1
+        return osingot
+
+
+    def get_kurssi(self):
+        soup = self.get_raw_soup(self.url_kurssi)
+        table_tags = soup.find_all('table')
+        kurssi = table_tags[5].find('span').text
+        kurssi = self.pretty_val(kurssi, float)
+        return kurssi
+
+    def get_kuvaus(self):
+        soup = self.get_raw_soup(self.url_kurssi)
+        class_padding_tags = soup.find_all(class_="paddings")
+        kuvaus = None
+        for tag in class_padding_tags:
+            if tag.parent.h3.text == "Yrityksen perustiedot":
+                kuvaus = tag.p.text.strip().replace("\n"," ").replace("\r"," ")
+                kuvaus = self.pretty_val(kuvaus, str)
+        if not kuvaus:
+            raise ScrapeException("Kuvaus not found")
+        return kuvaus
+
+    def get_perustiedot(self):
+        perustiedot = {}
+        soup = self.get_raw_soup(self.url_kurssi)
+        class_is_TSBD = soup.find_all(class_="table_stock_basic_details")
+        perustiedot_tag = None
+        for tag in class_is_TSBD:
+            if tag.parent.parent.h3.text.strip() == "Osakkeen perustiedot":
+                perustiedot_tag = tag
+                break
+        tr_tags = perustiedot_tag.find_all('tr')
+        c = 0
+        for i in tr_tags:
+            td_tags = i.find_all('td')
+            if c == 0:
+                key = td_tags[0].text.replace(":","")
+                val = td_tags[1].text
+                perustiedot[self.pretty_val(key, str)] = self.pretty_val(val, str)
+
+                strs = td_tags[2].text.split("\n")
+                [key, val] = strs[1].split(":")
+                perustiedot[self.pretty_val(key, str)] = self.pretty_val(val, str)
+
+                [key, val] = strs[2].split(":")
+                perustiedot[self.pretty_val(key, str)] = self.pretty_val(val, str)
+                c += 1
+            else:
+                key = td_tags[0].text.strip().replace(":","")
+                val = td_tags[1].text.strip()
+                key = self.pretty_val(key, str)
+                if key == "osakkeet":
+                    key = "{}_kpl".format(key)
+                    val = val.replace("kpl","").replace("\xa0", "")
+                    val = self.pretty_val(val, int)
+                elif key == "markkina-arvo":
+                    val = self.pretty_val(val, float)
+                elif key == "listattu":
+                    val = self.pretty_val(val, date)
+                elif key == "isin-koodi" or key == "porssi" or \
+                            key == "nimellisarvo":
+                    val = self.pretty_val(val, str)
+                elif key == "kaupank. val.":
+                    key = "kaupankaynti_valuutta"
+                    val = self.pretty_val(val, str)
+                else:
+                    raise ScrapeException(
+                        "Unrecognized key: {}, val: {}".format(key, val)
+                    )
+                perustiedot[key] = val
+        return perustiedot
+
+    def get_tunnuslukuja(self):
+        tunnuslukuja = {}
+        soup = self.get_raw_soup(self.url_kurssi)
+        table_tags = soup.find_all('table')
+        tunnuslukuja_tag = None
+        for tag in table_tags:
+            if tag.parent.p and tag.parent.p.text.strip() == "Tunnuslukuja":
+                tunnuslukuja_tag = tag
+                break
+        tr_tags = tunnuslukuja_tag.find_all('tr')
+        head = [
+            "viimeisin_kurssi_eur",
+            "tulos/osake",
+            "oma_paaoma/osake_eur",
+            "p/e-luku_reaali",
+            "osinko/osake_eur",
+            "markkina-arvo_eur"
+        ]
+        c = 0
+        for i in tr_tags:
+            td_tags = i.find_all('td')
+            if c == 0:
+                strs = td_tags[0].text.split("(")
+                #key = strs[0].strip() # key could be used for debuging
+                val = strs[1].replace(")","")
+            else:
+                #key = td_tags[0].text
+                val = td_tags[1].text
+            tunnuslukuja[head[c]] = self.pretty_val(val, float)
+            c += 1
+        return tunnuslukuja
+
+
+    def get_tulostiedot(self, header, head=None):
+        if head:
+            assert isinstance(head, list), "Invalid head type: {}".format(type(head))
+            for s in head:
+                assert isinstance(s, str), "Invalid name type: {}".format(type(s))
+        tulostiedot = {}
+        soup = self.get_raw_soup(self.url_tulostiedot)
+        table_tags = soup.find_all(class_="table_stockexchange")
+        tulostiedot_tag = None
+        for tag in table_tags:
+            if tag.parent.h3 and tag.parent.h3.text.strip().lower() == header.lower():
+                tulostiedot_tag = tag
+                break
+        if not tulostiedot_tag:
+            return None
+        tr_tags = tulostiedot_tag.find_all('tr')
+        # Go trough rows, and store them before populating tulostiedot.
+        type_row_list = []
+        r = 0 # row counter
+        for i in tr_tags:
+            td_tags = i.find_all('td')
+            type_row = []
+            c = 0 # column counter
+            for j in td_tags:
+                if c == 0 or r == 0:
+                    val = self.pretty_val(j.text, str)
+                else:
+                    val = self.pretty_val(j.text, float)
+                type_row.append(val)
+                c += 1
+            r += 1
+            type_row_list.append(type_row)
+        # Reorganize data
+        row_count = len(type_row_list)
+        col_count = len(type_row_list[0])
+        if head:
+            assert len(head) == row_count - 1, "Wrong numer of names in head list."
+        # type_row_list[0] is like: "12/16"
+        for col in range(1, col_count):
+            if type_row_list[0][col].strip():
+                sub_dict = {}
+                for row in range(1, row_count):
+                    if head:
+                        sub_dict[head[row - 1]] = type_row_list[row][col]
+                    else:
+                        sub_dict[type_row_list[row][0]] = type_row_list[row][col]
+                tulostiedot[self.pretty_val(type_row_list[0][col], str)] = sub_dict
+        return tulostiedot
+
+    def get_toiminnan_laajuus(self):
+        head = [
+            "liikevaihto",
+            "liikevaihdon_muutos_%",
+            "ulkomaantoiminta_%",
+            "oikaistun_taseen_loppusumma",
+            "investoinnit",
+            "investointiaste_%",
+            "henkilosto_keskimaarin"
+        ]
+        return self.get_tulostiedot("toiminnan laajuus", head)
+
+    def get_kannattavuus(self):
+        head = [
+            "kayttokate",
+            "liiketulos",
+            "nettotulos",
+            "kokonaistulos",
+            "sijoitetun_paaoman_tuotto_%",
+            "oman_paaoman_tuotto_%",
+            "kokonaispaaoman_tuotto_%"
+        ]
+        return self.get_tulostiedot("kannattavuus", head)
+
+    def get_vakavaraisuus(self):
+        head = [
+            "omavaraisuusaste_%",
+            "nettovelkaantumisaste_%",
+            "korollinen_nettovelka",
+            "nettorahoitus_kulut/liikevaihto_%",
+            "nettorahoitus_kulut/kayttokate_%",
+            "vieraan_paaoman_takaisin_maksuaika"
+        ]
+        return self.get_tulostiedot("vakavaraisuus", head)
+
+    def get_maksuvalmius(self):
+        head = [
+            "quick_ratio",
+            "current_ratio",
+            "likvidit_varat"
+        ]
+        return self.get_tulostiedot("maksuvalmius", head)
+
+    def get_sijoittajan_tunnuslukuja(self):
+        head = [
+            "markkina-arvo_(p)",
+            "tasesubstanssi_ilman_vahennettya_osinkoa_(b)",
+            "yritysarvo_(ev)",
+            "tulos_(e)",
+            "p/b-luku",
+            "p/s-luku",
+            "p/e-luku",
+            "ev/ebit-luku",
+            "tulos/osake_(eps)_euroa",
+            "tulorahoitus/osake (cps)_euroa",
+            "oma_paaoma/osake_euroa",
+            "osinko/kokonaistulos_%"
+        ]
+        return self.get_tulostiedot("sijoittajan tunnuslukuja", head)

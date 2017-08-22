@@ -3,22 +3,17 @@ from datetime import datetime, date
 from multiprocessing import Queue
 import scrape_logger
 
+from scraping import Scraper
 import scraping
 
-import json
+#import json
+#print(json.dumps(tunnuslukuja, indent=3))
 
 
 level = "INFO"
 #level = "DEBUG"
 logger = scrape_logger.setup_logger(level)
 
-
-url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
-osingot_url            = url_basic + "osingot/osinkohistoria.jsp"
-osingot_yritys_url     = url_basic + "osingot/osinkohistoria.jsp?klid={}"
-kurssi_url             = url_basic + "porssikurssit/osake/index.jsp?klid={}"
-kurssi_tulostiedot_url = url_basic + \
-    "porssikurssit/osake/tulostiedot.jsp?klid={}"
 
 some_company_ids = [2048, 1032, 1135, 1120, 1105]
 
@@ -68,7 +63,7 @@ class Test(unittest.TestCase):
         test_pretty_val_Equal(self, int, "3.4milj.eur", 34e5)
         for v in ["38.2", " ", "", None, "he", "3,5", 2.1, "2miljard.eur"]:
             self.assertRaises(scraping.ScrapeException,
-                              scraping.pretty_val, v, int)
+                              Scraper.pretty_val, v, int)
 
         test_pretty_val_Equal(self, float, 38.23, 38.23)
         test_pretty_val_Equal(self, float, "38.23", 38.23)
@@ -76,7 +71,7 @@ class Test(unittest.TestCase):
         test_pretty_val_Equal(self, float, 2.1, 2.1)
         for v in [" ", "", None, "he"]:
             self.assertRaises(scraping.ScrapeException,
-                              scraping.pretty_val, v, float)
+                              Scraper.pretty_val, v, float)
 
         test_pretty_val_Equal(self, str, "38.23", "38.23")
         test_pretty_val_Equal(self, str, "fooBar\n", "foobar")
@@ -92,12 +87,12 @@ class Test(unittest.TestCase):
         for v in ["01.20.2015", "01-02-2016", "01022016",
                   "1.1.1aaaaa", "i01.02.2011i", "", None, " "]:
             self.assertRaises(scraping.ScrapeException,
-                              scraping.pretty_val, v, date)
+                              Scraper.pretty_val, v, date)
 
         self.assertRaises(scraping.ScrapeException,
-                          scraping.pretty_val, "value", datetime)
+                          Scraper.pretty_val, "value", datetime)
         self.assertRaises(scraping.ScrapeException,
-                          scraping.pretty_val, "value", "type")
+                          Scraper.pretty_val, "value", "type")
 
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
@@ -112,14 +107,14 @@ class Test(unittest.TestCase):
 
     def test_get_kurssi(self):
         for company_id in some_company_ids:
-            url = kurssi_url.format(company_id)
-            kurssi = scraping.get_kurssi(url)
+            scraper = Scraper(company_id)
+            kurssi = scraper.get_kurssi()
             self.assertIsInstance(kurssi, float)
 
     def test_get_kuvaus(self):
         for company_id in some_company_ids:
-            url = kurssi_url.format(company_id)
-            kuvaus = scraping.get_kuvaus(url)
+            scraper = Scraper(company_id)
+            kuvaus = scraper.get_kuvaus()
             self.assertIsInstance(kuvaus, str)
 
     def test_get_osingot(self):
@@ -218,7 +213,7 @@ class Test(unittest.TestCase):
 
 
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
-    pretty_v = scraping.pretty_val(v, expected_type)
+    pretty_v = Scraper.pretty_val(v, expected_type)
     tester.assertEqual(pretty_v, expected_v)
     if expected_type == date:
         tester.assertIsInstance(pretty_v, str)
@@ -235,9 +230,8 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
         "tuotto_%": float,
         "lisatieto": str
     }
-
-    url = osingot_yritys_url.format(company_id)
-    osingot = scraping.get_osingot(url)
+    scraper = Scraper(company_id)
+    osingot = scraper.get_osingot()
     matches = 0
     for top_key in osingot:
         tester.assertIsInstance(top_key, str)
@@ -264,8 +258,8 @@ def test_get_perustiedot_Controll(tester, company_id,
         "markkina-arvo": float,
         "osakkeet_kpl": int
     }
-    url = kurssi_url.format(company_id)
-    perustiedot = scraping.get_perustiedot(url)
+    scraper = Scraper(company_id)
+    perustiedot = scraper.get_perustiedot()
     tester.assertEqual(len(perustiedot), 10)
     for key in perustiedot:
         tester.assertIsInstance(perustiedot[key], type_dict[key])
@@ -274,8 +268,8 @@ def test_get_perustiedot_Controll(tester, company_id,
                                part_of_expected_perustiedot[key])
 
 def test_get_tunnuslukuja_Controll(tester, company_id):
-    url = kurssi_url.format(company_id)
-    tunnuslukuja = scraping.get_tunnuslukuja(url)
+    scraper = Scraper(company_id)
+    tunnuslukuja = scraper.get_tunnuslukuja()
     tester.assertEqual(len(tunnuslukuja), 6)
     for key in tunnuslukuja:
         tester.assertIsInstance(tunnuslukuja[key], float)
@@ -294,31 +288,29 @@ def assert_tulostietoja(tester, company_id, tulostieto, head_count):
         tester.assertEqual(company_id, 1105)
 
 def test_get_toiminnan_laajuus_Controll(tester, company_id):
-    url = kurssi_tulostiedot_url.format(company_id)
-    toiminnan_laajuus = scraping.get_toiminnan_laajuus(url)
+    scraper = Scraper(company_id)
+    toiminnan_laajuus = scraper.get_toiminnan_laajuus()
     assert_tulostietoja(tester, company_id, toiminnan_laajuus, 7)
 
 def test_get_kannattavuus_Controll(tester, company_id):
-    url = kurssi_tulostiedot_url.format(company_id)
-    kannattavuus = scraping.get_kannattavuus(url)
+    scraper = Scraper(company_id)
+    kannattavuus = scraper.get_kannattavuus()
     assert_tulostietoja(tester, company_id, kannattavuus, 7)
 
 def test_get_vakavaraisuus_Controll(tester, company_id):
-    url = kurssi_tulostiedot_url.format(company_id)
-    vakavaraisuus = scraping.get_vakavaraisuus(url)
+    scraper = Scraper(company_id)
+    vakavaraisuus = scraper.get_vakavaraisuus()
     assert_tulostietoja(tester, company_id, vakavaraisuus, 6)
 
 def test_get_maksuvalmius_Controll(tester, company_id):
-    url = kurssi_tulostiedot_url.format(company_id)
-    maksuvalmius = scraping.get_maksuvalmius(url)
+    scraper = Scraper(company_id)
+    maksuvalmius = scraper.get_maksuvalmius()
     assert_tulostietoja(tester, company_id, maksuvalmius, 3)
 
 def test_get_sijoittajan_tunnuslukuja_Controll(tester, company_id):
-    url = kurssi_tulostiedot_url.format(company_id)
-    sijoittajan_tunnuslukuja = scraping.get_sijoittajan_tunnuslukuja(url)
+    scraper = Scraper(company_id)
+    sijoittajan_tunnuslukuja = scraper.get_sijoittajan_tunnuslukuja()
     assert_tulostietoja(tester, company_id, sijoittajan_tunnuslukuja, 12)
-
-#print(json.dumps(tunnuslukuja, indent=3))
 
 
 if __name__ == '__main__':
