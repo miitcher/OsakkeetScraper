@@ -4,6 +4,12 @@ Check if raw_soup could be gotten fewer times
         Functions could take the raw_soup as input
         All raw_soup:s could be first gotten, and then be analyzed
             Timing the code, could make things clearer, if it is good to do
+    When every function takes its own soup, Scraping took [s]:
+        25.23
+        25.72
+        25.08
+        25.43
+        --> avg: 25,365
 
 Check if there is any usable code in OLD_CODE
 

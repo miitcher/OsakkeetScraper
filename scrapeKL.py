@@ -1,4 +1,4 @@
-import logging, json, sys, os
+import logging, json, sys, os, time
 
 import scraping
 import storage
@@ -180,7 +180,9 @@ if __name__ == '__main__':
     if len(sys.argv) == 1 or sys.argv[1] == "help":
         print(console_instructions)
     elif sys.argv[1] == "scrape" or sys.argv[1] == "s":
+        time0 = time.time()
         company_names = scrape_companies(storage_directory)
+        print("Scraping took: {:.2f} s".format(time.time() - time0))
     elif sys.argv[1] == "files" or sys.argv[1] == "f":
         all_filenames = os.listdir(storage_directory)
         stored_filenames = []

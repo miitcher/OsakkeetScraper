@@ -108,25 +108,6 @@ class Company():
         self.metrics["company_id"] = self.company_id
         self.metrics["company_name"] = self.company_name
 
-        """
-        self.metrics["scrape_date"] = date.today().strftime(date_format)
-
-        self.metrics["kurssi"] = get_kurssi(url_ku)
-        self.metrics["kuvaus"] = get_kuvaus(url_ku)
-
-        self.metrics["osingot"] = get_osingot(url_os)
-
-        self.metrics["perustiedot"] = get_perustiedot(url_ku)
-        self.metrics["tunnuslukuja"] = get_tunnuslukuja(url_ku)
-
-        self.metrics["toiminnan_laajuus"] = get_toiminnan_laajuus(url_ku_tu)
-        self.metrics["kannattavuus"] = get_kannattavuus(url_ku_tu)
-        self.metrics["vakavaraisuus"] = get_vakavaraisuus(url_ku_tu)
-        self.metrics["maksuvalmius"] = get_maksuvalmius(url_ku_tu)
-        self.metrics["sijoittajan_tunnuslukuja"] = \
-            get_sijoittajan_tunnuslukuja(url_ku_tu)
-        """
-
     def addCalc(self, key, value):
         assert not str(key) in self.calculations
         self.calculations[str(key)] = value
