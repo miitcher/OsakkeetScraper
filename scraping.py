@@ -213,11 +213,15 @@ class Company():
 
 class Scraper():
     def __init__(self, company_id=None):
+        self.metrics = {}
         if company_id:
             self.url_osingot = osingot_yritys_url.format(company_id)
             self.url_kurssi = kurssi_url.format(company_id)
             self.url_tulostiedot = kurssi_tulostiedot_url.format(company_id)
-        self.metrics = {}
+
+            self.soup_osingot = self.get_raw_soup(self.url_osingot)
+            self.soup_kurssi = self.get_raw_soup(self.url_kurssi)
+            self.soup_tulostiedot = self.get_raw_soup(self.url_tulostiedot)
 
     @staticmethod
     def get_raw_soup(link):
@@ -350,8 +354,7 @@ class Scraper():
 
 
     def get_osingot(self):
-        soup = self.get_raw_soup(self.url_osingot)
-        table_tags = soup.find_all('table')
+        table_tags = self.soup_osingot.find_all('table')
         table_row_tags = table_tags[5].find_all('tr')
         head = ["vuosi", "irtoaminen", "oikaistu_euroina", \
                 "maara", "valuutta", "tuotto_%", "lisatieto"]
@@ -383,15 +386,13 @@ class Scraper():
 
 
     def get_kurssi(self):
-        soup = self.get_raw_soup(self.url_kurssi)
-        table_tags = soup.find_all('table')
+        table_tags = self.soup_kurssi.find_all('table')
         kurssi = table_tags[5].find('span').text
         kurssi = self.pretty_val(kurssi, float)
         return kurssi
 
     def get_kuvaus(self):
-        soup = self.get_raw_soup(self.url_kurssi)
-        class_padding_tags = soup.find_all(class_="paddings")
+        class_padding_tags = self.soup_kurssi.find_all(class_="paddings")
         kuvaus = None
         for tag in class_padding_tags:
             if tag.parent.h3.text == "Yrityksen perustiedot":
@@ -402,9 +403,8 @@ class Scraper():
         return kuvaus
 
     def get_perustiedot(self):
+        class_is_TSBD = self.soup_kurssi.find_all(class_="table_stock_basic_details")
         perustiedot = {}
-        soup = self.get_raw_soup(self.url_kurssi)
-        class_is_TSBD = soup.find_all(class_="table_stock_basic_details")
         perustiedot_tag = None
         for tag in class_is_TSBD:
             if tag.parent.parent.h3.text.strip() == "Osakkeen perustiedot":
@@ -452,9 +452,8 @@ class Scraper():
         return perustiedot
 
     def get_tunnuslukuja(self):
+        table_tags = self.soup_kurssi.find_all('table')
         tunnuslukuja = {}
-        soup = self.get_raw_soup(self.url_kurssi)
-        table_tags = soup.find_all('table')
         tunnuslukuja_tag = None
         for tag in table_tags:
             if tag.parent.p and tag.parent.p.text.strip() == "Tunnuslukuja":
@@ -489,9 +488,9 @@ class Scraper():
             assert isinstance(head, list), "Invalid head type: {}".format(type(head))
             for s in head:
                 assert isinstance(s, str), "Invalid name type: {}".format(type(s))
+
+        table_tags = self.soup_tulostiedot.find_all(class_="table_stockexchange")
         tulostiedot = {}
-        soup = self.get_raw_soup(self.url_tulostiedot)
-        table_tags = soup.find_all(class_="table_stockexchange")
         tulostiedot_tag = None
         for tag in table_tags:
             if tag.parent.h3 and tag.parent.h3.text.strip().lower() == header.lower():

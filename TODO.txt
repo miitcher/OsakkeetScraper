@@ -10,6 +10,14 @@ Check if raw_soup could be gotten fewer times
         25.08
         25.43
         --> avg: 25,365
+    When sheared soups, Scraping took [s]:
+        17.33
+        18.12
+        17.18
+        17.40
+        17.50
+        --> avg: 17,506
+    The scraping got 30% faster!
 
 Check if there is any usable code in OLD_CODE
 
