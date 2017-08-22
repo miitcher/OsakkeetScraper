@@ -1,3 +1,13 @@
+Add log file for speed testing
+    When a speed test is run, the gotten data is stored.
+    The "old_avg" could be an average of all former speed tests or just
+        the most resent speed test.
+    Should be different log files for different computers.
+
+Add the running of speed test to the unittests.
+    test_speed.py
+    Then the speed is tested every time all the tests are run.
+
 Make code faster
     All raw_soup:s could be first gotten, and then be analyzed
 
