@@ -200,6 +200,22 @@ class Test(unittest.TestCase):
         for company_id in some_company_ids:
             test_get_toiminnan_laajuus_Controll(self, company_id)
 
+    def test_get_kannattavuus(self):
+        for company_id in some_company_ids:
+            test_get_kannattavuus_Controll(self, company_id)
+
+    def test_get_vakavaraisuus(self):
+        for company_id in some_company_ids:
+            test_get_vakavaraisuus_Controll(self, company_id)
+
+    def test_get_maksuvalmius(self):
+        for company_id in some_company_ids:
+            test_get_maksuvalmius_Controll(self, company_id)
+
+    def test_get_sijoittajan_tunnuslukuja(self):
+        for company_id in some_company_ids:
+            test_get_sijoittajan_tunnuslukuja_Controll(self, company_id)
+
 
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
     pretty_v = scraping.pretty_val(v, expected_type)
@@ -264,18 +280,43 @@ def test_get_tunnuslukuja_Controll(tester, company_id):
     for key in tunnuslukuja:
         tester.assertIsInstance(tunnuslukuja[key], float)
 
-def test_get_toiminnan_laajuus_Controll(tester, company_id):
-    url = kurssi_tulostiedot_url.format(company_id)
-    toiminnan_laajuus = scraping.get_toiminnan_laajuus(url)
-    if toiminnan_laajuus:
-        tester.assertLess(len(toiminnan_laajuus), 6)
-        for key in toiminnan_laajuus:
-            for sub_key in toiminnan_laajuus[key]:
-                v = toiminnan_laajuus[key][sub_key]
+def assert_tulostietoja(tester, company_id, tulostieto, head_count):
+    if tulostieto:
+        tester.assertLess(len(tulostieto), 6)
+        tester.assertGreater(len(tulostieto), 3)
+        for key in tulostieto:
+            tester.assertEqual(len(tulostieto[key]), head_count)
+            for sub_key in tulostieto[key]:
+                v = tulostieto[key][sub_key]
                 if v is not None:
                     tester.assertIsInstance(v, float)
     else:
         tester.assertEqual(company_id, 1105)
+
+def test_get_toiminnan_laajuus_Controll(tester, company_id):
+    url = kurssi_tulostiedot_url.format(company_id)
+    toiminnan_laajuus = scraping.get_toiminnan_laajuus(url)
+    assert_tulostietoja(tester, company_id, toiminnan_laajuus, 7)
+
+def test_get_kannattavuus_Controll(tester, company_id):
+    url = kurssi_tulostiedot_url.format(company_id)
+    kannattavuus = scraping.get_kannattavuus(url)
+    assert_tulostietoja(tester, company_id, kannattavuus, 7)
+
+def test_get_vakavaraisuus_Controll(tester, company_id):
+    url = kurssi_tulostiedot_url.format(company_id)
+    vakavaraisuus = scraping.get_vakavaraisuus(url)
+    assert_tulostietoja(tester, company_id, vakavaraisuus, 6)
+
+def test_get_maksuvalmius_Controll(tester, company_id):
+    url = kurssi_tulostiedot_url.format(company_id)
+    maksuvalmius = scraping.get_maksuvalmius(url)
+    assert_tulostietoja(tester, company_id, maksuvalmius, 3)
+
+def test_get_sijoittajan_tunnuslukuja_Controll(tester, company_id):
+    url = kurssi_tulostiedot_url.format(company_id)
+    sijoittajan_tunnuslukuja = scraping.get_sijoittajan_tunnuslukuja(url)
+    assert_tulostietoja(tester, company_id, sijoittajan_tunnuslukuja, 12)
 
 #print(json.dumps(tunnuslukuja, indent=3))
 

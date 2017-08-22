@@ -97,78 +97,7 @@ class Company():
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.company_name)
 
-
-
-    @staticmethod
-    def make_value_pretty(v):
-        # substitute string for coefficient
-        coefficient = 1
-        if "milj.eur" in v:
-            coefficient = 1e6
-            v = v.replace("milj.eur", "")
-        try:
-            v = float(v) * coefficient
-        except ValueError:
-            pass
-        # integer
-        try:
-            if v == int(v):
-                v = int(v)
-        except ValueError:
-            pass
-        # TODO: handle other like miljard, etc.
-        # TODO: turn all empty fields to "-"
-        # TODO: handle dates and booleans
-        return v
-
-    @staticmethod
-    def list_to_pretty_dict(list_in):
-        d = {}
-        head = list_in[1]
-        for i in range(2, len(list_in)):
-            sub_d = {}
-            for j in range(len(head)):
-                k = str(head[j]).lower()
-                v = str(list_in[i][j]).lower()
-                sub_d[k] = Company.make_value_pretty(v)
-            d[str(i-2)] = sub_d
-        return d
-
-    @staticmethod
-    def list_to_pretty_dict_pivot(list_in):
-        l = []
-        head = list_in[1]
-        first_col = str(head[0]).lower() # "vuosi"
-        for i in range(2, len(list_in)):
-            sub_d = {}
-            for j in range(len(head)):
-                k = str(head[j]).lower()
-                v = str(list_in[i][j]).lower()
-                sub_d[k] = Company.make_value_pretty(v)
-            l.append(sub_d)
-        d = {}
-        for k in head:
-            k = str(k).lower()
-            if k != first_col and k != "-":
-                sub_d = {}
-                for row_d in l:
-                    sub_d[row_d[first_col]] = row_d[k]
-                d[k] = sub_d
-        return d
-
-    @staticmethod
-    def dict_to_pretty_dict(dict_in):
-        d = {}
-        for i in dict_in:
-            if i != 0:
-                k = str(i).lower()
-                v = str(dict_in[i]).lower()
-                d[k] = Company.make_value_pretty(v)
-        return d
-
     def scrape(self):
-        # TODO: Shorten too long lines
-        #  Done after the old functions are fixed
         url_os = osingot_yritys_url.format(self.company_id)
         url_ku = kurssi_url.format(self.company_id)
         url_ku_tu = kurssi_tulostiedot_url.format(self.company_id)
@@ -186,20 +115,11 @@ class Company():
         self.metrics["tunnuslukuja"] = get_tunnuslukuja(url_ku)
 
         self.metrics["toiminnan_laajuus"] = get_toiminnan_laajuus(url_ku_tu)
-
-        # TODO: HERE
-
-        kannattavuus = get_kurssi_tulostiedot(url_ku_tu, "Kannattavuus")
-        vakavaraisuus = get_kurssi_tulostiedot(url_ku_tu, "Vakavaraisuus")
-        maksuvalmius = get_kurssi_tulostiedot(url_ku_tu, "Maksuvalmius")
-        sijoittajan_tunnuslukuja = get_kurssi_tulostiedot(url_ku_tu, "Sijoittajan tunnuslukuja")
-
-        self.metrics["kannattavuus"] = self.list_to_pretty_dict_pivot(kannattavuus)
-        self.metrics["vakavaraisuus"] = self.list_to_pretty_dict_pivot(vakavaraisuus)
-        self.metrics["maksuvalmius"] = self.list_to_pretty_dict_pivot(maksuvalmius)
-        self.metrics["sijoittajan_tunnuslukuja"] = self.list_to_pretty_dict_pivot(sijoittajan_tunnuslukuja)
-
-
+        self.metrics["kannattavuus"] = get_kannattavuus(url_ku_tu)
+        self.metrics["vakavaraisuus"] = get_vakavaraisuus(url_ku_tu)
+        self.metrics["maksuvalmius"] = get_maksuvalmius(url_ku_tu)
+        self.metrics["sijoittajan_tunnuslukuja"] = \
+            get_sijoittajan_tunnuslukuja(url_ku_tu)
 
     def addCalc(self, key, value):
         assert not str(key) in self.calculations
@@ -304,7 +224,6 @@ class Company():
         self.calculate_fresh()
 
 
-
 def get_raw_soup(link):
     r = requests.get(link)
     soup = BeautifulSoup(r.text, "html.parser")
@@ -392,15 +311,6 @@ def pretty_val(v, expected_type):
             "Not an accepted type: [{}]".format(expected_type)
         )
     return v
-
-
-def fix_str_OLD(string): # TODO: Remove later
-    # deals with scandinavian characters
-    return string.replace("\xe4", "a").replace("\xe5", "a").replace("\xf6", "o")
-
-def fix_str_noncompatible_chars_in_unicode(string): # TODO: Remove later
-    return string.replace("\x9a","?").replace("\x96","?").replace("\x92","?")
-
 
 def scrape_company_names():
     soup = get_raw_soup(osingot_url)
@@ -556,7 +466,11 @@ def get_tunnuslukuja(url):
     return tunnuslukuja
 
 
-def get_tulostiedot(url, header, head):
+def get_tulostiedot(url, header, head=None):
+    if head:
+        assert isinstance(head, list), "Invalid head type: {}".format(type(head))
+        for s in head:
+            assert isinstance(s, str), "Invalid name type: {}".format(type(s))
     tulostiedot = {}
     soup = get_raw_soup(url)
     table_tags = soup.find_all(class_="table_stockexchange")
@@ -587,13 +501,17 @@ def get_tulostiedot(url, header, head):
     # Reorganize data
     row_count = len(type_row_list)
     col_count = len(type_row_list[0])
+    if head:
+        assert len(head) == row_count - 1, "Wrong numer of names in head list."
     # type_row_list[0] is like: "12/16"
     for col in range(1, col_count):
         if type_row_list[0][col].strip():
             sub_dict = {}
             for row in range(1, row_count):
-                #sub_dict[type_row_list[row][0]] = type_row_list[row][col]
-                sub_dict[head[row - 1]] = type_row_list[row][col]
+                if head:
+                    sub_dict[head[row - 1]] = type_row_list[row][col]
+                else:
+                    sub_dict[type_row_list[row][0]] = type_row_list[row][col]
             tulostiedot[pretty_val(type_row_list[0][col], str)] = sub_dict
     return tulostiedot
 
@@ -609,83 +527,50 @@ def get_toiminnan_laajuus(url):
     ]
     return get_tulostiedot(url, "toiminnan laajuus", head)
 
-
-# TODO: Go trough old functions here under and write tests for them
-# USE FUNCTION: pretty_val()
-
-# TODO: Run all tests and remove OLD-function.
-
-
 def get_kannattavuus(url):
-    # TODO: make proper heads...
-    head = []
+    head = [
+        "kayttokate",
+        "liiketulos",
+        "nettotulos",
+        "kokonaistulos",
+        "sijoitetun_paaoman_tuotto_%",
+        "oman_paaoman_tuotto_%",
+        "kokonaispaaoman_tuotto_%"
+    ]
     return get_tulostiedot(url, "kannattavuus", head)
 
 def get_vakavaraisuus(url):
-    head = []
+    head = [
+        "omavaraisuusaste_%",
+        "nettovelkaantumisaste_%",
+        "korollinen_nettovelka",
+        "nettorahoitus_kulut/liikevaihto_%",
+        "nettorahoitus_kulut/kayttokate_%",
+        "vieraan_paaoman_takaisin_maksuaika"
+    ]
     return get_tulostiedot(url, "vakavaraisuus", head)
 
 def get_maksuvalmius(url):
-    head = []
+    head = [
+        "quick_ratio",
+        "current_ratio",
+        "likvidit_varat"
+    ]
     return get_tulostiedot(url, "maksuvalmius", head)
 
 def get_sijoittajan_tunnuslukuja(url):
-    head = []
+    head = [
+        "markkina-arvo_(p)",
+        "tasesubstanssi_ilman_vahennettya_osinkoa_(b)",
+        "yritysarvo_(ev)",
+        "tulos_(e)",
+        "p/b-luku",
+        "p/s-luku",
+        "p/e-luku",
+        "ev/ebit-luku",
+        "tulos/osake_(eps)_euroa",
+        "tulorahoitus/osake (cps)_euroa",
+        "oma_paaoma/osake_euroa",
+        "osinko/kokonaistulos_%"
+    ]
     return get_tulostiedot(url, "sijoittajan tunnuslukuja", head)
-
-
-
-# OLD
-def get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko):
-    soup = get_raw_soup(url)
-    try:
-        table_tags=soup.find_all(class_="table_stockexchange")
-        
-        for tag in table_tags:
-            try:
-                if tag.parent.h3.text.strip() == otsikko:
-                    return tag
-            except:
-                pass
-        logger.debug("Otsikko='{}' TAG EI LOYTYNYT".format(otsikko))
-    except:
-        logger.debug("Otsikko='{}'".format(otsikko))
-    return -1
-
-# OLD
-def get_kurssi_tulostiedot(url, otsikko):
-    matrix=["NOT REDY"]
-    try:
-        TAG = get_KURSSI_TULOSTIEDOT_table_TAG(url, otsikko)
-        
-        if TAG == -1:
-            matrix[0]=False
-            return matrix
-        
-        tr_tags=TAG.find_all('tr')
-        r=0 #rivi
-        for i in tr_tags:
-            td_tags=i.find_all('td')
-            
-            rivi=[]
-            for j in td_tags:
-                if r==0:
-                    rivi.append("VUOSI")
-                    r+=1
-                else:
-                    val=fix_str_OLD(j.text.strip())
-                    try:
-                        val=float(val.replace("\xa0",""))
-                    except:
-                        pass
-                        # logger.debug("Otsikko='{}', float('{}')".format(otsikko, val))
-                    rivi.append(val)
-            
-            matrix.append(rivi)
-        
-        matrix[0]=True
-    except:
-        logger.debug("Otsikko='{}'".format(otsikko))
-        matrix[0]=False
-
-    return matrix

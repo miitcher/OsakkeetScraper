@@ -1,15 +1,13 @@
-Check if there is any usable code in OLD_CODE
+Collect scraping functions into a Scraper class
 
-Go trough old functions at end of scraping.py
-    Add tests
-    Make functions return pretty_dictionaries
-    Collect scraping functions into a Scraper class
-    Check if raw_soup could be gotten fewer times
-        This would mean less to download
-        Some of the scraping functions use the same raw_soup
-            Functions could take the raw_soup as input
-            All raw_soup:s could be first gotten, and then be analyzed
-                Timing the code, could make things clearer, if it is good to do
+Check if raw_soup could be gotten fewer times
+    This would mean less to download
+    Some of the scraping functions use the same raw_soup
+        Functions could take the raw_soup as input
+        All raw_soup:s could be first gotten, and then be analyzed
+            Timing the code, could make things clearer, if it is good to do
+
+Check if there is any usable code in OLD_CODE
 
 Handle missing metrics for companies
 
