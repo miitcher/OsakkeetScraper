@@ -19,5 +19,3 @@ Make the command line interface better
     Could use the thing at work...
 
 Should I use unicode instead of strings?
-
-Change logger.info() to just print() where apropriate.
