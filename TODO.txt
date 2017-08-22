@@ -1,23 +1,5 @@
-Check if raw_soup could be gotten fewer times
-    This would mean less to download
-    Some of the scraping functions use the same raw_soup
-        Functions could take the raw_soup as input
-        All raw_soup:s could be first gotten, and then be analyzed
-            Timing the code, could make things clearer, if it is good to do
-    When every function takes its own soup, Scraping took [s]:
-        25.23
-        25.72
-        25.08
-        25.43
-        --> avg: 25,365
-    When sheared soups, Scraping took [s]:
-        17.33
-        18.12
-        17.18
-        17.40
-        17.50
-        --> avg: 17,506
-    The scraping got 30% faster!
+Make code faster
+    All raw_soup:s could be first gotten, and then be analyzed
 
 Check if there is any usable code in OLD_CODE
 
@@ -25,12 +7,6 @@ Handle missing metrics for companies
 
 Make the command line interface better
     Could use the thing at work...
-
-Time parts in program
-    Check if there are some convention how to time your code (maby there is a module already)
-    Add a new code-file that times the running of the program
-        This does not feel appropriate to have in the unittests
-            Unittests should test the timing-functionality
 
 Should I use unicode instead of strings?
 

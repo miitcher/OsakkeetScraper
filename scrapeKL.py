@@ -175,7 +175,11 @@ console_instructions = \
 if __name__ == '__main__':
     logger = scrape_logger.setup_logger()
 
+    # Storage
     storage_directory = "scrapes"
+    if not os.path.isdir(storage_directory):
+        os.makedirs(storage_directory)
+        logger.debug("storage-folder created: [{}]".format(storage_directory))
 
     if len(sys.argv) == 1 or sys.argv[1] == "help":
         print(console_instructions)
