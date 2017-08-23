@@ -76,8 +76,24 @@ def scrape_companies_with_processes(company_names, showProgress=True):
     return metrics_list
 
 def scrape_company_names():
-    scraper = Scraper()
-    return scraper.scrape_company_names()
+    soup = Scraper.get_raw_soup(osingot_url)
+    form_tags = soup.find_all('form')
+    option_tags = form_tags[2].find_all('option')
+    company_names = {}
+    for i in option_tags:
+        company_id = i.attrs['value']
+        company_name = i.string
+        if company_id and company_name:
+            company_id = int(company_id)
+            company_name = Scraper.pretty_val(company_name, str)
+            company_names[company_id] = company_name
+        elif company_name != "Valitse osake":
+            raise ScrapeException(
+                "Unexpected: id:[{}], name:[{}]".format(
+                    company_id, company_name
+                )
+            )
+    return company_names
 
 
 class Company():
@@ -218,22 +234,31 @@ class Company():
 
 
 class Scraper():
-    def __init__(self, company_id=None):
+    def __init__(self, company_id):
+        assert isinstance(company_id, int)
         self.metrics = {}
-        if company_id:
-            self.url_osingot = osingot_yritys_url.format(company_id)
-            self.url_kurssi = kurssi_url.format(company_id)
-            self.url_tulostiedot = kurssi_tulostiedot_url.format(company_id)
+        self.url_osingot = osingot_yritys_url.format(company_id)
+        self.url_kurssi = kurssi_url.format(company_id)
+        self.url_tulostiedot = kurssi_tulostiedot_url.format(company_id)
 
-            self.soup_osingot = self.get_raw_soup(self.url_osingot)
-            self.soup_kurssi = self.get_raw_soup(self.url_kurssi)
-            self.soup_tulostiedot = self.get_raw_soup(self.url_tulostiedot)
+        self.soup_osingot = None
+        self.soup_kurssi = None
+        self.soup_tulostiedot = None
 
     @staticmethod
     def get_raw_soup(link):
         r = requests.get(link)
         soup = BeautifulSoup(r.text, "html.parser")
         return soup
+
+    def make_soup_osingot(self):
+        self.soup_osingot = self.get_raw_soup(self.url_osingot)
+
+    def make_soup_kurssi(self):
+        self.soup_kurssi = self.get_raw_soup(self.url_kurssi)
+
+    def make_soup_tulostiedot(self):
+        self.soup_tulostiedot = self.get_raw_soup(self.url_tulostiedot)
 
     @staticmethod
     def pretty_val(v, expected_type):
@@ -319,26 +344,6 @@ class Scraper():
             )
         return v
 
-    def scrape_company_names(self):
-        soup = self.get_raw_soup(osingot_url)
-        form_tags = soup.find_all('form')
-        option_tags = form_tags[2].find_all('option')
-        company_names = {}
-        for i in option_tags:
-            company_id = i.attrs['value']
-            company_name = i.string
-            if company_id and company_name:
-                company_id = int(company_id)
-                company_name = self.pretty_val(company_name, str)
-                company_names[company_id] = company_name
-            elif company_name != "Valitse osake":
-                raise ScrapeException(
-                    "Unexpected: id:[{}], name:[{}]".format(
-                        company_id, company_name
-                    )
-                )
-        return company_names
-
     def scrape(self):
         self.metrics["scrape_date"] = date.today().strftime(date_format)
 
@@ -360,6 +365,9 @@ class Scraper():
 
 
     def get_osingot(self):
+        if not self.soup_osingot:
+            self.make_soup_osingot()
+
         table_tags = self.soup_osingot.find_all('table')
         table_row_tags = table_tags[5].find_all('tr')
         head = ["vuosi", "irtoaminen", "oikaistu_euroina", \
@@ -392,12 +400,18 @@ class Scraper():
 
 
     def get_kurssi(self):
+        if not self.soup_kurssi:
+            self.make_soup_kurssi()
+
         table_tags = self.soup_kurssi.find_all('table')
         kurssi = table_tags[5].find('span').text
         kurssi = self.pretty_val(kurssi, float)
         return kurssi
 
     def get_kuvaus(self):
+        if not self.soup_kurssi:
+            self.make_soup_kurssi()
+
         class_padding_tags = self.soup_kurssi.find_all(class_="paddings")
         kuvaus = None
         for tag in class_padding_tags:
@@ -409,6 +423,9 @@ class Scraper():
         return kuvaus
 
     def get_perustiedot(self):
+        if not self.soup_kurssi:
+            self.make_soup_kurssi()
+
         class_is_TSBD = self.soup_kurssi.find_all(class_="table_stock_basic_details")
         perustiedot = {}
         perustiedot_tag = None
@@ -458,6 +475,9 @@ class Scraper():
         return perustiedot
 
     def get_tunnuslukuja(self):
+        if not self.soup_kurssi:
+            self.make_soup_kurssi()
+
         table_tags = self.soup_kurssi.find_all('table')
         tunnuslukuja = {}
         tunnuslukuja_tag = None
@@ -495,6 +515,9 @@ class Scraper():
             for s in head:
                 assert isinstance(s, str), "Invalid name type: {}".format(type(s))
 
+        if not self.soup_tulostiedot:
+            self.make_soup_tulostiedot()
+
         table_tags = self.soup_tulostiedot.find_all(class_="table_stockexchange")
         tulostiedot = {}
         tulostiedot_tag = None
@@ -525,7 +548,8 @@ class Scraper():
         row_count = len(type_row_list)
         col_count = len(type_row_list[0])
         if head:
-            assert len(head) == row_count - 1, "Wrong numer of names in head list."
+            assert len(head) == row_count - 1, \
+                "Expected rows: {}; Got: {}".format(len(head), row_count - 1)
         # type_row_list[0] is like: "12/16"
         for col in range(1, col_count):
             if type_row_list[0][col].strip():
