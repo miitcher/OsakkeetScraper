@@ -1,14 +1,16 @@
+Time parts in Scraper to know what is the limiting thing.
+
+Make code faster by trying:
+    create process for every Scraper.get_*() --> metric
+    create process for every Scraper.get_soup_*() --> soup
+
 Handle missing metrics for companies.
     The companies that fails the scraping, should just not get the
     metrics that fails, but get the other metrics.
         The metrics they do not get, I need to check.
             The expected missing metrics are then not fails.
 
-Time parts in Scraper to know what is the limiting thing.
-
 Check if there is any usable code in OLD_CODE.
-
-Make code faster.
 
 Make the command line interface better.
     Could use the thing at work...
