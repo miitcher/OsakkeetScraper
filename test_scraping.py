@@ -47,11 +47,11 @@ class Test(unittest.TestCase):
             self.assertGreater(len(metrics), 1)
             logger.debug("company_name: {}".format(metrics['company_name']))
 
-    def test_Company_scrape(self):
-        company = scraping.Company(c_id=2048, c_name="talenom")
-        company.scrape()
-        self.assertIsInstance(company.metrics, dict)
-        self.assertGreater(len(company.metrics), 5)
+    def test_Scraper_scrape(self):
+        scraper = scraping.Scraper(2048)
+        metrics = scraper.scrape()
+        self.assertIsInstance(metrics, dict)
+        self.assertEqual(len(metrics), 11)
 
     def test_pretty_val(self):
         # expected_type can be: int, float, str, date

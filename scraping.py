@@ -27,16 +27,9 @@ class ScrapeException(Exception):
 def scrape_company_target_function(queue, company_id, company_name):
     # Used as target function for multitreading.Process
     metrics = {}
+    scraper = Scraper(company_id)
     try:
-        # OLD
-        company = Company(c_id=company_id, c_name=company_name)
-        company.scrape()
-        metrics = company.metrics
-        """
-        # NEW: does not seem to be faster...
-        scraper = Scraper(company_id)
         metrics = scraper.scrape()
-        """
     except:
         pass
     finally:
@@ -97,38 +90,27 @@ def scrape_company_names():
 
 
 class Company():
-    def __init__(self, c_metrics=None, c_id=None, c_name=None):
-        assert c_metrics or (c_id and c_name), "Invalid Company input"
-        if c_metrics:
-            assert isinstance(c_metrics, dict)
-            assert not c_id
-            assert not c_name
-            self.metrics = c_metrics
-            self.calculations = {}
-            self.company_id = self.metrics["company_id"]
-            self.company_name = self.metrics["company_name"]
+    def __init__(self, c_metrics):
+        assert isinstance(c_metrics, dict) and len(c_metrics) > 1
+        self.metrics = c_metrics
+        self.company_id = self.metrics["company_id"]
+        self.company_name = self.metrics["company_name"]
 
-            if len(self.metrics) > 2:
-                self.do_calculations()
-        else:
-            assert not c_metrics
-            self.metrics = {}
-            self.calculations = {}
-            self.company_id = c_id
-            self.company_name = c_name.replace("\"", "").replace("'", "")
         assert self.company_id
         assert isinstance(self.company_id, int)
         assert isinstance(self.company_name, str)
 
+        self.calculations = {}
+
     def __repr__(self):
         return "Company({}, {})".format(self.company_id, self.company_name)
 
-    def scrape(self):
-        scraper = Scraper(self.company_id)
-        self.metrics = scraper.scrape()
-
-        self.metrics["company_id"] = self.company_id
-        self.metrics["company_name"] = self.company_name
+    def calculate(self):
+        assert len(self.metrics) > 2, \
+            "Too few metrics. len(self.metrics)={}".fomat(len(self.metrics))
+        self.calculate_osinko()
+        self.collect_metrics()
+        self.calculate_fresh()
 
     def addCalc(self, key, value):
         assert not str(key) in self.calculations
@@ -226,11 +208,6 @@ class Company():
             self.addCalc("calc_P_factor", round( calc["calc_P"] / calc["P"], 4))
             self.addCalc("calc_PB", round( calc["calc_P_factor"] * calc["PB"], 2))
             self.addCalc("calc_PE", round( calc["calc_P_factor"] * calc["PE"], 2))
-
-    def do_calculations(self):
-        self.calculate_osinko()
-        self.collect_metrics()
-        self.calculate_fresh()
 
 
 class Scraper():

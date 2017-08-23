@@ -69,7 +69,7 @@ def check_scrape_speed(old_avg_time, times):
     c = 0
     time0 = time.time()
     while c < times:
-        _company_names = scrapeKL.scrape_companies(storage_directory)
+        scrapeKL.scrape_companies(storage_directory, showProgress=False)
         c += 1
 
     whole_run_time = time.time() - time0
