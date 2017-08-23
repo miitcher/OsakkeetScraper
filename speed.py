@@ -39,10 +39,12 @@ def store_speed_run(times, whole_run_time):
         f.write(line_str)
 
 def get_old_avg_time():
+    if not os.path.isfile(speed_filename):
+        return 0.0
     with open(speed_filename, "r") as f:
         lines = f.readlines()
     time_sum = 0
-    all_times = 0
+    all_times = 0.0
     for line in lines:
         try:
             date, times, whole_run_time = line.strip().split("\t")
@@ -53,11 +55,11 @@ def get_old_avg_time():
     if all_times:
         return time_sum / all_times
     else:
-        return 0
+        return 0.0
 
 def check_scrape_speed(old_avg_time, times):
     assert isinstance(times, int) and times > 0
-    assert isinstance(old_avg_time, float) and old_avg_time > 0, \
+    assert isinstance(old_avg_time, float) and old_avg_time >= 0, \
         "old_avg_time: {}".format(old_avg_time)
     expected_time = times * old_avg_time
     logger.info(
@@ -76,7 +78,10 @@ def check_scrape_speed(old_avg_time, times):
 
     avg_time = whole_run_time / times
     compared = avg_time - old_avg_time
-    compared_percent = 100 * compared / old_avg_time
+    if old_avg_time:
+        compared_percent = 100 * compared / old_avg_time
+    else:
+        compared_percent = 0
     logger.info(
         "- Scraping took:\t\t{:6.2f} s\n".format(whole_run_time) + \
         "Average time per scraping:\t{:6.2f} s\n".format(avg_time) + \
