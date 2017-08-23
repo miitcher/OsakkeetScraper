@@ -25,7 +25,7 @@ def main(times):
     store_speed_run(times, whole_run_time)
 
     # Cleanup
-    if storage_directory != "scrapes" and False:
+    if storage_directory != "scrapes":
         speed_filenames = os.listdir(storage_directory)
         for filename_end in speed_filenames:
             filename = storage_directory + "\\" + filename_end
