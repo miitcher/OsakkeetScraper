@@ -26,44 +26,51 @@ class ScrapeException(Exception):
 
 def scrape_company_target_function(queue, company_id, company_name):
     # Used as target function for multitreading.Process
+    metrics = {}
     try:
+        # OLD
         company = Company(c_id=company_id, c_name=company_name)
         company.scrape()
-        queue.put(company.metrics)
+        metrics = company.metrics
+        """
+        # NEW: does not seem to be faster...
+        scraper = Scraper(company_id)
+        metrics = scraper.scrape()
+        """
     except:
-        queue.put( {"company_id": company_id, "company_name": company_name} )
+        pass
+    finally:
+        metrics["company_id"] = company_id
+        metrics["company_name"] = company_name
+        queue.put(metrics)
 
 def scrape_companies_with_processes(company_names, showProgress=True):
-    metrics_queue = Queue() # Company.metrics dicts are stored here
-    # TODO: Could use Pool instead of process_list.
-    #  Would the code be simpler? Performance?
-    process_list = []
+    metrics_queue = Queue() # metrics dictionaries are stored here
+    # TODO: Would Pool be better?
     for company_id in company_names:
         process = Process(
             target=scrape_company_target_function,
             args=(metrics_queue, company_id, company_names[company_id]),
             name="({}, {})".format(company_id, company_names[company_id])
         )
-        process_list.append(process)
-
-    for process in process_list:
         logger.debug("Starting {}".format(process))
         process.start()
 
     metrics_list = []
-    all_c = len(company_names) # all companies expected count
-    c = 0 # counter for len(metrics_list)
+    len_all = len(company_names)
+    len_metrics_list = 0 # counter
     while True:
-        if len(metrics_list) == all_c:
+        if len_metrics_list == len_all:
             break
         # .get() waits on the next value.
         # Then .join() is not needed for processes.
         metrics_list.append(metrics_queue.get())
+        len_metrics_list += 1
         if showProgress:
-            c += 1
-            if c%5 == 0:
+            if len_metrics_list%5 == 0:
                 logger.info("\t{:3}/{} - {:2}%".format(
-                    c, all_c, round( 100*c/all_c )
+                    len_metrics_list, len_all,
+                    round( 100 * len_metrics_list / len_all )
                 ))
 
     return metrics_list

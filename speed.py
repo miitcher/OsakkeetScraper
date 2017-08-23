@@ -44,9 +44,12 @@ def get_old_avg_time():
     time_sum = 0
     all_times = 0
     for line in lines:
-        date, times, whole_run_time = line.strip().split("\t")
-        time_sum += float(whole_run_time)
-        all_times += int(times)
+        try:
+            date, times, whole_run_time = line.strip().split("\t")
+            time_sum += float(whole_run_time)
+            all_times += int(times)
+        except:
+            pass
     if all_times:
         return time_sum / all_times
     else:

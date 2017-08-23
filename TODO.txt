@@ -1,7 +1,7 @@
-Handle missing metrics for companies
-
 Make code faster
     All raw_soup:s could be first gotten, and then be analyzed
+
+Handle missing metrics for companies
 
 Check if there is any usable code in OLD_CODE
 
