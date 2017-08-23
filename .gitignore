@@ -9,3 +9,6 @@
 # ignore scraped files
 *scrapes/*
 *speed/*
+
+# ignore log
+*speed_run.log
