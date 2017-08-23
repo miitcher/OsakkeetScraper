@@ -1,9 +1,11 @@
-import sys, os, time
+import sys, os, time, logging
 from datetime import date
 
 import scrape_logger
 import scraping
 import scrapeKL
+
+logger = logging.getLogger('speed')
 
 
 storage_directory = "speed"
@@ -32,6 +34,7 @@ def main(times):
 def store_speed_run(times, whole_run_time):
     date_str = date.today().strftime(scraping.date_short_format) # YY-MM-DD
     line_str = "{}\t{}\t{:.2f}\n".format(date_str, times, whole_run_time)
+    logger.debug("Store line: [{}]".format(line_str))
     with open(speed_filename, "a") as f:
         f.write(line_str)
 
@@ -82,8 +85,7 @@ def check_scrape_speed(old_avg_time, times):
 
 
 if __name__ == '__main__':
-    logger_root = scrape_logger.setup_logger()
-    scrape_logger.set_logger_level(logger_root, "WARNING")
+    logger_root = scrape_logger.setup_logger("WARNING")
     logger = scrape_logger.setup_logger(name="speed")
 
     times = 5

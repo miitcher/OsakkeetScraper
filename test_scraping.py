@@ -6,11 +6,9 @@ import scrape_logger
 from scraping import Scraper
 import scraping
 
-#import json
-#print(json.dumps(tunnuslukuja, indent=3))
 
-
-level = "INFO"
+level = "WARNING"
+#level = "INFO"
 #level = "DEBUG"
 logger = scrape_logger.setup_logger(level)
 

@@ -6,7 +6,8 @@ import scrape_logger
 import storage
 
 
-level = "INFO"
+level = "WARNING"
+#level = "INFO"
 #level = "DEBUG"
 logger = scrape_logger.setup_logger(level)
 

@@ -1,10 +1,10 @@
 import logging
 
+logger = logging.getLogger('root')
+
 
 long_f = "%(levelname)s:%(filename)s:%(funcName)s():%(lineno)s: %(message)s"
 short_f = '%(message)s'
-
-logger = logging.getLogger('root')
 
 
 def setup_logger(level="INFO", name="root"):

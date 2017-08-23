@@ -4,9 +4,8 @@ import scraping
 import storage
 import scrape_logger
 
-
-
 logger = logging.getLogger('root')
+
 
 """
 When a company is scraped, its raw metrics is stored.

@@ -10,7 +10,6 @@ from scraping import date_format
 import scrapeKL
 import scrape_logger
 
-
 logger = logging.getLogger('root')
 
 

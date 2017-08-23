@@ -1,11 +1,9 @@
+Handle missing metrics for companies
+
 Make code faster
     All raw_soup:s could be first gotten, and then be analyzed
 
 Check if there is any usable code in OLD_CODE
 
-Handle missing metrics for companies
-
 Make the command line interface better
     Could use the thing at work...
-
-Should I use unicode instead of strings?

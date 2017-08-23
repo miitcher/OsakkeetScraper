@@ -2,7 +2,6 @@ import requests, re, logging
 from bs4 import BeautifulSoup
 from datetime import date
 from multiprocessing import Process, Queue
-import json
 
 logger = logging.getLogger('root')
 
