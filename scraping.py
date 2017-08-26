@@ -80,7 +80,7 @@ def scrape_company_names():
         company_name = i.string
         if company_id and company_name:
             company_id = int(company_id)
-            company_name = Scraper.pretty_val(company_name, str)
+            company_name = Scraper.pretty_val_st(company_name, str)
             company_names[company_id] = company_name
         elif company_name != "Valitse osake":
             raise ScrapeException(
@@ -240,7 +240,8 @@ class Scraper():
     def make_soup_tulostiedot(self):
         self.soup_tulostiedot = self.get_raw_soup(self.url_tulostiedot)
 
-    def pretty_val(self, v, expected_type):
+    @staticmethod
+    def pretty_val_st(v, expected_type, c_id=None):
         """ expected_type can be:
                 int, float, str, date
             if there is a need:
@@ -248,7 +249,7 @@ class Scraper():
         """
         exception_str = \
             "c_id: {}; Unexpected type: expected_type:[{}], value:[{}]".format(
-                self.company_id, expected_type, v
+                c_id, expected_type, v
             )
         if not isinstance(expected_type, type):
             raise ScrapeException(exception_str)
@@ -328,6 +329,10 @@ class Scraper():
                 "Not an accepted type: [{}]".format(expected_type)
             )
         return v
+
+    def pretty_val(self, v, expected_type):
+        return self.pretty_val_st(v, expected_type, self.company_id)
+
 
     def scrape(self):
         self.metrics["scrape_date"] = date.today().strftime(date_format)
