@@ -1,4 +1,4 @@
-import requests, re, logging
+import requests, re, logging, traceback
 from bs4 import BeautifulSoup
 from datetime import date
 from multiprocessing import Process, Queue
@@ -26,16 +26,11 @@ class ScrapeException(Exception):
 
 def scrape_company_target_function(queue, company_id, company_name):
     # Used as target function for multitreading.Process
-    metrics = {}
     scraper = Scraper(company_id)
-    try:
-        metrics = scraper.scrape()
-    except:
-        pass
-    finally:
-        metrics["company_id"] = company_id
-        metrics["company_name"] = company_name
-        queue.put(metrics)
+    metrics = scraper.scrape()
+    metrics["company_id"] = company_id
+    metrics["company_name"] = company_name
+    queue.put(metrics)
 
 def scrape_companies_with_processes(company_names, showProgress=True):
     metrics_queue = Queue() # metrics dictionaries are stored here
@@ -342,202 +337,232 @@ class Scraper():
 
 
     def get_osingot(self):
-        if not self.soup_osingot:
-            self.make_soup_osingot()
-
-        table_tags = self.soup_osingot.find_all('table')
-        table_row_tags = table_tags[5].find_all('tr')
-        head = ["vuosi", "irtoaminen", "oikaistu_euroina", \
-                "maara", "valuutta", "tuotto_%", "lisatieto"]
-        osingot = {}
-        row_counter = 0
-        for row in table_row_tags:
-            sub_dict = {}
-            columns = row.find_all('td')
-            # if every metric (except "lisatieto") is empty it can be discarded
-            if not columns[0].string:
-                for i in range(1,6):
-                    if columns[i].string:
-                        raise ScrapeException("Unexpected osinko row")
-                continue
-            for i in range(7):
-                val = columns[i].string
-                if i == 0:
-                    val = self.pretty_val(val, int)
-                elif i == 1:
-                    val = self.pretty_val(val, date)
-                elif i == 2 or i == 3 or i == 5:
-                    val = self.pretty_val(val, float)
-                elif i == 4 or i == 6:
-                    val = self.pretty_val(val, str)
-                sub_dict[head[i]] = val
-            osingot[str(row_counter)] = sub_dict
-            row_counter += 1
-        return osingot
+        try:
+            if not self.soup_osingot:
+                self.make_soup_osingot()
+    
+            table_tags = self.soup_osingot.find_all('table')
+            table_row_tags = table_tags[5].find_all('tr')
+            head = ["vuosi", "irtoaminen", "oikaistu_euroina", \
+                    "maara", "valuutta", "tuotto_%", "lisatieto"]
+            osingot = {}
+            row_counter = 0
+            for row in table_row_tags:
+                sub_dict = {}
+                columns = row.find_all('td')
+                # if every metric (except "lisatieto") is empty it can be discarded
+                if not columns[0].string:
+                    for i in range(1,6):
+                        if columns[i].string:
+                            raise ScrapeException("Unexpected osinko row")
+                    continue
+                for i in range(7):
+                    val = columns[i].string
+                    if i == 0:
+                        val = self.pretty_val(val, int)
+                    elif i == 1:
+                        if val is not None:
+                            val = self.pretty_val(val, date)
+                    elif i == 2 or i == 3 or i == 5:
+                        if val is not None:
+                            val = self.pretty_val(val, float)
+                    elif i == 4 or i == 6:
+                        val = self.pretty_val(val, str)
+                    sub_dict[head[i]] = val
+                osingot[str(row_counter)] = sub_dict
+                row_counter += 1
+            return osingot
+        except:
+            traceback.print_exc()
+            return None
 
 
     def get_kurssi(self):
-        if not self.soup_kurssi:
-            self.make_soup_kurssi()
-
-        table_tags = self.soup_kurssi.find_all('table')
-        kurssi = table_tags[5].find('span').text
-        kurssi = self.pretty_val(kurssi, float)
-        return kurssi
+        try:
+            if not self.soup_kurssi:
+                self.make_soup_kurssi()
+    
+            table_tags = self.soup_kurssi.find_all('table')
+            kurssi = table_tags[5].find('span').text
+            kurssi = self.pretty_val(kurssi, float)
+            return kurssi
+        except:
+            traceback.print_exc()
+            return None
 
     def get_kuvaus(self):
-        if not self.soup_kurssi:
-            self.make_soup_kurssi()
-
-        class_padding_tags = self.soup_kurssi.find_all(class_="paddings")
-        kuvaus = None
-        for tag in class_padding_tags:
-            if tag.parent.h3.text == "Yrityksen perustiedot":
-                kuvaus = tag.p.text.strip().replace("\n"," ").replace("\r"," ")
-                kuvaus = self.pretty_val(kuvaus, str)
-        if not kuvaus:
-            raise ScrapeException("Kuvaus not found")
-        return kuvaus
+        try:
+            if not self.soup_kurssi:
+                self.make_soup_kurssi()
+    
+            class_padding_tags = self.soup_kurssi.find_all(class_="paddings")
+            kuvaus = None
+            for tag in class_padding_tags:
+                if tag.parent.h3.text == "Yrityksen perustiedot":
+                    kuvaus = tag.p.text.strip().replace("\n"," ").replace("\r"," ")
+                    kuvaus = self.pretty_val(kuvaus, str)
+            if not kuvaus:
+                raise ScrapeException("Kuvaus not found")
+            return kuvaus
+        except:
+            traceback.print_exc()
+            return None
 
     def get_perustiedot(self):
-        if not self.soup_kurssi:
-            self.make_soup_kurssi()
-
-        class_is_TSBD = self.soup_kurssi.find_all(class_="table_stock_basic_details")
-        perustiedot = {}
-        perustiedot_tag = None
-        for tag in class_is_TSBD:
-            if tag.parent.parent.h3.text.strip() == "Osakkeen perustiedot":
-                perustiedot_tag = tag
-                break
-        tr_tags = perustiedot_tag.find_all('tr')
-        c = 0
-        for i in tr_tags:
-            td_tags = i.find_all('td')
-            if c == 0:
-                key = td_tags[0].text.replace(":","")
-                val = td_tags[1].text
-                perustiedot[self.pretty_val(key, str)] = self.pretty_val(val, str)
-
-                strs = td_tags[2].text.split("\n")
-                [key, val] = strs[1].split(":")
-                perustiedot[self.pretty_val(key, str)] = self.pretty_val(val, str)
-
-                [key, val] = strs[2].split(":")
-                perustiedot[self.pretty_val(key, str)] = self.pretty_val(val, str)
-                c += 1
-            else:
-                key = td_tags[0].text.strip().replace(":","")
-                val = td_tags[1].text.strip()
-                key = self.pretty_val(key, str)
-                if key == "osakkeet":
-                    key = "{}_kpl".format(key)
-                    val = val.replace("kpl","").replace("\xa0", "")
-                    val = self.pretty_val(val, int)
-                elif key == "markkina-arvo":
-                    val = self.pretty_val(val, float)
-                elif key == "listattu":
-                    val = self.pretty_val(val, date)
-                elif key == "isin-koodi" or key == "porssi" or \
-                            key == "nimellisarvo":
-                    val = self.pretty_val(val, str)
-                elif key == "kaupank. val.":
-                    key = "kaupankaynti_valuutta"
-                    val = self.pretty_val(val, str)
+        try:
+            if not self.soup_kurssi:
+                self.make_soup_kurssi()
+    
+            class_is_TSBD = self.soup_kurssi.find_all(class_="table_stock_basic_details")
+            perustiedot = {}
+            perustiedot_tag = None
+            for tag in class_is_TSBD:
+                if tag.parent.parent.h3.text.strip() == "Osakkeen perustiedot":
+                    perustiedot_tag = tag
+                    break
+            tr_tags = perustiedot_tag.find_all('tr')
+            c = 0
+            for i in tr_tags:
+                td_tags = i.find_all('td')
+                if c == 0:
+                    key = td_tags[0].text.replace(":","")
+                    val = td_tags[1].text
+                    perustiedot[self.pretty_val(key, str)] = self.pretty_val(val, str)
+    
+                    strs = td_tags[2].text.split("\n")
+                    [key, val] = strs[1].split(":")
+                    perustiedot[self.pretty_val(key, str)] = self.pretty_val(val, str)
+    
+                    [key, val] = strs[2].split(":")
+                    perustiedot[self.pretty_val(key, str)] = self.pretty_val(val, str)
+                    c += 1
                 else:
-                    raise ScrapeException(
-                        "Unrecognized key: {}, val: {}".format(key, val)
-                    )
-                perustiedot[key] = val
-        return perustiedot
+                    key = td_tags[0].text.strip().replace(":","")
+                    val = td_tags[1].text.strip()
+                    key = self.pretty_val(key, str)
+                    if key == "osakkeet":
+                        key = "{}_kpl".format(key)
+                        val = val.replace("kpl","").replace("\xa0", "")
+                        val = self.pretty_val(val, int)
+                    elif key == "markkina-arvo":
+                        val = self.pretty_val(val, float)
+                    elif key == "listattu":
+                        val = self.pretty_val(val, date)
+                    elif key == "isin-koodi" or key == "porssi" or \
+                                key == "nimellisarvo":
+                        val = self.pretty_val(val, str)
+                    elif key == "kaupank. val.":
+                        key = "kaupankaynti_valuutta"
+                        val = self.pretty_val(val, str)
+                    else:
+                        raise ScrapeException(
+                            "Unrecognized key: {}, val: {}".format(key, val)
+                        )
+                    perustiedot[key] = val
+            return perustiedot
+        except:
+            traceback.print_exc()
+            return None
 
     def get_tunnuslukuja(self):
-        if not self.soup_kurssi:
-            self.make_soup_kurssi()
-
-        table_tags = self.soup_kurssi.find_all('table')
-        tunnuslukuja = {}
-        tunnuslukuja_tag = None
-        for tag in table_tags:
-            if tag.parent.p and tag.parent.p.text.strip() == "Tunnuslukuja":
-                tunnuslukuja_tag = tag
-                break
-        tr_tags = tunnuslukuja_tag.find_all('tr')
-        head = [
-            "viimeisin_kurssi_eur",
-            "tulos/osake",
-            "oma_paaoma/osake_eur",
-            "p/e-luku_reaali",
-            "osinko/osake_eur",
-            "markkina-arvo_eur"
-        ]
-        c = 0
-        for i in tr_tags:
-            td_tags = i.find_all('td')
-            if c == 0:
-                strs = td_tags[0].text.split("(")
-                #key = strs[0].strip() # key could be used for debuging
-                val = strs[1].replace(")","")
-            else:
-                #key = td_tags[0].text
-                val = td_tags[1].text
-            tunnuslukuja[head[c]] = self.pretty_val(val, float)
-            c += 1
-        return tunnuslukuja
+        # The tunnuslukuja field is missing on many companies.
+        # This is not an fail, but means that the company is probably smaller,
+        # because Kauppalehti does not provide the most updated tunnuslukuja
+        # of the company.
+        try:
+            if not self.soup_kurssi:
+                self.make_soup_kurssi()
+    
+            table_tags = self.soup_kurssi.find_all('table')
+            tunnuslukuja = {}
+            tunnuslukuja_tag = None
+            for tag in table_tags:
+                if tag.parent.p and tag.parent.p.text.strip() == "Tunnuslukuja":
+                    tunnuslukuja_tag = tag
+                    break
+            tr_tags = tunnuslukuja_tag.find_all('tr')
+            head = [
+                "viimeisin_kurssi_eur",
+                "tulos/osake",
+                "oma_paaoma/osake_eur",
+                "p/e-luku_reaali",
+                "osinko/osake_eur",
+                "markkina-arvo_eur"
+            ]
+            c = 0
+            for i in tr_tags:
+                td_tags = i.find_all('td')
+                if c == 0:
+                    strs = td_tags[0].text.split("(")
+                    #key = strs[0].strip() # key could be used for debuging
+                    val = strs[1].replace(")","")
+                else:
+                    #key = td_tags[0].text
+                    val = td_tags[1].text
+                tunnuslukuja[head[c]] = self.pretty_val(val, float)
+                c += 1
+            return tunnuslukuja
+        except:
+            traceback.print_exc()
+            return None
 
 
     def get_tulostiedot(self, header, head=None):
-        if head:
-            assert isinstance(head, list), "Invalid head type: {}".format(type(head))
-            for s in head:
-                assert isinstance(s, str), "Invalid name type: {}".format(type(s))
-
-        if not self.soup_tulostiedot:
-            self.make_soup_tulostiedot()
-
-        table_tags = self.soup_tulostiedot.find_all(class_="table_stockexchange")
-        tulostiedot = {}
-        tulostiedot_tag = None
-        for tag in table_tags:
-            if tag.parent.h3 and tag.parent.h3.text.strip().lower() == header.lower():
-                tulostiedot_tag = tag
-                break
-        if not tulostiedot_tag:
-            return None
-        tr_tags = tulostiedot_tag.find_all('tr')
-        # Go trough rows, and store them before populating tulostiedot.
-        type_row_list = []
-        r = 0 # row counter
-        for i in tr_tags:
-            td_tags = i.find_all('td')
-            type_row = []
-            c = 0 # column counter
-            for j in td_tags:
-                if c == 0 or r == 0:
-                    val = self.pretty_val(j.text, str)
-                else:
-                    val = self.pretty_val(j.text, float)
-                type_row.append(val)
-                c += 1
-            r += 1
-            type_row_list.append(type_row)
-        # Reorganize data
-        row_count = len(type_row_list)
-        col_count = len(type_row_list[0])
-        if head:
-            assert len(head) == row_count - 1, \
-                "Expected rows: {}; Got: {}".format(len(head), row_count - 1)
-        # type_row_list[0] is like: "12/16"
-        for col in range(1, col_count):
-            if type_row_list[0][col].strip():
-                sub_dict = {}
-                for row in range(1, row_count):
-                    if head:
-                        sub_dict[head[row - 1]] = type_row_list[row][col]
+        try:
+            if head:
+                assert isinstance(head, list), "Invalid head type: {}".format(type(head))
+                for s in head:
+                    assert isinstance(s, str), "Invalid name type: {}".format(type(s))
+    
+            if not self.soup_tulostiedot:
+                self.make_soup_tulostiedot()
+    
+            table_tags = self.soup_tulostiedot.find_all(class_="table_stockexchange")
+            tulostiedot = {}
+            tulostiedot_tag = None
+            for tag in table_tags:
+                if tag.parent.h3 and tag.parent.h3.text.strip().lower() == header.lower():
+                    tulostiedot_tag = tag
+                    break
+            if not tulostiedot_tag:
+                return None
+            tr_tags = tulostiedot_tag.find_all('tr')
+            # Go trough rows, and store them before populating tulostiedot.
+            type_row_list = []
+            r = 0 # row counter
+            for i in tr_tags:
+                td_tags = i.find_all('td')
+                type_row = []
+                c = 0 # column counter
+                for j in td_tags:
+                    if c == 0 or r == 0:
+                        val = self.pretty_val(j.text, str)
                     else:
-                        sub_dict[type_row_list[row][0]] = type_row_list[row][col]
-                tulostiedot[self.pretty_val(type_row_list[0][col], str)] = sub_dict
-        return tulostiedot
+                        val = self.pretty_val(j.text, float)
+                    type_row.append(val)
+                    c += 1
+                r += 1
+                type_row_list.append(type_row)
+            # Reorganize data
+            row_count = len(type_row_list)
+            col_count = len(type_row_list[0])
+            if head:
+                assert len(head) == row_count - 1, \
+                    "Expected rows: {}; Got: {}".format(len(head), row_count - 1)
+            # type_row_list[0] is like: "12/16"
+            for col in range(1, col_count):
+                if type_row_list[0][col].strip():
+                    sub_dict = {}
+                    for row in range(1, row_count):
+                        if head:
+                            sub_dict[head[row - 1]] = type_row_list[row][col]
+                        else:
+                            sub_dict[type_row_list[row][0]] = type_row_list[row][col]
+                    tulostiedot[self.pretty_val(type_row_list[0][col], str)] = sub_dict
+            return tulostiedot
+        except:
+            traceback.print_exc()
+            return None
 
     def get_toiminnan_laajuus(self):
         head = [

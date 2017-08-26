@@ -29,17 +29,19 @@ def scrape_companies(storage_directory, company_names=None, showProgress=True):
     )
 
     # Find failed scrapes
-    failed_company_dict = {}
+    failed_dict = {}
     for metrics in metrics_list:
-        if len(metrics) < 3:
-            assert len(metrics) == 2, "metrics entries: {}".format(len(metrics))
-            failed_company_dict[metrics["company_id"]] = metrics["company_name"]
-            logger.debug("Failed: Company({}, {})".format(
-                metrics["company_id"], metrics["company_name"]
-            ))
+        failed_on = []
+        for key, value in metrics.items():
+            # Missing tunnuslukuja is not a fail.
+            if value is None and key != "tunnuslukuja":
+                failed_on.append(key)
+        if len(failed_on) > 0:
+            failed_dict[metrics["company_id"]] = (metrics["company_name"],
+                                                  failed_on)
 
     company_count = len(company_names)
-    company_failed_count = len(failed_company_dict)
+    company_failed_count = len(failed_dict)
     assert company_count == len(metrics_list)
     logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
         company_count - company_failed_count,
@@ -48,20 +50,22 @@ def scrape_companies(storage_directory, company_names=None, showProgress=True):
 
     if company_failed_count > 0:
         failed_companies_str = "\n\tFailed Companies ({}):\n".format(
-            len(failed_company_dict)) + "-"*40
+            len(failed_dict)) + "-"*80
         i = 1
-        for c_id in sorted(failed_company_dict, key=failed_company_dict.get):
-            failed_companies_str += "\n\t{:3}. ({}, {})".format(
-                i, c_id, failed_company_dict[c_id]
-            )
+        for c_id in sorted(failed_dict, key=failed_dict.get):
+            c_name = failed_dict[c_id][0]
+            failed_on = failed_dict[c_id][1]
+            failed_companies_str += "\n {:3}. ({}, {})".format(i, c_id, c_name)
+            for fail in failed_on:
+                failed_companies_str += "\n\t" + fail
             i += 1
-        failed_companies_str += "\n" + "-"*40
+        failed_companies_str += "\n" + "-"*80
         logger.info(failed_companies_str)
 
     metrics_filename = storage.store_metrics(storage_directory, metrics_list)
     logger.info("Companies stored in file: {}".format(metrics_filename))
 
-    return metrics_list, failed_company_dict, metrics_filename
+    return metrics_list, failed_dict, metrics_filename
 
 def print_names(storage_directory=None, names_filename=None,
                 company_names=None):
@@ -165,14 +169,16 @@ def get_company_names(storage_directory):
 
 console_instructions = \
 "ScrapeKL\n\
- s, scrape\n\
+ s, scrape [--id=<id>]\n\
  f, files\n\
  n, names [file]\n\
  m, metrics <file> [--name=<name> | --id=<id>]"
 
 
 if __name__ == '__main__':
-    logger = scrape_logger.setup_logger()
+    #level = "INFO"
+    level = "DEBUG"
+    logger = scrape_logger.setup_logger(level)
 
     # Storage
     storage_directory = "scrapes"
@@ -183,8 +189,15 @@ if __name__ == '__main__':
     if len(sys.argv) == 1 or sys.argv[1] == "help":
         print(console_instructions)
     elif sys.argv[1] == "scrape" or sys.argv[1] == "s":
+        company_names = None
+        if len(sys.argv) > 2:
+            try:
+                company_names = {int(sys.argv[2]):""}
+            except ValueError:
+                logger.info("Invalid id type: ".format(type(sys.argv[2])))
+        logger.debug("company_names to scrape: {}".format(company_names))
         time0 = time.time()
-        company_names = scrape_companies(storage_directory)
+        scrape_companies(storage_directory, company_names)
         print("Scraping took: {:.2f} s".format(time.time() - time0))
     elif sys.argv[1] == "files" or sys.argv[1] == "f":
         all_filenames = os.listdir(storage_directory)
