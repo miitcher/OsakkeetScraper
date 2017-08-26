@@ -33,8 +33,8 @@ def scrape_companies(storage_directory, company_names=None, showProgress=True):
     for metrics in metrics_list:
         failed_on = []
         for key, value in metrics.items():
-            # Missing tunnuslukuja is not a fail.
-            if value is None and key != "tunnuslukuja":
+            # If value is None it is not a fail.
+            if value == "FAIL":
                 failed_on.append(key)
         if len(failed_on) > 0:
             failed_dict[metrics["company_id"]] = (metrics["company_name"],

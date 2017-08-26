@@ -2,8 +2,15 @@ import requests, re, logging, traceback
 from bs4 import BeautifulSoup
 from datetime import date
 from multiprocessing import Process, Queue
+import scrape_logger
 
-logger = logging.getLogger('root')
+#logger = logging.getLogger('root')
+
+#level = "WARNING"
+#level = "INFO"
+level = "DEBUG"
+logger = scrape_logger.setup_logger(level, "scraping")
+scrape_logger.set_logger_level(logger, level)
 
 
 url_basic = "http://www.kauppalehti.fi/5/i/porssi/"
@@ -209,6 +216,7 @@ class Scraper():
     def __init__(self, company_id):
         assert isinstance(company_id, int)
         self.metrics = {}
+        self.company_id = company_id
         self.url_osingot = osingot_yritys_url.format(company_id)
         self.url_kurssi = kurssi_url.format(company_id)
         self.url_tulostiedot = kurssi_tulostiedot_url.format(company_id)
@@ -232,16 +240,16 @@ class Scraper():
     def make_soup_tulostiedot(self):
         self.soup_tulostiedot = self.get_raw_soup(self.url_tulostiedot)
 
-    @staticmethod
-    def pretty_val(v, expected_type):
+    def pretty_val(self, v, expected_type):
         """ expected_type can be:
                 int, float, str, date
             if there is a need:
                 handle more string replacements (like miljard, etc.)
         """
-        exception_str = "Unexpected type: expected_type:[{}], value:[{}]".format(
-            expected_type, v
-        )
+        exception_str = \
+            "c_id: {}; Unexpected type: expected_type:[{}], value:[{}]".format(
+                self.company_id, expected_type, v
+            )
         if not isinstance(expected_type, type):
             raise ScrapeException(exception_str)
         if expected_type != str and isinstance(v, expected_type):
@@ -254,16 +262,21 @@ class Scraper():
                 return None
             coefficient = 1
             if not isinstance(v, int) and not isinstance(v, float):
-                v = v.lower().replace("€", "").replace("eur", "")
+                v = v.lower().replace("?", "")
+                v = v.replace("€", "").replace("eur", "")
                 # remove noncompatibel characters in unicode (\x80-\xFF):
                 v = re.sub(r'[^\x00-\x7F]+','', v)
                 v = v.replace("\x00", "") # Remove empty character
                 if "milj." in v:
                     coefficient *= 1e6
                     v = v.replace("milj.", "")
+                v = v.strip()
+            if v == "" or v == "-":
+                return None
             try:
                 v = float(v) * coefficient
             except ValueError:
+                #print("[{}]".format(v))
                 if "," in v:
                     v = float(v.replace(".", "").replace(",", ".")) \
                             * coefficient
@@ -374,7 +387,7 @@ class Scraper():
             return osingot
         except:
             traceback.print_exc()
-            return None
+            return "FAIL"
 
 
     def get_kurssi(self):
@@ -388,7 +401,7 @@ class Scraper():
             return kurssi
         except:
             traceback.print_exc()
-            return None
+            return "FAIL"
 
     def get_kuvaus(self):
         try:
@@ -406,7 +419,7 @@ class Scraper():
             return kuvaus
         except:
             traceback.print_exc()
-            return None
+            return "FAIL"
 
     def get_perustiedot(self):
         try:
@@ -462,7 +475,7 @@ class Scraper():
             return perustiedot
         except:
             traceback.print_exc()
-            return None
+            return "FAIL"
 
     def get_tunnuslukuja(self):
         # The tunnuslukuja field is missing on many companies.
@@ -480,6 +493,9 @@ class Scraper():
                 if tag.parent.p and tag.parent.p.text.strip() == "Tunnuslukuja":
                     tunnuslukuja_tag = tag
                     break
+            if not tunnuslukuja_tag:
+                logger.debug("c_id: {}; NO tunnuslukuja".format(self.company_id))
+                return None
             tr_tags = tunnuslukuja_tag.find_all('tr')
             head = [
                 "viimeisin_kurssi_eur",
@@ -499,12 +515,14 @@ class Scraper():
                 else:
                     #key = td_tags[0].text
                     val = td_tags[1].text
-                tunnuslukuja[head[c]] = self.pretty_val(val, float)
+                if val:
+                    val = self.pretty_val(val, float)
+                tunnuslukuja[head[c]] = val
                 c += 1
             return tunnuslukuja
         except:
             traceback.print_exc()
-            return None
+            return "FAIL"
 
 
     def get_tulostiedot(self, header, head=None):
@@ -525,6 +543,7 @@ class Scraper():
                     tulostiedot_tag = tag
                     break
             if not tulostiedot_tag:
+                logger.debug("c_id: {}; NO {}".format(self.company_id, header))
                 return None
             tr_tags = tulostiedot_tag.find_all('tr')
             # Go trough rows, and store them before populating tulostiedot.
@@ -548,7 +567,9 @@ class Scraper():
             col_count = len(type_row_list[0])
             if head:
                 assert len(head) == row_count - 1, \
-                    "Expected rows: {}; Got: {}".format(len(head), row_count - 1)
+                    "c_id: {}; Expected rows: {}; Got: {}".format(
+                        self.company_id, len(head), row_count - 1
+                    )
             # type_row_list[0] is like: "12/16"
             for col in range(1, col_count):
                 if type_row_list[0][col].strip():
@@ -562,7 +583,7 @@ class Scraper():
             return tulostiedot
         except:
             traceback.print_exc()
-            return None
+            return "FAIL"
 
     def get_toiminnan_laajuus(self):
         head = [
