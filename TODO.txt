@@ -1,8 +1,7 @@
-Handle missing metrics for companies.
-    The companies that fails the scraping, should just not get the
-    metrics that fails, but get the other metrics.
-        The metrics they do not get, I need to check.
-            The expected missing metrics are then not fails.
+Handle missing metrics for companies (get-function returns None).
+    * List all metrics that are missing, for all companies.
+    * Check if the missing metrics are also missing on Kauppalehti.fi.
+    * Store (known) truly missing metrics as None, and rest as "FAIL".
 
 Check if there is any usable code in OLD_CODE.
 

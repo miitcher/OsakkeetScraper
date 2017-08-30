@@ -1,4 +1,4 @@
-import requests, re, logging, traceback
+import requests, re, logging, traceback, time
 from bs4 import BeautifulSoup
 from datetime import date
 from multiprocessing import Process, Queue
@@ -6,9 +6,8 @@ import scrape_logger
 
 #logger = logging.getLogger('root')
 
-#level = "WARNING"
-#level = "INFO"
-level = "DEBUG"
+level = "INFO"
+#level = "DEBUG"
 logger = scrape_logger.setup_logger(level, "scraping")
 scrape_logger.set_logger_level(logger, level)
 
@@ -30,6 +29,12 @@ date_pattern_1 = re.compile("^\d{2}\.\d{2}\.\d{4}$") # DD.MM.YYYY
 class ScrapeException(Exception):
     pass
 
+class ScrapeNetworkException(Exception):
+    pass
+
+class ScrapeAgainFailedException(Exception):
+    pass
+
 
 def scrape_company_target_function(queue, company_id, company_name):
     # Used as target function for multitreading.Process
@@ -48,7 +53,7 @@ def scrape_companies_with_processes(company_names, showProgress=True):
             args=(metrics_queue, company_id, company_names[company_id]),
             name="({}, {})".format(company_id, company_names[company_id])
         )
-        logger.debug("Starting {}".format(process))
+        #logger.debug("Starting {}".format(process))
         process.start()
 
     metrics_list = []
@@ -225,6 +230,9 @@ class Scraper():
         self.soup_kurssi = None
         self.soup_tulostiedot = None
 
+        self.max_scrape_retries = 3
+        self.wait_before_last_retry = 1 # seconds
+
     @staticmethod
     def get_raw_soup(link):
         r = requests.get(link)
@@ -255,12 +263,11 @@ class Scraper():
             raise ScrapeException(exception_str)
         if expected_type != str and isinstance(v, expected_type):
             return v
-        if expected_type != str and not v:
-            raise ScrapeException(exception_str)
+        if not v or ( isinstance(v, str) \
+                      and ( v.strip() == "" or v.strip() == "-" ) ):
+            return None
 
         if expected_type == int or expected_type == float:
-            if isinstance(v, str) and v.strip() == "-":
-                return None
             coefficient = 1
             if not isinstance(v, int) and not isinstance(v, float):
                 v = v.lower().replace("?", "")
@@ -277,7 +284,6 @@ class Scraper():
             try:
                 v = float(v) * coefficient
             except ValueError:
-                #print("[{}]".format(v))
                 if "," in v:
                     v = float(v.replace(".", "").replace(",", ".")) \
                             * coefficient
@@ -292,28 +298,19 @@ class Scraper():
                 if v != v_float:
                     raise ScrapeException(exception_str)
         elif expected_type == str:
-            if v == None:
-                v = ""
-            else:
-                try:
-                    v = str(v).strip().lower()
-                    # possible confusing in string
-                    v = v.replace("\"", "").replace("'", "")
-                    # the scandinavian letters:
-                    # TODO: Is this needed? Test if no problems.
-                    v = v.replace("\xe4", "a").replace("\xe5", "a")
-                    v = v.replace("\xf6", "o")
-                    # remove noncompatibel characters in unicode (\x80-\xFF):
-                    len_v = len(v)
-                    v = re.sub(r'[^\x00-\x7F]+','', v)
-                    if len_v != len(v):
-                        pass
-                        # TODO: Fix this
-                        #raise ScrapeException("Weird character(s)!")
-                except ValueError:
-                    raise ScrapeException(exception_str)
-            if v == "-":
-                v = ""
+            try:
+                v = str(v).strip().lower()
+                # possible confusing characters in string
+                v = v.replace("\"", "").replace("'", "")
+                # the scandinavian letters:
+                # TODO: Is this needed? Test if no problems.
+                v = v.replace("\xe4", "a").replace("\xe5", "a")
+                v = v.replace("\xf6", "o")
+                # remove noncompatibel characters in unicode (\x80-\xFF):
+                # TODO: Could use unicode instead.
+                v = re.sub(r'[^\x00-\x7F]+','', v)
+            except ValueError:
+                raise ScrapeException(exception_str)
         elif expected_type == date:
             v = v.strip()
             if date_pattern_1.match(v): # DD.MM.YYYY
@@ -499,7 +496,7 @@ class Scraper():
                     tunnuslukuja_tag = tag
                     break
             if not tunnuslukuja_tag:
-                logger.debug("c_id: {}; NO tunnuslukuja".format(self.company_id))
+                #logger.debug("c_id: {}; NO tunnuslukuja".format(self.company_id))
                 return None
             tr_tags = tunnuslukuja_tag.find_all('tr')
             head = [
@@ -530,7 +527,7 @@ class Scraper():
             return "FAIL"
 
 
-    def get_tulostiedot(self, header, head=None):
+    def get_tulostiedot(self, header, head=None, attempt=1):
         try:
             if head:
                 assert isinstance(head, list), "Invalid head type: {}".format(type(head))
@@ -548,7 +545,7 @@ class Scraper():
                     tulostiedot_tag = tag
                     break
             if not tulostiedot_tag:
-                logger.debug("c_id: {}; NO {}".format(self.company_id, header))
+                #logger.debug("c_id: {}; NO {}".format(self.company_id, header))
                 return None
             tr_tags = tulostiedot_tag.find_all('tr')
             # Go trough rows, and store them before populating tulostiedot.
@@ -571,13 +568,16 @@ class Scraper():
             row_count = len(type_row_list)
             col_count = len(type_row_list[0])
             if head:
-                assert len(head) == row_count - 1, \
-                    "c_id: {}; Expected rows: {}; Got: {}".format(
-                        self.company_id, len(head), row_count - 1
-                    )
+                if len(head) != row_count - 1:
+                    if attempt <= self.max_scrape_retries:
+                        if attempt == self.max_scrape_retries:
+                            time.sleep(self.wait_before_last_retry)
+                        raise ScrapeNetworkException()
+                    else:
+                        raise ScrapeAgainFailedException()
             # type_row_list[0] is like: "12/16"
             for col in range(1, col_count):
-                if type_row_list[0][col].strip():
+                if type_row_list[0][col]:
                     sub_dict = {}
                     for row in range(1, row_count):
                         if head:
@@ -586,9 +586,27 @@ class Scraper():
                             sub_dict[type_row_list[row][0]] = type_row_list[row][col]
                     tulostiedot[self.pretty_val(type_row_list[0][col], str)] = sub_dict
             return tulostiedot
+        except ScrapeNetworkException:
+            logger.debug("Try again: c_id: {}; header: {}; attempt: {}".format(
+                self.company_id, header, attempt
+            ))
+            attempt += 1
+            self.make_soup_tulostiedot()
+            retval =  self.get_tulostiedot(header, head, attempt)
+            if retval != "FAIL":
+                logger.debug("Scraping again was successfull for: " + \
+                             "c_id: {}; header: {}; attempt: {}".format(
+                                 self.company_id, header, attempt
+                ))
+            return retval
+        except ScrapeAgainFailedException:
+            logger.debug("Scraping failed: " + \
+                "c_id: {}; header: {}; Expected rows: {}; Got: {}".format(
+                    self.company_id, header, len(head), row_count - 1
+            ))
         except:
             traceback.print_exc()
-            return "FAIL"
+        return "FAIL"
 
     def get_toiminnan_laajuus(self):
         head = [

@@ -176,8 +176,8 @@ console_instructions = \
 
 
 if __name__ == '__main__':
-    #level = "INFO"
-    level = "DEBUG"
+    level = "INFO"
+    #level = "DEBUG"
     logger = scrape_logger.setup_logger(level)
 
     # Storage

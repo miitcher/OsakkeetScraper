@@ -55,42 +55,52 @@ class Test(unittest.TestCase):
 
     def test_pretty_val(self):
         # expected_type can be: int, float, str, date
+
+        # OUTPUT IS NONE
+        for v in ["-", "", " \t", None]:
+            test_pretty_val_Equal(self, int, v, None)
+            test_pretty_val_Equal(self, float, v, None)
+            test_pretty_val_Equal(self, str, v, None)
+            test_pretty_val_Equal(self, date, v, None)
+
+        # INT
         test_pretty_val_Equal(self, int, 12, 12)
         test_pretty_val_Equal(self, int, "12", 12)
         test_pretty_val_Equal(self, int, "100milj.eur", 1e8)
         test_pretty_val_Equal(self, int, "3.4milj.eur", 34e5)
-        for v in ["38.2", " ", "", None, "he", "3,5", 2.1, "2miljard.eur"]:
+        for v in ["38.2", "he", "3,5", 2.1, "2miljard.eur"]:
             self.assertRaises(scraping.ScrapeException,
-                              Scraper.pretty_val, v, int)
+                              Scraper.pretty_val_st, v, int)
 
+        # FLOAT
         test_pretty_val_Equal(self, float, 38.23, 38.23)
         test_pretty_val_Equal(self, float, "38.23", 38.23)
         test_pretty_val_Equal(self, float, "3.4milj.eur", 34e5)
         test_pretty_val_Equal(self, float, 2.1, 2.1)
-        for v in [" ", "", None, "he"]:
+        for v in ["he"]:
             self.assertRaises(scraping.ScrapeException,
-                              Scraper.pretty_val, v, float)
+                              Scraper.pretty_val_st, v, float)
 
+        # STR
         test_pretty_val_Equal(self, str, "38.23", "38.23")
         test_pretty_val_Equal(self, str, "fooBar\n", "foobar")
         test_pretty_val_Equal(self, str, " aåäöox ", "aaaoox")
-        test_pretty_val_Equal(self, str, None, "")
-        test_pretty_val_Equal(self, str, "", "")
-        test_pretty_val_Equal(self, str, " ", "")
 
+        # DATE
         # DD.MM.YYYY --> YYYY-MM-DD
         test_pretty_val_Equal(self, date, "2016-02-01", "2016-02-01")
         test_pretty_val_Equal(self, date, "12.11.2002", "2002-11-12")
         test_pretty_val_Equal(self, date, "01.02.2016", "2016-02-01")
         for v in ["01.20.2015", "01-02-2016", "01022016",
-                  "1.1.1aaaaa", "i01.02.2011i", "", None, " "]:
+                  "1.1.1aaaaa", "i01.02.2011i"]:
             self.assertRaises(scraping.ScrapeException,
-                              Scraper.pretty_val, v, date)
+                              Scraper.pretty_val_st, v, date)
 
+        # OTHER TYPES
         self.assertRaises(scraping.ScrapeException,
-                          Scraper.pretty_val, "value", datetime)
+                          Scraper.pretty_val_st, "value", datetime)
         self.assertRaises(scraping.ScrapeException,
-                          Scraper.pretty_val, "value", "type")
+                          Scraper.pretty_val_st, "value", "type")
 
     def test_scrape_company_names(self):
         company_names = scraping.scrape_company_names()
@@ -126,7 +136,7 @@ class Test(unittest.TestCase):
             'lisatieto': 'paaomanpalautus'
         }
         one_expected_osinko_1050 = {
-            'lisatieto': '',
+            'lisatieto': None,
             'oikaistu_euroina': 0.37,
             'maara': 0.37,
             'tuotto_%': 2.1,
@@ -138,7 +148,7 @@ class Test(unittest.TestCase):
             'valuutta': 'eur',
             'irtoaminen': "2003-04-25",
             'oikaistu_euroina': 0.18,
-            'lisatieto': '',
+            'lisatieto': None,
             'maara': 0.23,
             'tuotto_%': 4.8,
             'vuosi': 2003
@@ -155,7 +165,7 @@ class Test(unittest.TestCase):
             'kaupankayntitunnus': 'tnom',
             'toimialaluokka': 'teollisuushyodykkeet ja -palvelut',
             'isin-koodi': 'fi4000153580',
-            'nimellisarvo': '',
+            'nimellisarvo': None,
             'porssi': 'omx helsinki'
         }
         part_of_expected_perustiedot_1032 = {
@@ -164,7 +174,7 @@ class Test(unittest.TestCase):
             'toimiala': 'yleishyodylliset palvelut',
             'kaupankaynti_valuutta': 'eur',
             'kaupankayntitunnus': 'fortum',
-            'nimellisarvo': '',
+            'nimellisarvo': None,
             'listattu': '1998-12-18',
             'toimialaluokka': 'yleishyodyllliset palvelut'
         }
@@ -174,7 +184,7 @@ class Test(unittest.TestCase):
             'kaupankaynti_valuutta': 'eur',
             'kaupankayntitunnus': 'upm',
             'toimiala': 'perusteollisuus',
-            'nimellisarvo': '',
+            'nimellisarvo': None,
             'listattu': '1996-05-02',
             'isin-koodi': 'fi0009005987',
         }
@@ -211,9 +221,11 @@ class Test(unittest.TestCase):
 
 
 def test_pretty_val_Equal(tester, expected_type, v, expected_v):
-    pretty_v = Scraper.pretty_val(v, expected_type)
+    pretty_v = Scraper.pretty_val_st(v, expected_type)
     tester.assertEqual(pretty_v, expected_v)
-    if expected_type == date:
+    if pretty_v is None:
+        pass
+    elif expected_type == date:
         tester.assertIsInstance(pretty_v, str)
     else:
         tester.assertIsInstance(pretty_v, expected_type)
@@ -239,7 +251,8 @@ def test_get_osinko_Controll(tester, company_id, one_expected_osinko):
             tester.assertDictEqual(osingot[top_key], one_expected_osinko)
             matches += 1
         for key in osingot[top_key]:
-            tester.assertIsInstance(osingot[top_key][key], type_dict[key])
+            if osingot[top_key][key] is not None:
+                tester.assertIsInstance(osingot[top_key][key], type_dict[key])
     tester.assertEqual(matches, 1)
 
 def test_get_perustiedot_Controll(tester, company_id,
@@ -260,7 +273,8 @@ def test_get_perustiedot_Controll(tester, company_id,
     perustiedot = scraper.get_perustiedot()
     tester.assertEqual(len(perustiedot), 10)
     for key in perustiedot:
-        tester.assertIsInstance(perustiedot[key], type_dict[key])
+        if perustiedot[key] is not None:
+            tester.assertIsInstance(perustiedot[key], type_dict[key])
         if type_dict[key] == str:
             tester.assertEqual(perustiedot[key],
                                part_of_expected_perustiedot[key])
