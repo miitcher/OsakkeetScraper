@@ -40,8 +40,10 @@ def scrape_company_target_function(queue, company_id, company_name):
     # Used as target function for multitreading.Process
     scraper = Scraper(company_id)
     metrics = scraper.scrape()
-    metrics["company_id"] = company_id
-    metrics["company_name"] = company_name
+    if company_name:
+        assert metrics["company_name"][:3].lower() == company_name[:3].lower(), \
+            "Scraped name: {}; Given name: {}".format(metrics["company_name"],
+                                                      company_name)
     queue.put(metrics)
 
 def scrape_companies_with_processes(company_names, showProgress=True):
@@ -64,7 +66,10 @@ def scrape_companies_with_processes(company_names, showProgress=True):
             break
         # .get() waits on the next value.
         # Then .join() is not needed for processes.
-        metrics_list.append(metrics_queue.get())
+        metrics = metrics_queue.get()
+        assert isinstance(metrics, dict) and len(metrics) > 5, \
+            "Failed metric: {}; len: {}".format(type(metrics), len(metrics))
+        metrics_list.append(metrics)
         len_metrics_list += 1
         if showProgress:
             if len_metrics_list%5 == 0:
@@ -233,6 +238,58 @@ class Scraper():
         self.max_scrape_retries = 3
         self.wait_before_last_retry = 1 # seconds
 
+    def define_expected_missing_metrics(self):
+        self.exp_missing_metrics = []
+
+        # The tulostiedot are missing for banks.
+        missing_tulostiedot = [1971, 1970, 1105, 1104, 2056, 1083, 1089]
+        if self.company_id in missing_tulostiedot:
+            self.exp_missing_metrics.append("toiminnan_laajuus")
+            self.exp_missing_metrics.append("kannattavuus")
+            self.exp_missing_metrics.append("vakavaraisuus")
+            self.exp_missing_metrics.append("maksuvalmius")
+            self.exp_missing_metrics.append("sijoittajan_tunnuslukuja")
+
+        # The tunnuslukuja field is missing on many companies.
+        # This means probably that the company is smaller, because Kauppalehti
+        # does not provide the most updated tunnuslukuja of the company.
+        missing_tunnuslukuja = [2063, 2027, 2042, 2055, 2050, 2074, 2026, 2033,
+                                2035, 2040, 2069, 2045, 2034, 2025, 2073, 1953]
+        if self.company_id  in missing_tunnuslukuja:
+            self.exp_missing_metrics.append("tunnuslukuja")
+
+    def controll_metrics(self):
+        # Find failed and missing metrics
+        # If a metric is expected to be missing it is not appended in the
+        # missing_metrics.
+        failed_metrics = []
+        exp_missing_metrics = []
+        missing_metrics = []
+
+        for key, value in self.metrics.items():
+            if value == "FAIL":
+                failed_metrics.append(key)
+            elif value is None:
+                if key in self.exp_missing_metrics:
+                    exp_missing_metrics.append(key)
+                else:
+                    missing_metrics.append(key)
+            elif key in self.exp_missing_metrics:
+                failed_metrics.append("EXISTS: " + key)
+
+        if failed_metrics:
+            self.metrics["failed_metrics"] = failed_metrics
+        else:
+            self.metrics["failed_metrics"] = None
+        if exp_missing_metrics:
+            self.metrics["exp_missing_metrics"] = exp_missing_metrics
+        else:
+            self.metrics["exp_missing_metrics"] = None
+        if missing_metrics:
+            self.metrics["missing_metrics"] = missing_metrics
+        else:
+            self.metrics["missing_metrics"] = None
+
     @staticmethod
     def get_raw_soup(link):
         r = requests.get(link)
@@ -332,10 +389,12 @@ class Scraper():
 
 
     def scrape(self):
+        self.metrics["company_id"] = self.company_id
         self.metrics["scrape_date"] = date.today().strftime(date_format)
 
         self.metrics["osingot"] = self.get_osingot()
 
+        self.metrics["company_name"] = self.get_name()
         self.metrics["kurssi"] = self.get_kurssi()
         self.metrics["kuvaus"] = self.get_kuvaus()
         self.metrics["perustiedot"] = self.get_perustiedot()
@@ -347,6 +406,9 @@ class Scraper():
         self.metrics["maksuvalmius"] = self.get_maksuvalmius()
         self.metrics["sijoittajan_tunnuslukuja"] = \
             self.get_sijoittajan_tunnuslukuja()
+
+        self.define_expected_missing_metrics()
+        self.controll_metrics()
 
         return self.metrics
 
@@ -386,11 +448,31 @@ class Scraper():
                     sub_dict[head[i]] = val
                 osingot[str(row_counter)] = sub_dict
                 row_counter += 1
-            return osingot
+            if osingot:
+                return osingot
+            else:
+                return None
         except:
             traceback.print_exc()
             return "FAIL"
 
+
+    def get_name(self):
+        try:
+            if not self.soup_kurssi:
+                self.make_soup_kurssi()
+
+            content_div = self.soup_kurssi.find(id="content")
+            name = content_div.find("h1").text
+            name = name.lower().replace("oyj","").split("(")[0].strip()
+            name = self.pretty_val(name, str)
+            if name:
+                return name
+            else:
+                return None
+        except:
+            traceback.print_exc()
+            return "FAIL"
 
     def get_kurssi(self):
         try:
@@ -400,7 +482,10 @@ class Scraper():
             table_tags = self.soup_kurssi.find_all('table')
             kurssi = table_tags[5].find('span').text
             kurssi = self.pretty_val(kurssi, float)
-            return kurssi
+            if kurssi:
+                return kurssi
+            else:
+                return None
         except:
             traceback.print_exc()
             return "FAIL"
@@ -416,9 +501,10 @@ class Scraper():
                 if tag.parent.h3.text == "Yrityksen perustiedot":
                     kuvaus = tag.p.text.strip().replace("\n"," ").replace("\r"," ")
                     kuvaus = self.pretty_val(kuvaus, str)
-            if not kuvaus:
-                raise ScrapeException("Kuvaus not found")
-            return kuvaus
+            if kuvaus:
+                return kuvaus
+            else:
+                return None
         except:
             traceback.print_exc()
             return "FAIL"
@@ -474,16 +560,15 @@ class Scraper():
                             "Unrecognized key: {}, val: {}".format(key, val)
                         )
                     perustiedot[key] = val
-            return perustiedot
+            if perustiedot:
+                return perustiedot
+            else:
+                return None
         except:
             traceback.print_exc()
             return "FAIL"
 
     def get_tunnuslukuja(self):
-        # The tunnuslukuja field is missing on many companies.
-        # This is not an fail, but means that the company is probably smaller,
-        # because Kauppalehti does not provide the most updated tunnuslukuja
-        # of the company.
         try:
             if not self.soup_kurssi:
                 self.make_soup_kurssi()
@@ -521,7 +606,10 @@ class Scraper():
                     val = self.pretty_val(val, float)
                 tunnuslukuja[head[c]] = val
                 c += 1
-            return tunnuslukuja
+            if tunnuslukuja:
+                return tunnuslukuja
+            else:
+                return None
         except:
             traceback.print_exc()
             return "FAIL"
@@ -585,7 +673,10 @@ class Scraper():
                         else:
                             sub_dict[type_row_list[row][0]] = type_row_list[row][col]
                     tulostiedot[self.pretty_val(type_row_list[0][col], str)] = sub_dict
-            return tulostiedot
+            if tulostiedot:
+                return tulostiedot
+            else:
+                return None
         except ScrapeNetworkException:
             logger.debug("Try again: c_id: {}; header: {}; attempt: {}".format(
                 self.company_id, header, attempt

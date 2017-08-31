@@ -51,7 +51,7 @@ class Test(unittest.TestCase):
         scraper = scraping.Scraper(2048)
         metrics = scraper.scrape()
         self.assertIsInstance(metrics, dict)
-        self.assertEqual(len(metrics), 11)
+        self.assertEqual(len(metrics), 16)
 
     def test_pretty_val(self):
         # expected_type can be: int, float, str, date
@@ -112,6 +112,13 @@ class Test(unittest.TestCase):
         self.assertEqual(company_names[1135], "upm-kymmene")
         self.assertEqual(company_names[1120], "huhtamaki")
         self.assertEqual(company_names[1105], "alandsbanken b")
+
+    def test_get_name(self):
+        for company_id in some_company_ids:
+            scraper = Scraper(company_id)
+            name = scraper.get_name()
+            self.assertIsInstance(name, str)
+            self.assertGreater(len(name), 2)
 
     def test_get_kurssi(self):
         for company_id in some_company_ids:

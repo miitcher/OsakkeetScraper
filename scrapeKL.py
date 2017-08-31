@@ -28,44 +28,73 @@ def scrape_companies(storage_directory, company_names=None, showProgress=True):
         company_names, showProgress
     )
 
-    # Find failed scrapes
+    # Find failed and missing scrapes
     failed_dict = {}
+    missing_dict = {}
+    exp_missing_dict = {}
     for metrics in metrics_list:
-        failed_on = []
-        for key, value in metrics.items():
-            # If value is None it is not a fail.
-            if value == "FAIL":
-                failed_on.append(key)
-        if len(failed_on) > 0:
+        if metrics["failed_metrics"]:
             failed_dict[metrics["company_id"]] = (metrics["company_name"],
-                                                  failed_on)
+                                            metrics["failed_metrics"])
+        if metrics["missing_metrics"]:
+            missing_dict[metrics["company_id"]] = (metrics["company_name"],
+                                            metrics["missing_metrics"])
+        if metrics["exp_missing_metrics"]:
+            exp_missing_dict[metrics["company_id"]] = (metrics["company_name"],
+                                            metrics["exp_missing_metrics"])
 
     company_count = len(company_names)
     company_failed_count = len(failed_dict)
     assert company_count == len(metrics_list)
-    logger.info("Scraping done:\t{}/{}\tFailed: {}".format(
-        company_count - company_failed_count,
-        company_count, company_failed_count)
+
+    metrics_failed_count = 0
+    for t in failed_dict.values():
+        metrics_failed_count += len(t[1])
+    metrics_missing_count = 0
+    for t in missing_dict.values():
+        metrics_missing_count += len(t[1])
+    exp_metrics_missing_count = 0
+    for t in exp_missing_dict.values():
+        exp_metrics_missing_count += len(t[1])
+
+    logger.info(
+        "Scraping done:\t{}/{}\tFailed Metrics: {}\tMissing Metrics: {}" \
+        .format(company_count - company_failed_count, company_count,
+                metrics_failed_count, metrics_missing_count)
     )
 
-    if company_failed_count > 0:
-        failed_companies_str = "\n\tFailed Companies ({}):\n".format(
-            len(failed_dict)) + "-"*80
-        i = 1
-        for c_id in sorted(failed_dict, key=failed_dict.get):
-            c_name = failed_dict[c_id][0]
-            failed_on = failed_dict[c_id][1]
-            failed_companies_str += "\n {:3}. ({}, {})".format(i, c_id, c_name)
-            for fail in failed_on:
-                failed_companies_str += "\n\t" + fail
-            i += 1
-        failed_companies_str += "\n" + "-"*80
-        logger.info(failed_companies_str)
+    if metrics_failed_count > 0:
+        logger.info(_log_scrape_dict(failed_dict, "Failed"))
+    if metrics_missing_count > 0:
+        logger.info(_log_scrape_dict(missing_dict, "(Unexpected) Missing"))
+    if exp_metrics_missing_count > 0:
+        logger.debug(_log_scrape_dict(exp_missing_dict, "EXPECTED Missing"))
+
+    if company_failed_count > 0 or metrics_missing_count > 0:
+        logger.info(
+            "Scraping done:\t{}/{}\tFailed Metrics: {}\tMissing Metrics: {}" \
+            .format(company_count - company_failed_count, company_count,
+                    metrics_failed_count, metrics_missing_count)
+        )
 
     metrics_filename = storage.store_metrics(storage_directory, metrics_list)
     logger.info("Companies stored in file: {}".format(metrics_filename))
 
     return metrics_list, failed_dict, metrics_filename
+
+def _log_scrape_dict(some_dict, header):
+    retval_str = "\n\t" + header + " Metrics ({}):\n".format(len(some_dict))
+    retval_str += "-"*80
+    i = 1
+    for c_id in sorted(some_dict, key=some_dict.get):
+        c_name = some_dict[c_id][0]
+        failed_on = some_dict[c_id][1]
+        retval_str += "\n {:3}. ({}, {})".format(i, c_id, c_name)
+        for fail in failed_on:
+            retval_str += "\n\t" + fail
+        i += 1
+    retval_str += "\n" + "-"*80
+    return retval_str
 
 def print_names(storage_directory=None, names_filename=None,
                 company_names=None):
@@ -169,10 +198,10 @@ def get_company_names(storage_directory):
 
 console_instructions = \
 "ScrapeKL\n\
- s, scrape [--id=<id>]\n\
+ s, scrape [<id>]\n\
  f, files\n\
  n, names [file]\n\
- m, metrics <file> [--name=<name> | --id=<id>]"
+ m, metrics <file> [<name> | <id>]"
 
 
 if __name__ == '__main__':
@@ -192,7 +221,7 @@ if __name__ == '__main__':
         company_names = None
         if len(sys.argv) > 2:
             try:
-                company_names = {int(sys.argv[2]):""}
+                company_names = {int(sys.argv[2]): None}
             except ValueError:
                 logger.info("Invalid id type: ".format(type(sys.argv[2])))
         logger.debug("company_names to scrape: {}".format(company_names))
