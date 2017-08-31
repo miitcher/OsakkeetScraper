@@ -177,7 +177,7 @@ def print_calculations(metrics_filename, company_id=None, company_name=None):
             logger.info(json.dumps(company.calculations, indent=3))
             """
             # TODO: implement
-            logger.error("NOT READY")
+            logger.error("NOT IMPLEMENTED YET")
             calculations_printed = True
 
     if not calculations_printed:
