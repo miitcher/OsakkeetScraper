@@ -2,8 +2,8 @@ import sys, os, time, logging
 from datetime import date
 
 import scrape_logger
-import scraping
 import scrapeKL
+from scraping import date_short_format
 
 logger = logging.getLogger('speed')
 
@@ -32,7 +32,7 @@ def main(times):
             os.remove(filename)
 
 def store_speed_run(times, whole_run_time):
-    date_str = date.today().strftime(scraping.date_short_format) # YY-MM-DD
+    date_str = date.today().strftime(date_short_format) # YY-MM-DD
     line_str = "{}\t{}\t{:.2f}\n".format(date_str, times, whole_run_time)
     logger.debug("Store line: [{}]".format(line_str))
     with open(speed_filename, "a") as f:

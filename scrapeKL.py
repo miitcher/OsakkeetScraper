@@ -1,6 +1,7 @@
 import logging, json, sys, os, time
 
 import scraping
+#import processing
 import storage
 import scrape_logger
 
@@ -171,8 +172,12 @@ def print_calculations(metrics_filename, company_id=None, company_name=None):
             logger.info("\tcompany: {}, {}".format(
                 metrics["company_id"], metrics["company_name"]
             ))
-            company = scraping.Company(c_metrics=metrics)
+            """
+            company = processing.Company(c_metrics=metrics)
             logger.info(json.dumps(company.calculations, indent=3))
+            """
+            # TODO: implement
+            logger.error("NOT READY")
             calculations_printed = True
 
     if not calculations_printed:

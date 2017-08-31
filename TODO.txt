@@ -1,6 +1,13 @@
-Check if there is any usable code in OLD_CODE.
+Work on processing.Processor class
+    * Go trough old filter-function once and refine.
+    * Make unittests for class.
+
+Work on processing.Ranker class
+    * Go trough old code once and refine.
+    * Make unittests for class.
 
 Make the command line interface better.
+    Could skip the gui, maby
     Could use the thing at work...
 
 Time parts in Scraper to know what is the limiting thing.

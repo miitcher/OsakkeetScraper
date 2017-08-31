@@ -1,7 +1,7 @@
 import os, json, logging
 from datetime import datetime, date
 
-import scraping
+from scraping import datetime_format, date_short_format
 
 logger = logging.getLogger('root')
 
@@ -16,7 +16,7 @@ def store_names(storage_directory, company_names, names_filename=None):
         assert isinstance(company_id, int)
         assert isinstance(company_names[company_id], str)
 
-    datetime_str = datetime.now().strftime(scraping.datetime_format)
+    datetime_str = datetime.now().strftime(datetime_format)
     if not names_filename:
         names_filename = storage_directory + "\\names_{}.tsv".format(
             datetime_str
@@ -57,7 +57,7 @@ def load_names(names_filename):
     return company_names
 
 def load_todays_names(storage_directory):
-    date_str = date.today().strftime(scraping.date_short_format) # YY-MM-DD
+    date_str = date.today().strftime(date_short_format) # YY-MM-DD
     filename_start_today = "names_{}".format(date_str)
     logger.debug("filename_start_today: {}".format(filename_start_today))
     files = os.listdir(storage_directory)
@@ -76,7 +76,7 @@ def store_metrics(storage_directory, metrics_list, metrics_filename=None):
     for metrics in metrics_list:
         assert isinstance(metrics, dict), metrics
 
-    datetime_str = datetime.now().strftime(scraping.datetime_format)
+    datetime_str = datetime.now().strftime(datetime_format)
     if not metrics_filename:
         metrics_filename = storage_directory + "\\metrics_{}.json".format(
             datetime_str

@@ -1,9 +1,258 @@
-from costum_conditions import Costum_conditions
+import logging, traceback
+from datetime import date
 
 
-class Kaytetaan():
-    def __init__(self):
-        self.Conditions = Costum_conditions()
+logger = logging.getLogger('root')
+
+
+class ProcessorException(Exception):
+    pass
+
+class RankerException(Exception):
+    pass
+
+
+class Processor():
+    def __init__(self, metrics):
+        # Takes one company metrics as input, and returns a filtered collection.
+        assert isinstance(metrics, dict) and len(metrics) > 10
+
+        self.metrics = metrics
+        self.company_id = self.metrics["company_id"]
+        self.company_name = self.metrics["company_name"]
+
+        assert self.company_id
+        assert isinstance(self.company_id, int)
+        assert isinstance(self.company_name, str)
+
+    def process(self):
+        self.collection = self.collect_and_calculate_metrics()
+        #self.filter()
+        return self.collection
+
+    def get_tulostiedot_key(self):
+        # TODO: Could be more more readable.
+        try:
+            # "12/16", used for dictionaries scraped from the tulostiedot-page
+            tulostiedot_key = None
+            current_year = int(date.today().strftime("%y")) # YY
+            key_dict = {} # keys_dict(year_int) = key_str
+            for key in self.metrics["kannattavuus"]:
+                if key.endswith("/{}".format(current_year)) or \
+                   key.endswith("/{}".format(current_year - 1)):
+                    parts = key.split("/")
+                    key_dict[int(parts[1])] = key
+            if current_year in key_dict:
+                tulostiedot_key = key_dict[current_year]
+            elif (current_year - 1) in key_dict:
+                tulostiedot_key = key_dict[(current_year - 1)]
+            else:
+                all_keys = []
+                for key in self.metrics["kannattavuus"]:
+                    all_keys.append(key)
+                raise ProcessorException("Unexpected keys: {}".format(str(all_keys)))
+            assert tulostiedot_key
+            assert tulostiedot_key == "12/16" # Changed when time passes
+            return tulostiedot_key
+        except:
+            traceback.print_exc()
+            return None
+
+    def collect_and_calculate_metrics(self):
+        collection = {}
+
+        """ Collect current osinko metrics and check steady osinko
+        osinko_tuotto_%
+        osinko_euro
+        steady_osinko    : osinkotuotto > 0% for five years
+        """
+        current_year = int(date.today().strftime("%Y")) # YYYY
+        osinko_tuotto_percent = {}
+        osinko_euro = {}
+        for year in range(current_year-4, current_year+1):
+            osinko_tuotto_percent[str(year)] = 0
+            osinko_euro[str(year)] = 0
+
+        for top_key in self.metrics["osingot"]:
+            osinko_dict = self.metrics["osingot"][top_key]
+            osinko_year = str(osinko_dict["vuosi"])
+            if osinko_year in osinko_tuotto_percent:
+                osinko_tuotto_percent[osinko_year] += osinko_dict["tuotto_%"]
+                osinko_euro[osinko_year] += osinko_dict["oikaistu_euroina"]
+
+        steady_osinko = True
+        for year in osinko_tuotto_percent:
+            if osinko_tuotto_percent[year] <= 0:
+                steady_osinko = False
+                break
+
+        collection["osinko_tuotto_%"] = osinko_tuotto_percent
+        collection["osinko_euro"] = osinko_euro
+        collection["steady_osinko"] = steady_osinko
+
+        """ Collect usefull metrics
+        company_id
+        company_name
+        kurssi
+        kuvaus
+        scrape_date
+        toimiala
+        toimialaluokka
+        osakkeet_kpl
+        markkina_arvo  TODO: Added, but is it needed?
+        """
+        collection["company_id"]       = self.metrics["company_id"]
+        collection["company_name"]     = self.metrics["company_name"]
+        collection["kurssi"]           = self.metrics["kurssi"]
+        collection["kuvaus"]           = self.metrics["kuvaus"]
+        collection["scrape_date"]      = self.metrics["scrape_date"]
+
+        perustiedot = self.metrics["perustiedot"]
+        collection["toimiala"]         = perustiedot["toimiala"]
+        collection["toimialaluokka"]   = perustiedot["toimialaluokka"]
+        collection["osakkeet_kpl"]     = perustiedot["osakkeet_kpl"]
+        collection["markkina_arvo"]    = perustiedot["markkina_arvo"]
+
+        """ Collect usefull metrics, that need the tulostiedot_key
+        tulostiedot_key
+        ROE
+        nettotulos
+        omavaraisuusaste
+        gearing
+        PB
+        PE
+        E
+        P
+        """
+        tulostiedot_key = self.get_tulostiedot_key() # "12/16"
+        collection["tulostiedot_key"] = tulostiedot_key
+        if tulostiedot_key:
+            kannattavuus = self.metrics["kannattavuus"][tulostiedot_key]
+            collection["ROE"]        = kannattavuus["oman_paaoman_tuotto_%"]
+            collection["nettotulos"] = kannattavuus["nettotulos"]
+
+            vakavaraisuus = self.metrics["vakavaraisuus"][tulostiedot_key]
+            collection["omavaraisuusaste"] = vakavaraisuus["omavaraisuusaste, %"]
+            collection["gearing"]          = vakavaraisuus["nettovelkaantumisaste, %"]
+
+            sijoittajan_tunnuslukuja = self.metrics["sijoittajan_tunnuslukuja"][tulostiedot_key]
+            collection["PB"] = sijoittajan_tunnuslukuja["p/b-luku"]
+            collection["PE"] = sijoittajan_tunnuslukuja["p/e-luku"]
+            collection["E"]  = sijoittajan_tunnuslukuja["tulos (e)"]
+            collection["P"]  = sijoittajan_tunnuslukuja["markkina-arvo (p)"]
+
+        """ Calculate fresh metrics, with current stock price
+        osinko_tuotto_%_fresh
+        P_fresh
+        P_factor_fresh
+        PB_fresh
+        PE_fresh
+        """
+        current_year_str = date.today().strftime("%Y") # "YYYY"
+        collection["osinko_tuotto_%_fresh"] = round(
+            100 * collection["osinko_euro"][current_year_str]
+            / collection["kurssi"], 2
+        )
+        collection["P_fresh"] = round(
+            collection["osakkeet_kpl"]
+            * collection["kurssi"] / 1e6, 4
+        )
+        if tulostiedot_key:
+            collection["P_factor_fresh"] = round(
+                collection["P_fresh"] / collection["P"], 4
+            )
+            collection["PB_fresh"] = round(
+                collection["P_factor_fresh"] * collection["PB"], 2
+            )
+            collection["PE_fresh"] = round(
+                collection["P_factor_fresh"] * collection["PE"], 2
+            )
+
+        return collection
+
+    def filter(self): # OLD: trim
+        """SAADUT BOOLEAANIT
+        self.KAR_gearing
+        self.KAR_omavaraisuusaste
+        self.KAR_ROE
+        self.KAR_viisi_vuotta_osinkoa
+        self.KAR_tulokset_nousee_viisi_vuotta
+        self.KARSINTA_LAPI
+        """
+        
+        #TRIM RAJA-ARVOT
+        GEARING_MAX = 100
+        OVA_MIN     = 40
+        ROE_MIN     = 10
+        
+        
+        #RAHOITUSRAKENNE (gearing <100%, omavaraisuusaste >40%)
+        #RAHOITUSRAKENNE (gearing <GEARING_MAX%, omavaraisuusaste >OVA_MIN%)
+        if self.gearing:
+            if self.gearing < GEARING_MAX:
+                self.KAR_gearing=True
+            else:
+                self.KAR_gearing=False
+        else:
+            self.KAR_gearing=False
+        
+        if self.omavaraisuusaste:
+            if self.omavaraisuusaste > OVA_MIN:
+                self.KAR_omavaraisuusaste=True
+            else:
+                self.KAR_omavaraisuusaste=False
+        else:
+            self.KAR_omavaraisuusaste=False
+        
+        #TUOTTO (ROE >10%)
+        #TUOTTO (ROE >ROE_MIN%)
+        if self.ROE:
+            if self.ROE > ROE_MIN:
+                self.KAR_ROE=True
+            else:
+                self.KAR_ROE=False
+        else:
+            self.KAR_ROE=False
+        
+        #OSINKO (osinkotuotto >0 viisi vuotta)
+        self.KAR_viisi_vuotta_osinkoa=True
+        if self.vuoden_osingot_lista:
+            for i in self.vuoden_osingot_lista:
+                if i==0:
+                    self.KAR_viisi_vuotta_osinkoa=False
+                    break
+        else:
+            self.KAR_viisi_vuotta_osinkoa=False
+            self.osinkotuotto_keskiarvo_PROCENT=False
+        
+        #TULOS (korkeintaan 1 tuloksen heikennys viitena vuotena)
+        c_heik=0
+        if self.nettotulokset:
+            le = len(self.nettotulokset) -1
+            while le>0:
+                if self.nettotulokset[le-1] < self.nettotulokset[le]:
+                    c_heik+=1
+                le-=1
+            
+            if c_heik >1:
+                self.KAR_tulokset_nousee_viisi_vuotta=False
+            else:
+                self.KAR_tulokset_nousee_viisi_vuotta=True
+        else:
+            self.KAR_tulokset_nousee_viisi_vuotta=False
+        
+        
+        #LOPULLINEN KARSINTA
+        if self.KAR_gearing and self.KAR_omavaraisuusaste and self.KAR_ROE and self.KAR_viisi_vuotta_osinkoa and self.KAR_tulokset_nousee_viisi_vuotta:
+            self.KARSINTA_LAPI=True
+        else:
+            self.KARSINTA_LAPI=False
+
+
+class Ranker(): # OLD: Kaytetaan
+    def __init__(self, collection_list):
+        # Takes multiple companies collection as input.
+        self.Conditions = None
 
     def companies_print(self):
         if self.DATA_SET:
