@@ -1,12 +1,14 @@
-* Add more asserts to unittests for processing.Processor class.
+Make "12/16"-like-keys into dates in pretty_val().
 
 Check and rewrite Processor.get_tulostiedot_key().
+
+Work on unittests for processing.Processor class.
+
+Add access from scrapeKL to Processor, with the command line.
 
 Work on processing.Ranker class
     * Go trough old code once and refine.
     * Make unittests for class.
-
-Make "12/16"-like-keys into dates in pretty_val().
 
 Make the command line interface better.
     Add speed test to scrapeKL.py commandline running.

@@ -35,6 +35,10 @@ class Test(unittest.TestCase):
             self.assertIsInstance(collection, dict)
             self.assertEqual(len(collection), 16)
 
+    def test_get_tulostiedot_key(self):
+        # TODO: Good to test, so I do not need to think of it later.
+        pass
+
     def test_collect_and_calculate_metrics(self):
         for filename in test_filenames:
             test_collect_and_calculate_metrics_Controll(self, filename)
