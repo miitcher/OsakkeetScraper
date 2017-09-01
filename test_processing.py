@@ -15,11 +15,7 @@ logger = scrape_logger.setup_logger(level)
 
 
 test_filenames = [
-    "test\\metrics_test_2048.json",
-    "test\\metrics_test_1196.json",
-    "test\\metrics_test_1050.json",
-    "test\\metrics_test_1901.json",
-    "test\\metrics_test_1104.json"
+    "test\\metrics_test_2048.json"
 ]
 
 

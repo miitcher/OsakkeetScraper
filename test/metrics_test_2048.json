@@ -52,7 +52,7 @@
             "listattu": "2015-06-11",
             "nimellisarvo": null,
             "osakkeet_kpl": 6812046,
-            "markkina-arvo": 84470000.0,
+            "markkina-arvo": 84130000.0,
             "porssi": "omx helsinki",
             "kaupankaynti_valuutta": "eur"
          },
@@ -62,10 +62,10 @@
             "oma_paaoma/osake_eur": 1.88,
             "p/e-luku_reaali": 23.65,
             "osinko/osake_eur": 0.2,
-            "markkina-arvo_eur": 84470000.0
+            "markkina-arvo_eur": 84130000.0
          },
          "toiminnan_laajuus": {
-            "12/16": {
+            "2016-12-01": {
                "liikevaihto": 36.96,
                "liikevaihdon_muutos_%": 12.0,
                "ulkomaantoiminta_%": 0.0,
@@ -74,7 +74,7 @@
                "investointiaste_%": 16.7,
                "henkilosto_keskimaarin": 543.0
             },
-            "12/15": {
+            "2015-12-01": {
                "liikevaihto": 33.0,
                "liikevaihdon_muutos_%": 11.6,
                "ulkomaantoiminta_%": 0.0,
@@ -83,7 +83,7 @@
                "investointiaste_%": 25.6,
                "henkilosto_keskimaarin": 576.0
             },
-            "12/14": {
+            "2014-12-01": {
                "liikevaihto": 29.58,
                "liikevaihdon_muutos_%": 14.0,
                "ulkomaantoiminta_%": 0.0,
@@ -92,7 +92,7 @@
                "investointiaste_%": 23.3,
                "henkilosto_keskimaarin": 486.0
             },
-            "12/13": {
+            "2013-12-01": {
                "liikevaihto": 25.94,
                "liikevaihdon_muutos_%": null,
                "ulkomaantoiminta_%": 0.0,
@@ -103,7 +103,7 @@
             }
          },
          "kannattavuus": {
-            "12/16": {
+            "2016-12-01": {
                "kayttokate": 7.56,
                "liiketulos": 1.61,
                "nettotulos": 0.65,
@@ -112,7 +112,7 @@
                "oman_paaoman_tuotto_%": 6.5,
                "kokonaispaaoman_tuotto_%": 4.1
             },
-            "12/15": {
+            "2015-12-01": {
                "kayttokate": 4.88,
                "liiketulos": -1.32,
                "nettotulos": -2.44,
@@ -121,7 +121,7 @@
                "oman_paaoman_tuotto_%": -45.9,
                "kokonaispaaoman_tuotto_%": -3.4
             },
-            "12/14": {
+            "2014-12-01": {
                "kayttokate": 6.29,
                "liiketulos": 1.54,
                "nettotulos": 0.03,
@@ -130,7 +130,7 @@
                "oman_paaoman_tuotto_%": 4.4,
                "kokonaispaaoman_tuotto_%": 4.9
             },
-            "12/13": {
+            "2013-12-01": {
                "kayttokate": 4.25,
                "liiketulos": 0.29,
                "nettotulos": -0.96,
@@ -141,7 +141,7 @@
             }
          },
          "vakavaraisuus": {
-            "12/16": {
+            "2016-12-01": {
                "omavaraisuusaste_%": 25.0,
                "nettovelkaantumisaste_%": 179.8,
                "korollinen_nettovelka": 18.17,
@@ -149,7 +149,7 @@
                "nettorahoitus_kulut/kayttokate_%": 7.1,
                "vieraan_paaoman_takaisin_maksuaika": 2.75
             },
-            "12/15": {
+            "2015-12-01": {
                "omavaraisuusaste_%": 24.6,
                "nettovelkaantumisaste_%": 191.4,
                "korollinen_nettovelka": 19.01,
@@ -157,7 +157,7 @@
                "nettorahoitus_kulut/kayttokate_%": 23.4,
                "vieraan_paaoman_takaisin_maksuaika": 5.07
             },
-            "12/14": {
+            "2014-12-01": {
                "omavaraisuusaste_%": 2.1,
                "nettovelkaantumisaste_%": 999.0,
                "korollinen_nettovelka": 26.02,
@@ -165,7 +165,7 @@
                "nettorahoitus_kulut/kayttokate_%": 21.0,
                "vieraan_paaoman_takaisin_maksuaika": 5.45
             },
-            "12/13": {
+            "2013-12-01": {
                "omavaraisuusaste_%": 2.1,
                "nettovelkaantumisaste_%": 999.0,
                "korollinen_nettovelka": 24.01,
@@ -175,29 +175,29 @@
             }
          },
          "maksuvalmius": {
-            "12/16": {
+            "2016-12-01": {
                "quick_ratio": 1.14,
                "current_ratio": 1.12,
                "likvidit_varat": 4.33
             },
-            "12/15": {
+            "2015-12-01": {
                "quick_ratio": 1.31,
                "current_ratio": 1.29,
                "likvidit_varat": 5.36
             },
-            "12/14": {
+            "2014-12-01": {
                "quick_ratio": 0.9,
                "current_ratio": 0.88,
                "likvidit_varat": 1.59
             },
-            "12/13": {
+            "2013-12-01": {
                "quick_ratio": 0.83,
                "current_ratio": 0.81,
                "likvidit_varat": 0.9
             }
          },
          "sijoittajan_tunnuslukuja": {
-            "12/16": {
+            "2016-12-01": {
                "markkina-arvo_(p)": 49.01,
                "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 10.1,
                "yritysarvo_(ev)": 67.18,
@@ -211,7 +211,7 @@
                "oma_paaoma/osake_euroa": 1.48,
                "osinko/kokonaistulos_%": 208.9
             },
-            "12/15": {
+            "2015-12-01": {
                "markkina-arvo_(p)": 35.8,
                "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 9.93,
                "yritysarvo_(ev)": 54.81,
@@ -225,7 +225,7 @@
                "oma_paaoma/osake_euroa": 1.46,
                "osinko/kokonaistulos_%": 999.0
             },
-            "12/14": {
+            "2014-12-01": {
                "markkina-arvo_(p)": null,
                "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 0.72,
                "yritysarvo_(ev)": null,
@@ -239,7 +239,7 @@
                "oma_paaoma/osake_euroa": 0.14,
                "osinko/kokonaistulos_%": 0.0
             },
-            "12/13": {
+            "2013-12-01": {
                "markkina-arvo_(p)": null,
                "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 0.65,
                "yritysarvo_(ev)": null,
