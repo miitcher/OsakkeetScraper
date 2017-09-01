@@ -91,8 +91,10 @@ class Test(unittest.TestCase):
         test_pretty_val_Equal(self, date, "2016-02-01", "2016-02-01")
         test_pretty_val_Equal(self, date, "12.11.2002", "2002-11-12")
         test_pretty_val_Equal(self, date, "01.02.2016", "2016-02-01")
+        test_pretty_val_Equal(self, date, "12/15", "2015-12-01")
+        test_pretty_val_Equal(self, date, "09/12", "2012-09-01")
         for v in ["01.20.2015", "01-02-2016", "01022016",
-                  "1.1.1aaaaa", "i01.02.2011i"]:
+                  "1.1.1aaaaa", "i01.02.2011i", "02/98"]:
             self.assertRaises(scraping.ScrapeException,
                               Scraper.pretty_val_st, v, date)
 

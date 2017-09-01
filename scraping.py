@@ -24,6 +24,7 @@ date_short_format = "%y-%m-%d" # YY-MM-DD
 datetime_format = "%y-%m-%d_%H-%M-%S" # YY-MM-DD_HH-MM-SS: for filename
 date_pattern_0 = re.compile("^\d{4}\-\d{2}\-\d{2}$") # YYYY-MM-DD
 date_pattern_1 = re.compile("^\d{2}\.\d{2}\.\d{4}$") # DD.MM.YYYY
+date_pattern_2 = re.compile("^\d{2}/\d{2}$")         # MM/YY
 
 
 class ScrapeException(Exception):
@@ -249,12 +250,22 @@ class Scraper():
                 raise ScrapeException(exception_str)
         elif expected_type == date:
             v = v.strip()
+
             if date_pattern_1.match(v): # DD.MM.YYYY
                 dd, mm, yyyy = v.split(".")
-                if int(dd) > 31 or int(mm) > 12 or \
-                  int(dd) < 1 or int(mm) < 1 or int(yyyy) < 1:
+                if int(dd) > 31 or  int(dd) < 1 \
+                or int(mm) > 12 or int(mm) < 1 \
+                or int(yyyy) < 1:
                     raise ScrapeException(exception_str)
                 v = "{}-{}-{}".format(yyyy, mm, dd) # YYYY-MM-DD
+
+            elif date_pattern_2.match(v): # MM/YY
+                mm, yy = v.split("/")
+                if int(mm) > 12 or int(mm) < 1 \
+                or int(yy) < 1 or int(yy) > 50:
+                    raise ScrapeException(exception_str)
+                v = "20{}-{}-01".format(yy, mm) # YYYY-MM-DD
+
             elif not date_pattern_0.match(v): # YYYY-MM-DD
                 raise ScrapeException(exception_str)
         else:
@@ -551,7 +562,7 @@ class Scraper():
                             sub_dict[head[row - 1]] = type_row_list[row][col]
                         else:
                             sub_dict[type_row_list[row][0]] = type_row_list[row][col]
-                    tulostiedot[self.pretty_val(type_row_list[0][col], str)] = sub_dict
+                    tulostiedot[self.pretty_val(type_row_list[0][col], date)] = sub_dict
             if tulostiedot:
                 return tulostiedot
             else:
