@@ -37,38 +37,37 @@ class Processor():
         return self.collection
 
     def get_tulostiedot_key(self):
-        # TODO: Could be more more readable (and be made to work reliable).
-        try:
-            # "12/16", used for dictionaries scraped from the tulostiedot-page
-            tulostiedot_key = None
-            current_year = int(date.today().strftime("%y")) # YY
-            key_dict = {} # keys_dict(year_int) = key_str
-            for key in self.metrics["kannattavuus"]:
-                if key.endswith("/{}".format(current_year)) or \
-                   key.endswith("/{}".format(current_year - 1)):
-                    parts = key.split("/")
-                    key_dict[int(parts[1])] = key
-            if current_year in key_dict:
-                tulostiedot_key = key_dict[current_year]
-            elif (current_year - 1) in key_dict:
-                tulostiedot_key = key_dict[(current_year - 1)]
-            else:
-                all_keys = []
-                for key in self.metrics["kannattavuus"]:
-                    all_keys.append(key)
-                raise ProcessorException("Unexpected keys: {}" \
-                                         .format(str(all_keys)))
-            assert tulostiedot_key
-            assert tulostiedot_key == "12/16" # Changed when time passes
-            return tulostiedot_key
-        except:
-            #traceback.print_exc()
+        if self.metrics["kannattavuus"] is None:
             return None
+
+        # YYYY
+        year_str_0 = date.today().strftime("%Y")
+        year_str_1 = str(int(year_str_0) - 1)
+        year_str_2 = str(int(year_str_0) - 2)
+
+        possible_keys = []
+        for key in self.metrics["kannattavuus"]:
+            possible_keys.append(key)
+
+        for key in sorted(possible_keys, reverse=True):
+            if key.startswith(year_str_0):
+                return key
+            elif key.startswith(year_str_1):
+                return key
+            elif key.startswith(year_str_2):
+                return key
+
+        logger.error(
+            "Found no tulostiedot_key: c_id: {}; c_name: {}" \
+            .format(self.company_id, self.company_name) \
+            + "\n\tPossible keys: " + str(possible_keys)
+        )
+        return None
 
     def collect_and_calculate_metrics(self):
         collection = {}
         needs_tulostiedot_key = {} # Banks do not have these metrics.
-        collection["tulostiedot_key"] = self.get_tulostiedot_key() # "12/16"
+        collection["tulostiedot_key"] = self.get_tulostiedot_key()
 
         """ Collect current osinko metrics and check steady osinko
         osinko_tuotto_%
@@ -236,15 +235,11 @@ class Processor():
             self._do_filtering("omavaraisuusaste_%",    threshold_min=40)
             self._do_filtering("ROE_%",                 threshold_min=10)
 
-            nettotulos_list = [] # tupples: ("12/16", 0.4)
+            # Put dictionary keys and values inside list as tuples,
+            # so they can be sorted.
+            nettotulos_list = [] # e.g. ("2016-12-01", 0.4)
             for key, val in self.metrics["kannattavuus"].items():
-                month, year = key.split("/")
-                assert int(month) > 0 and int(month) < 13, \
-                    "key: {}; month: {}".format(key, month)
-                assert int(year) > 0 and int(year) < 50, \
-                    "key: {}; year: {}".format(key, year)
-                modified_key = 100 * int(year) + int(month)
-                nettotulos_list.append((modified_key, val["nettotulos"]))
+                nettotulos_list.append((key, val["nettotulos"]))
 
             decrease_count = 0
             years_from_now = 0

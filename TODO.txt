@@ -1,5 +1,3 @@
-Check and rewrite Processor.get_tulostiedot_key().
-
 Work on unittests for processing.Processor class.
 
 Add access from scrapeKL to Processor, with the command line.
