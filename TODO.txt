@@ -1,12 +1,15 @@
-Work on processing.Processor class
-    * Go trough old filter-function once and refine.
-    * Make unittests for class.
+* Add more asserts to unittests for processing.Processor class.
+
+Check and rewrite Processor.get_tulostiedot_key().
 
 Work on processing.Ranker class
     * Go trough old code once and refine.
     * Make unittests for class.
 
+Make "12/16"-like-keys into dates in pretty_val().
+
 Make the command line interface better.
+    Add speed test to scrapeKL.py commandline running.
     Could skip the gui, maby
     Could use the thing at work...
 

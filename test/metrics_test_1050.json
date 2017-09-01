@@ -1,0 +1,442 @@
+{
+   "metrics": [
+      {
+         "company_id": 1050,
+         "scrape_date": "2017-09-01",
+         "osingot": {
+            "0": {
+               "vuosi": 2017,
+               "irtoaminen": "2017-05-24",
+               "oikaistu_euroina": 0.17,
+               "maara": 0.17,
+               "valuutta": "eur",
+               "tuotto_%": 2.9,
+               "lisatieto": null
+            },
+            "1": {
+               "vuosi": 2016,
+               "irtoaminen": "2016-06-17",
+               "oikaistu_euroina": 0.26,
+               "maara": 0.26,
+               "valuutta": "eur",
+               "tuotto_%": 5.1,
+               "lisatieto": null
+            },
+            "2": {
+               "vuosi": 2015,
+               "irtoaminen": "2015-05-06",
+               "oikaistu_euroina": 0.14,
+               "maara": 0.14,
+               "valuutta": "eur",
+               "tuotto_%": 2.4,
+               "lisatieto": null
+            },
+            "3": {
+               "vuosi": 2014,
+               "irtoaminen": "2014-06-18",
+               "oikaistu_euroina": 0.37,
+               "maara": 0.37,
+               "valuutta": "eur",
+               "tuotto_%": 6.3,
+               "lisatieto": null
+            },
+            "4": {
+               "vuosi": 2013,
+               "irtoaminen": "2013-05-08",
+               "oikaistu_euroina": 0.0,
+               "maara": 0.0,
+               "valuutta": "eur",
+               "tuotto_%": 0.0,
+               "lisatieto": null
+            },
+            "5": {
+               "vuosi": 2012,
+               "irtoaminen": "2012-05-04",
+               "oikaistu_euroina": 0.2,
+               "maara": 0.2,
+               "valuutta": "eur",
+               "tuotto_%": 7.5,
+               "lisatieto": null
+            },
+            "6": {
+               "vuosi": 2011,
+               "irtoaminen": "2011-05-04",
+               "oikaistu_euroina": 0.4,
+               "maara": 0.4,
+               "valuutta": "eur",
+               "tuotto_%": 6.4,
+               "lisatieto": null
+            },
+            "7": {
+               "vuosi": 2010,
+               "irtoaminen": "2010-05-07",
+               "oikaistu_euroina": 0.4,
+               "maara": 0.4,
+               "valuutta": "eur",
+               "tuotto_%": 4.5,
+               "lisatieto": null
+            },
+            "8": {
+               "vuosi": 2009,
+               "irtoaminen": "2009-04-24",
+               "oikaistu_euroina": 0.4,
+               "maara": 0.4,
+               "valuutta": "eur",
+               "tuotto_%": 3.6,
+               "lisatieto": null
+            },
+            "9": {
+               "vuosi": 2008,
+               "irtoaminen": "2008-05-09",
+               "oikaistu_euroina": 0.53,
+               "maara": 0.53,
+               "valuutta": "eur",
+               "tuotto_%": 2.8,
+               "lisatieto": null
+            },
+            "10": {
+               "vuosi": 2007,
+               "irtoaminen": "2007-05-04",
+               "oikaistu_euroina": 0.43,
+               "maara": 0.43,
+               "valuutta": "eur",
+               "tuotto_%": 2.3,
+               "lisatieto": null
+            },
+            "11": {
+               "vuosi": 2006,
+               "irtoaminen": "2006-03-31",
+               "oikaistu_euroina": 0.37,
+               "maara": 0.37,
+               "valuutta": "eur",
+               "tuotto_%": 2.1,
+               "lisatieto": null
+            },
+            "12": {
+               "vuosi": 2005,
+               "irtoaminen": "2005-04-08",
+               "oikaistu_euroina": 0.33,
+               "maara": 0.33,
+               "valuutta": "eur",
+               "tuotto_%": 2.7,
+               "lisatieto": null
+            },
+            "13": {
+               "vuosi": 2004,
+               "irtoaminen": "2004-03-26",
+               "oikaistu_euroina": 0.3,
+               "maara": 0.3,
+               "valuutta": "eur",
+               "tuotto_%": 1.8,
+               "lisatieto": null
+            },
+            "14": {
+               "vuosi": 2003,
+               "irtoaminen": "2003-03-28",
+               "oikaistu_euroina": 0.28,
+               "maara": 0.28,
+               "valuutta": "eur",
+               "tuotto_%": 2.0,
+               "lisatieto": null
+            },
+            "15": {
+               "vuosi": 2002,
+               "irtoaminen": "2002-03-22",
+               "oikaistu_euroina": 0.27,
+               "maara": 0.27,
+               "valuutta": "eur",
+               "tuotto_%": 1.1,
+               "lisatieto": null
+            },
+            "16": {
+               "vuosi": 2001,
+               "irtoaminen": "2001-03-22",
+               "oikaistu_euroina": 0.28,
+               "maara": 0.28,
+               "valuutta": "eur",
+               "tuotto_%": 1.0,
+               "lisatieto": null
+            },
+            "17": {
+               "vuosi": 2000,
+               "irtoaminen": "2000-03-23",
+               "oikaistu_euroina": 0.2,
+               "maara": 0.8,
+               "valuutta": "eur",
+               "tuotto_%": 0.4,
+               "lisatieto": null
+            },
+            "18": {
+               "vuosi": 1999,
+               "irtoaminen": "1999-03-18",
+               "oikaistu_euroina": 0.13,
+               "maara": 5.75,
+               "valuutta": "fim",
+               "tuotto_%": 0.7,
+               "lisatieto": null
+            }
+         },
+         "company_name": "nokia",
+         "kurssi": 5.235,
+         "kuvaus": "nokia on maailmanlaajuisesti toimiva tietoliikennealan konserni. yhtiolla on kaksi liiketoiminta-  aluetta. nokia networks valmistaa verkkolaitteita, kehittaa niihin uusia ohjelmistoratkaisuja seka   myy teleoperaattoreille palveluja ja teknologiayksikko hallinnoi yhtion patentoimia keksintoja seka   lisensoi ja kehittaa niita. yhtion juuret ovat tampereella vuonna 1865 perustetussa puuhiomossa,   joka yhtioitettiin vuonna 1871 nimella nokia aktiebolag. nokian osake noteerataan myos new   yorkin porssissa. kuvaus on koostettu yhtion vuosikertomuksen, tulostiedotteiden ja verkkosivujen perusteella.lisatietoa yrityksesta kauppalehden yrityshaussa: nokia",
+         "perustiedot": {
+            "kaupankayntitunnus": "nokia",
+            "toimiala": "teknologia",
+            "toimialaluokka": "teknologia",
+            "isin-koodi": "fi0009000681",
+            "listattu": "1981-04-01",
+            "nimellisarvo": null,
+            "osakkeet_kpl": 5836318262,
+            "markkina-arvo": 30377800000.0,
+            "porssi": "omx helsinki",
+            "kaupankaynti_valuutta": "eur"
+         },
+         "tunnuslukuja": {
+            "viimeisin_kurssi_eur": 5.24,
+            "tulos/osake": 0.28,
+            "oma_paaoma/osake_eur": 3.04,
+            "p/e-luku_reaali": 19.03,
+            "osinko/osake_eur": 0.17,
+            "markkina-arvo_eur": 30377800000.0
+         },
+         "toiminnan_laajuus": {
+            "12/16": {
+               "liikevaihto": 23614.0,
+               "liikevaihdon_muutos_%": 88.9,
+               "ulkomaantoiminta_%": 0.0,
+               "oikaistun_taseen_loppusumma": 44901.0,
+               "investoinnit": 477.0,
+               "investointiaste_%": 2.0,
+               "henkilosto_keskimaarin": 102687.0
+            },
+            "12/15": {
+               "liikevaihto": 12499.0,
+               "liikevaihdon_muutos_%": 6.3,
+               "ulkomaantoiminta_%": 0.0,
+               "oikaistun_taseen_loppusumma": 20926.0,
+               "investoinnit": 314.0,
+               "investointiaste_%": 2.5,
+               "henkilosto_keskimaarin": 56690.0
+            },
+            "12/14": {
+               "liikevaihto": 11763.0,
+               "liikevaihdon_muutos_%": -7.4,
+               "ulkomaantoiminta_%": 0.0,
+               "oikaistun_taseen_loppusumma": 21063.0,
+               "investoinnit": 311.0,
+               "investointiaste_%": 2.6,
+               "henkilosto_keskimaarin": 55399.0
+            },
+            "12/13": {
+               "liikevaihto": 12709.0,
+               "liikevaihdon_muutos_%": -17.5,
+               "ulkomaantoiminta_%": 0.0,
+               "oikaistun_taseen_loppusumma": 25191.0,
+               "investoinnit": 407.0,
+               "investointiaste_%": 3.2,
+               "henkilosto_keskimaarin": 59333.0
+            },
+            "12/12": {
+               "liikevaihto": 15400.0,
+               "liikevaihdon_muutos_%": -60.2,
+               "ulkomaantoiminta_%": 0.0,
+               "oikaistun_taseen_loppusumma": 29949.0,
+               "investoinnit": 461.0,
+               "investointiaste_%": 3.0,
+               "henkilosto_keskimaarin": 71808.0
+            }
+         },
+         "kannattavuus": {
+            "12/16": {
+               "kayttokate": -548.0,
+               "liiketulos": -1100.0,
+               "nettotulos": -912.0,
+               "kokonaistulos": -912.0,
+               "sijoitetun_paaoman_tuotto_%": -4.9,
+               "oman_paaoman_tuotto_%": -5.8,
+               "kokonaispaaoman_tuotto_%": -2.8
+            },
+            "12/15": {
+               "kayttokate": 2244.0,
+               "liiketulos": 1958.0,
+               "nettotulos": 1392.0,
+               "kokonaistulos": 1518.0,
+               "sijoitetun_paaoman_tuotto_%": 16.6,
+               "oman_paaoman_tuotto_%": 14.5,
+               "kokonaispaaoman_tuotto_%": 9.5
+            },
+            "12/14": {
+               "kayttokate": 1897.0,
+               "liiketulos": 1600.0,
+               "nettotulos": 878.0,
+               "kokonaistulos": 484.0,
+               "sijoitetun_paaoman_tuotto_%": 13.4,
+               "oman_paaoman_tuotto_%": 11.5,
+               "kokonaispaaoman_tuotto_%": 7.2
+            },
+            "12/13": {
+               "kayttokate": 1997.0,
+               "liiketulos": 1437.0,
+               "nettotulos": 879.0,
+               "kokonaistulos": -739.0,
+               "sijoitetun_paaoman_tuotto_%": 10.8,
+               "oman_paaoman_tuotto_%": 10.9,
+               "kokonaispaaoman_tuotto_%": 5.6
+            },
+            "12/12": {
+               "kayttokate": 2230.0,
+               "liiketulos": 1142.0,
+               "nettotulos": 613.0,
+               "kokonaistulos": -3786.0,
+               "sijoitetun_paaoman_tuotto_%": 7.4,
+               "oman_paaoman_tuotto_%": 5.2,
+               "kokonaispaaoman_tuotto_%": 3.8
+            }
+         },
+         "vakavaraisuus": {
+            "12/16": {
+               "omavaraisuusaste_%": 46.7,
+               "nettovelkaantumisaste_%": -25.3,
+               "korollinen_nettovelka": -5300.0,
+               "nettorahoitus_kulut/liikevaihto_%": 1.2,
+               "nettorahoitus_kulut/kayttokate_%": 999.0,
+               "vieraan_paaoman_takaisin_maksuaika": -999.0
+            },
+            "12/15": {
+               "omavaraisuusaste_%": 50.3,
+               "nettovelkaantumisaste_%": -73.9,
+               "korollinen_nettovelka": -7775.0,
+               "nettorahoitus_kulut/liikevaihto_%": 1.5,
+               "nettorahoitus_kulut/kayttokate_%": 8.3,
+               "vieraan_paaoman_takaisin_maksuaika": -4.63
+            },
+            "12/14": {
+               "omavaraisuusaste_%": 41.2,
+               "nettovelkaantumisaste_%": -58.0,
+               "korollinen_nettovelka": -5024.0,
+               "nettorahoitus_kulut/liikevaihto_%": 3.4,
+               "nettorahoitus_kulut/kayttokate_%": 21.1,
+               "vieraan_paaoman_takaisin_maksuaika": -4.28
+            },
+            "12/13": {
+               "omavaraisuusaste_%": 26.4,
+               "nettovelkaantumisaste_%": -34.7,
+               "korollinen_nettovelka": -2309.0,
+               "nettorahoitus_kulut/liikevaihto_%": 2.2,
+               "nettorahoitus_kulut/kayttokate_%": 14.0,
+               "vieraan_paaoman_takaisin_maksuaika": -1.6
+            },
+            "12/12": {
+               "omavaraisuusaste_%": 31.5,
+               "nettovelkaantumisaste_%": -46.2,
+               "korollinen_nettovelka": -4360.0,
+               "nettorahoitus_kulut/liikevaihto_%": 2.3,
+               "nettorahoitus_kulut/kayttokate_%": 16.0,
+               "vieraan_paaoman_takaisin_maksuaika": -2.56
+            }
+         },
+         "maksuvalmius": {
+            "12/16": {
+               "quick_ratio": 1.44,
+               "current_ratio": 1.64,
+               "likvidit_varat": 9327.0
+            },
+            "12/15": {
+               "quick_ratio": 2.32,
+               "current_ratio": 2.48,
+               "likvidit_varat": 9849.0
+            },
+            "12/14": {
+               "quick_ratio": 1.71,
+               "current_ratio": 1.88,
+               "likvidit_varat": 7716.0
+            },
+            "12/13": {
+               "quick_ratio": 1.37,
+               "current_ratio": 1.46,
+               "likvidit_varat": 8971.0
+            },
+            "12/12": {
+               "quick_ratio": 1.32,
+               "current_ratio": 1.43,
+               "likvidit_varat": 9909.0
+            }
+         },
+         "sijoittajan_tunnuslukuja": {
+            "12/16": {
+               "markkina-arvo_(p)": 26257.1,
+               "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 20094.0,
+               "yritysarvo_(ev)": 20957.1,
+               "tulos_(e)": -751.0,
+               "p/b-luku": 1.31,
+               "p/s-luku": 1.11,
+               "p/e-luku": -34.96,
+               "ev/ebit-luku": -19.05,
+               "tulos/osake_(eps)_euroa": -0.13,
+               "tulorahoitus/osake (cps)_euroa": -0.06,
+               "oma_paaoma/osake_euroa": 3.51,
+               "osinko/kokonaistulos_%": 999.0
+            },
+            "12/15": {
+               "markkina-arvo_(p)": 25998.7,
+               "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 10503.0,
+               "yritysarvo_(ev)": 18223.7,
+               "tulos_(e)": 1390.0,
+               "p/b-luku": 2.48,
+               "p/s-luku": 2.08,
+               "p/e-luku": 18.7,
+               "ev/ebit-luku": 9.31,
+               "tulos/osake_(eps)_euroa": 0.38,
+               "tulorahoitus/osake (cps)_euroa": 0.46,
+               "oma_paaoma/osake_euroa": 2.67,
+               "osinko/kokonaistulos_%": 102.9
+            },
+            "12/14": {
+               "markkina-arvo_(p)": 23931.8,
+               "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 8611.0,
+               "yritysarvo_(ev)": 18907.8,
+               "tulos_(e)": 870.0,
+               "p/b-luku": 2.78,
+               "p/s-luku": 2.03,
+               "p/e-luku": 27.51,
+               "ev/ebit-luku": 11.82,
+               "tulos/osake_(eps)_euroa": 0.24,
+               "tulorahoitus/osake (cps)_euroa": 0.32,
+               "oma_paaoma/osake_euroa": 2.36,
+               "osinko/kokonaistulos_%": 107.3
+            },
+            "12/13": {
+               "markkina-arvo_(p)": 21606.3,
+               "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 6467.0,
+               "yritysarvo_(ev)": 19297.3,
+               "tulos_(e)": 1003.0,
+               "p/b-luku": 3.34,
+               "p/s-luku": 1.7,
+               "p/e-luku": 21.54,
+               "ev/ebit-luku": 13.43,
+               "tulos/osake_(eps)_euroa": 0.27,
+               "tulorahoitus/osake (cps)_euroa": 0.39,
+               "oma_paaoma/osake_euroa": 1.74,
+               "osinko/kokonaistulos_%": 999.0
+            },
+            "12/12": {
+               "markkina-arvo_(p)": 10873.2,
+               "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 8061.0,
+               "yritysarvo_(ev)": 6513.2,
+               "tulos_(e)": 441.0,
+               "p/b-luku": 1.35,
+               "p/s-luku": 0.71,
+               "p/e-luku": 24.66,
+               "ev/ebit-luku": 5.7,
+               "tulos/osake_(eps)_euroa": 0.12,
+               "tulorahoitus/osake (cps)_euroa": 0.46,
+               "oma_paaoma/osake_euroa": 2.17,
+               "osinko/kokonaistulos_%": 0.0
+            }
+         },
+         "failed_metrics": null,
+         "exp_missing_metrics": null,
+         "missing_metrics": null
+      }
+   ]
+}

@@ -1,0 +1,262 @@
+{
+   "metrics": [
+      {
+         "company_id": 2048,
+         "scrape_date": "2017-09-01",
+         "osingot": {
+            "0": {
+               "vuosi": 2017,
+               "irtoaminen": "2017-03-17",
+               "oikaistu_euroina": 0.0,
+               "maara": 0.0,
+               "valuutta": "eur",
+               "tuotto_%": 0.0,
+               "lisatieto": null
+            },
+            "1": {
+               "vuosi": 2017,
+               "irtoaminen": "2017-03-17",
+               "oikaistu_euroina": 0.2,
+               "maara": 0.2,
+               "valuutta": "eur",
+               "tuotto_%": 2.2,
+               "lisatieto": "paaomanpalautus"
+            },
+            "2": {
+               "vuosi": 2016,
+               "irtoaminen": "2016-03-18",
+               "oikaistu_euroina": 0.0,
+               "maara": 0.0,
+               "valuutta": "eur",
+               "tuotto_%": 0.0,
+               "lisatieto": null
+            },
+            "3": {
+               "vuosi": 2016,
+               "irtoaminen": "2016-03-18",
+               "oikaistu_euroina": 0.07,
+               "maara": 0.07,
+               "valuutta": "eur",
+               "tuotto_%": 1.4,
+               "lisatieto": "paaomanpalautus"
+            }
+         },
+         "company_name": "talenom",
+         "kurssi": 12.35,
+         "kuvaus": "yhtiosta ei ole saatavilla kuvaustalisatietoa yrityksesta kauppalehden yrityshaussa: talenom",
+         "perustiedot": {
+            "kaupankayntitunnus": "tnom",
+            "toimiala": "teollisuustuotteet ja -palvelut",
+            "toimialaluokka": "teollisuushyodykkeet ja -palvelut",
+            "isin-koodi": "fi4000153580",
+            "listattu": "2015-06-11",
+            "nimellisarvo": null,
+            "osakkeet_kpl": 6812046,
+            "markkina-arvo": 84470000.0,
+            "porssi": "omx helsinki",
+            "kaupankaynti_valuutta": "eur"
+         },
+         "tunnuslukuja": {
+            "viimeisin_kurssi_eur": 12.35,
+            "tulos/osake": 0.52,
+            "oma_paaoma/osake_eur": 1.88,
+            "p/e-luku_reaali": 23.65,
+            "osinko/osake_eur": 0.2,
+            "markkina-arvo_eur": 84470000.0
+         },
+         "toiminnan_laajuus": {
+            "12/16": {
+               "liikevaihto": 36.96,
+               "liikevaihdon_muutos_%": 12.0,
+               "ulkomaantoiminta_%": 0.0,
+               "oikaistun_taseen_loppusumma": 40.49,
+               "investoinnit": 6.18,
+               "investointiaste_%": 16.7,
+               "henkilosto_keskimaarin": 543.0
+            },
+            "12/15": {
+               "liikevaihto": 33.0,
+               "liikevaihdon_muutos_%": 11.6,
+               "ulkomaantoiminta_%": 0.0,
+               "oikaistun_taseen_loppusumma": 40.5,
+               "investoinnit": 8.44,
+               "investointiaste_%": 25.6,
+               "henkilosto_keskimaarin": 576.0
+            },
+            "12/14": {
+               "liikevaihto": 29.58,
+               "liikevaihdon_muutos_%": 14.0,
+               "ulkomaantoiminta_%": 0.0,
+               "oikaistun_taseen_loppusumma": 34.39,
+               "investoinnit": 6.88,
+               "investointiaste_%": 23.3,
+               "henkilosto_keskimaarin": 486.0
+            },
+            "12/13": {
+               "liikevaihto": 25.94,
+               "liikevaihdon_muutos_%": null,
+               "ulkomaantoiminta_%": 0.0,
+               "oikaistun_taseen_loppusumma": 30.72,
+               "investoinnit": 2.94,
+               "investointiaste_%": 11.4,
+               "henkilosto_keskimaarin": 396.0
+            }
+         },
+         "kannattavuus": {
+            "12/16": {
+               "kayttokate": 7.56,
+               "liiketulos": 1.61,
+               "nettotulos": 0.65,
+               "kokonaistulos": 0.65,
+               "sijoitetun_paaoman_tuotto_%": 4.9,
+               "oman_paaoman_tuotto_%": 6.5,
+               "kokonaispaaoman_tuotto_%": 4.1
+            },
+            "12/15": {
+               "kayttokate": 4.88,
+               "liiketulos": -1.32,
+               "nettotulos": -2.44,
+               "kokonaistulos": -2.44,
+               "sijoitetun_paaoman_tuotto_%": -4.0,
+               "oman_paaoman_tuotto_%": -45.9,
+               "kokonaispaaoman_tuotto_%": -3.4
+            },
+            "12/14": {
+               "kayttokate": 6.29,
+               "liiketulos": 1.54,
+               "nettotulos": 0.03,
+               "kokonaistulos": 0.03,
+               "sijoitetun_paaoman_tuotto_%": 5.9,
+               "oman_paaoman_tuotto_%": 4.4,
+               "kokonaispaaoman_tuotto_%": 4.9
+            },
+            "12/13": {
+               "kayttokate": 4.25,
+               "liiketulos": 0.29,
+               "nettotulos": -0.96,
+               "kokonaistulos": -0.96,
+               "sijoitetun_paaoman_tuotto_%": null,
+               "oman_paaoman_tuotto_%": null,
+               "kokonaispaaoman_tuotto_%": null
+            }
+         },
+         "vakavaraisuus": {
+            "12/16": {
+               "omavaraisuusaste_%": 25.0,
+               "nettovelkaantumisaste_%": 179.8,
+               "korollinen_nettovelka": 18.17,
+               "nettorahoitus_kulut/liikevaihto_%": 1.5,
+               "nettorahoitus_kulut/kayttokate_%": 7.1,
+               "vieraan_paaoman_takaisin_maksuaika": 2.75
+            },
+            "12/15": {
+               "omavaraisuusaste_%": 24.6,
+               "nettovelkaantumisaste_%": 191.4,
+               "korollinen_nettovelka": 19.01,
+               "nettorahoitus_kulut/liikevaihto_%": 3.4,
+               "nettorahoitus_kulut/kayttokate_%": 23.4,
+               "vieraan_paaoman_takaisin_maksuaika": 5.07
+            },
+            "12/14": {
+               "omavaraisuusaste_%": 2.1,
+               "nettovelkaantumisaste_%": 999.0,
+               "korollinen_nettovelka": 26.02,
+               "nettorahoitus_kulut/liikevaihto_%": 4.5,
+               "nettorahoitus_kulut/kayttokate_%": 21.0,
+               "vieraan_paaoman_takaisin_maksuaika": 5.45
+            },
+            "12/13": {
+               "omavaraisuusaste_%": 2.1,
+               "nettovelkaantumisaste_%": 999.0,
+               "korollinen_nettovelka": 24.01,
+               "nettorahoitus_kulut/liikevaihto_%": 4.0,
+               "nettorahoitus_kulut/kayttokate_%": 24.3,
+               "vieraan_paaoman_takaisin_maksuaika": 8.0
+            }
+         },
+         "maksuvalmius": {
+            "12/16": {
+               "quick_ratio": 1.14,
+               "current_ratio": 1.12,
+               "likvidit_varat": 4.33
+            },
+            "12/15": {
+               "quick_ratio": 1.31,
+               "current_ratio": 1.29,
+               "likvidit_varat": 5.36
+            },
+            "12/14": {
+               "quick_ratio": 0.9,
+               "current_ratio": 0.88,
+               "likvidit_varat": 1.59
+            },
+            "12/13": {
+               "quick_ratio": 0.83,
+               "current_ratio": 0.81,
+               "likvidit_varat": 0.9
+            }
+         },
+         "sijoittajan_tunnuslukuja": {
+            "12/16": {
+               "markkina-arvo_(p)": 49.01,
+               "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 10.1,
+               "yritysarvo_(ev)": 67.18,
+               "tulos_(e)": 0.65,
+               "p/b-luku": 4.85,
+               "p/s-luku": 1.33,
+               "p/e-luku": 75.19,
+               "ev/ebit-luku": 41.67,
+               "tulos/osake_(eps)_euroa": 0.1,
+               "tulorahoitus/osake (cps)_euroa": 0.97,
+               "oma_paaoma/osake_euroa": 1.48,
+               "osinko/kokonaistulos_%": 208.9
+            },
+            "12/15": {
+               "markkina-arvo_(p)": 35.8,
+               "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 9.93,
+               "yritysarvo_(ev)": 54.81,
+               "tulos_(e)": -2.44,
+               "p/b-luku": 3.61,
+               "p/s-luku": 1.09,
+               "p/e-luku": -14.65,
+               "ev/ebit-luku": -41.63,
+               "tulos/osake_(eps)_euroa": -0.4,
+               "tulorahoitus/osake (cps)_euroa": 0.62,
+               "oma_paaoma/osake_euroa": 1.46,
+               "osinko/kokonaistulos_%": 999.0
+            },
+            "12/14": {
+               "markkina-arvo_(p)": null,
+               "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 0.72,
+               "yritysarvo_(ev)": null,
+               "tulos_(e)": 0.03,
+               "p/b-luku": null,
+               "p/s-luku": null,
+               "p/e-luku": null,
+               "ev/ebit-luku": null,
+               "tulos/osake_(eps)_euroa": 0.01,
+               "tulorahoitus/osake (cps)_euroa": 0.93,
+               "oma_paaoma/osake_euroa": 0.14,
+               "osinko/kokonaistulos_%": 0.0
+            },
+            "12/13": {
+               "markkina-arvo_(p)": null,
+               "tasesubstanssi_ilman_vahennettya_osinkoa_(b)": 0.65,
+               "yritysarvo_(ev)": null,
+               "tulos_(e)": -0.96,
+               "p/b-luku": null,
+               "p/s-luku": null,
+               "p/e-luku": null,
+               "ev/ebit-luku": null,
+               "tulos/osake_(eps)_euroa": 0.0,
+               "tulorahoitus/osake (cps)_euroa": 0.0,
+               "oma_paaoma/osake_euroa": 0.0,
+               "osinko/kokonaistulos_%": 0.0
+            }
+         },
+         "failed_metrics": null,
+         "exp_missing_metrics": null,
+         "missing_metrics": null
+      }
+   ]
+}
