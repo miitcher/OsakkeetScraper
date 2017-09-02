@@ -1,10 +1,14 @@
-Work on unittests for processing.Processor class.
-
 Add access from scrapeKL to Processor, with the command line.
 
 Work on processing.Ranker class
     * Go trough old code once and refine.
     * Make unittests for class.
+
+Check "kuvaus" before storing it, when scraping.
+    It kuvaus is like:
+        "yhtiosta ei ole saatavilla kuvaustalisatietoa
+        yrityksesta kauppalehden yrityshaussa: talenom"
+    Then kuvaus could be None.
 
 Make the command line interface better.
     Add speed test to scrapeKL.py commandline running.
