@@ -56,6 +56,10 @@ def load_names(names_filename):
                     return None
     return company_names
 
+def get_latest_metrics_filename(storage_directory):
+    # TODO: Implement
+    return None
+
 def load_todays_names(storage_directory):
     date_str = date.today().strftime(date_short_format) # YY-MM-DD
     filename_start_today = "names_{}".format(date_str)

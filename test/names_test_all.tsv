@@ -1,6 +1,5 @@
-Companies scraped from www.kauppalehti.fi
-scrape_names
-storage_datetime:	17-08-18_20-10-38
+source: www.kauppalehti.fi
+stored:	17-09-02_11-56-54
 ###
 1196	afarak group
 1905	affecto
@@ -31,6 +30,7 @@ storage_datetime:	17-08-18_20-10-38
 1102	cramo
 2042	detection technology
 1076	digia
+1197	digitalist group
 2075	dna
 1203	dovre group
 1174	efore
@@ -58,7 +58,6 @@ storage_datetime:	17-08-18_20-10-38
 1167	incap
 1042	innofactor
 1169	investors house
-1197	ixonos
 1025	kemira
 1113	keskisuomalainen a
 1027	kesko a

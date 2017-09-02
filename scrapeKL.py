@@ -1,7 +1,7 @@
 import logging, json, sys, os, time
 
 import scraping
-#import processing
+import processing
 import storage
 import scrape_logger
 
@@ -18,6 +18,20 @@ and the company is not stored again.
 class ScrapeKLException(Exception):
     pass
 
+
+def _log_scrape_dict(some_dict, header):
+    retval_str = "\n\t" + header + " Metrics ({}):\n".format(len(some_dict))
+    retval_str += "-"*80
+    i = 1
+    for c_id in sorted(some_dict, key=some_dict.get):
+        c_name = some_dict[c_id][0]
+        failed_on = some_dict[c_id][1]
+        retval_str += "\n {:3}. ({}, {})".format(i, c_id, c_name)
+        for fail in failed_on:
+            retval_str += "\n\t" + fail
+        i += 1
+    retval_str += "\n" + "-"*80
+    return retval_str
 
 def scrape_companies(storage_directory, company_names=None, showProgress=True):
     assert company_names is None or isinstance(company_names, dict)
@@ -83,34 +97,8 @@ def scrape_companies(storage_directory, company_names=None, showProgress=True):
 
     return metrics_list, failed_dict, metrics_filename
 
-def _log_scrape_dict(some_dict, header):
-    retval_str = "\n\t" + header + " Metrics ({}):\n".format(len(some_dict))
-    retval_str += "-"*80
-    i = 1
-    for c_id in sorted(some_dict, key=some_dict.get):
-        c_name = some_dict[c_id][0]
-        failed_on = some_dict[c_id][1]
-        retval_str += "\n {:3}. ({}, {})".format(i, c_id, c_name)
-        for fail in failed_on:
-            retval_str += "\n\t" + fail
-        i += 1
-    retval_str += "\n" + "-"*80
-    return retval_str
-
-def print_names(storage_directory=None, names_filename=None,
-                company_names=None):
-    # Only one input is allowed.
-    if storage_directory:
-        assert names_filename is None and company_names is None
-        company_names = get_company_names(storage_directory)
-    elif names_filename:
-        assert storage_directory is None and company_names is None
-        company_names = storage.load_names(names_filename)
-    elif company_names:
-        assert storage_directory is None and names_filename is None
-    else:
-        raise ScrapeKLException
-
+def _print_names(company_names):
+    assert isinstance(company_names, dict)
     c_strings = []
     for c_id in sorted(company_names, key=company_names.get):
         c_strings.append("({}, {})".format(c_id, company_names[c_id]))
@@ -128,66 +116,92 @@ def print_names(storage_directory=None, names_filename=None,
     logger.info("\n" + "-"*10 + "\tNAMES")
     logger.info(out_str)
 
-def print_metrics(metrics_filename, company_id=None, company_name=None):
-    # Only one of company_id and company_name is allowed.
+def print_all_names(storage_directory=None, names_filename=None):
+    if storage_directory:
+        assert names_filename is None
+        company_names = get_company_names(storage_directory)
+    elif names_filename:
+        assert storage_directory is None
+        company_names = storage.load_names(names_filename)
+    _print_names(company_names)
+
+def _get_metrics_list(filename, company_id, company_name):
+    # Only one or none of company_id and company_name is allowed.
     if company_id is not None:
         assert company_name is None, "Too many filters"
     if company_name is not None:
         assert company_id is None, "Too many filters"
     logger.debug("Filters: id={}; name={}".format(company_id, company_name))
 
-    metrics_list = storage.load_metrics(metrics_filename)
-    metrics_printed = False
-    logger.info("\n" + "-"*10 + "\tMETRICS"
-                + "\n\tfile:    {}".format(metrics_filename))
+    metrics_list = storage.load_metrics(filename)
+    if company_id is None and company_name is None:
+        return metrics_list
+    else:
+        retval = []
+        for metrics in metrics_list:
+            if ( company_id and company_id == metrics["company_id"] ) \
+            or ( company_name and str(company_name).lower() \
+                                    in str(metrics["company_name"]).lower() ):
+                retval.append(metrics)
+        return retval
+
+def print_passed_names(filename):
+    metrics_list = _get_metrics_list(filename, None, None)
+    company_names = {}
     for metrics in metrics_list:
-        if ( company_id and company_id == metrics["company_id"] ) \
-        or ( company_name and str(company_name).lower() \
-                                in str(metrics["company_name"]).lower() ):
+        processor = processing.Processor(metrics)
+        collection = processor.process()
+        #logger.info(json.dumps(collection["passed_filter"], indent=3))
+        if collection["passed_filter"]["all"]:
+            company_names[collection["company_id"]] = \
+                collection["company_name"]
+    _print_names(company_names)
+
+def _print_master(header, filename, company_id, company_name, print_func):
+    assert company_id or company_name, "Need some limiter."
+    metrics_list = _get_metrics_list(filename, company_id, company_name)
+    if metrics_list:
+        logger.info("\t" + header + "\t{}".format(filename))
+        for metrics in metrics_list:
+            logger.info("-"*14)
             logger.info("\tcompany: {}, {}".format(
                 metrics["company_id"], metrics["company_name"]
             ))
-            logger.info(json.dumps(metrics, indent=3))
-            metrics_printed = True
 
-    if not metrics_printed:
+            print_func(metrics)
+            #logger.info(json.dumps(metrics, indent=3))
+
+            logger.info("-"*14)
+        logger.info("\t" + header + "\t{}".format(filename))
+    else:
         logger.info("Nothing found")
 
-def print_calculations(metrics_filename, company_id=None, company_name=None):
-    # Only one of company_id and company_name is allowed.
-    if company_id is not None:
-        assert company_name is None, "Too many filters"
-    if company_name is not None:
-        assert company_id is None, "Too many filters"
-    logger.debug("Filters: id={}; name={}".format(company_id, company_name))
+def _print_metrics(metrics):
+    logger.info(json.dumps(metrics, indent=3))
 
-    metrics_list = storage.load_metrics(metrics_filename)
-    calculations_printed = False
-    logger.info("\n" + "-"*10 + "\tCALCULATIONS"
-                + "\n\tfile:    {}".format(metrics_filename))
-    for metrics in metrics_list:
-        if ( company_id and company_id == metrics["company_id"] ) \
-        or ( company_name and str(company_name).lower() \
-                                in str(metrics["company_name"]).lower() ):
-            logger.info("\tcompany: {}, {}".format(
-                metrics["company_id"], metrics["company_name"]
-            ))
-            """
-            company = processing.Company(c_metrics=metrics)
-            logger.info(json.dumps(company.calculations, indent=3))
-            """
-            # TODO: implement
-            logger.error("NOT IMPLEMENTED YET")
-            calculations_printed = True
+def print_metrics(filename, company_id, company_name):
+    _print_master("METRICS", filename, company_id, company_name,
+                  _print_metrics)
 
-    if not calculations_printed:
-        logger.info("Nothing found")
+def _print_collection(metrics):
+    processor = processing.Processor(metrics)
+    collection = processor.process()
+    logger.info(json.dumps(collection, indent=3))
 
-def filter_companies(metrics_filename):
-    # TODO: Done after metrics is scraped properly.
-    logger.info("Not implemented")
+def print_collection(filename, company_id, company_name):
+    _print_master("COLLECTION", filename, company_id, company_name,
+                  _print_collection)
 
-def organize_companies(metrics_filename):
+def _print_filtered(metrics):
+    processor = processing.Processor(metrics)
+    collection = processor.process()
+    logger.info(json.dumps(collection["passed_filter"], indent=3))
+
+def print_filtered(filename, company_id, company_name):
+    _print_master("FILTERED", filename, company_id, company_name,
+                  _print_filtered)
+
+def organize_companies(filename):
     # TODO: Done after metrics is scraped properly.
     logger.info("Not implemented")
 
@@ -200,18 +214,29 @@ def get_company_names(storage_directory):
         storage.store_names(storage_directory, company_names)
     return company_names
 
+def _get_commandline_filters(choice):
+    company_id = None
+    company_name = None
+    try:
+        company_id = int(choice)
+    except ValueError:
+        company_name = choice
+    return company_id, company_name
 
 console_instructions = \
-"ScrapeKL\n\
- s, scrape [<id>]\n\
- f, files\n\
- n, names [file]\n\
- m, metrics <file> [<name> | <id>]"
+"ScrapeKL  If no metrics file is specified, the latest is used.\n\
+ SCRAPE                s [<id>]\n\
+ LIST FILES            files\n\
+ LIST NAMES            n [<file>]\n\
+ SHOW METRICS          m [<file>] [<name> | <id>]\n\
+ SHOW COLLECTION       c [<file>] [<name> | <id>]\n\
+ SHOW FILTERED         f [<file>] [<name> | <id>]\n\
+ LIST PASSED FILTER    p [<file>]"
 
 
 if __name__ == '__main__':
-    level = "INFO"
-    #level = "DEBUG"
+    #level = "INFO"
+    level = "DEBUG"
     logger = scrape_logger.setup_logger(level)
 
     # Storage
@@ -220,9 +245,29 @@ if __name__ == '__main__':
         os.makedirs(storage_directory)
         logger.debug("storage-folder created: [{}]".format(storage_directory))
 
-    if len(sys.argv) == 1 or sys.argv[1] == "help":
+    # Latest filename
+    filename = storage.get_latest_metrics_filename(storage_directory)
+    # TODO: Make logic under use latest filename.
+
+
+    if len(sys.argv) == 1:
         print(console_instructions)
-    elif sys.argv[1] == "scrape" or sys.argv[1] == "s":
+
+    elif "n" == sys.argv[1]:
+        if len(sys.argv) == 3:
+            names_filename = sys.argv[2]
+            print_all_names(names_filename=names_filename)
+        else:
+            print_all_names(storage_directory=storage_directory)
+
+    elif "files" == sys.argv[1]:
+        all_filenames = os.listdir(storage_directory)
+        stored_filenames = []
+        for f in sorted(all_filenames):
+            if f.endswith(".json"):
+                print(f)
+
+    elif "s" == sys.argv[1]:
         company_names = None
         if len(sys.argv) > 2:
             try:
@@ -233,36 +278,55 @@ if __name__ == '__main__':
         time0 = time.time()
         scrape_companies(storage_directory, company_names)
         print("Scraping took: {:.2f} s".format(time.time() - time0))
-    elif sys.argv[1] == "files" or sys.argv[1] == "f":
-        all_filenames = os.listdir(storage_directory)
-        stored_filenames = []
-        for f in sorted(all_filenames):
-            if f.endswith(".json"):
-                print(f)
-    elif sys.argv[1] == "names" or sys.argv[1] == "n":
-        if len(sys.argv) == 3:
-            names_filename = sys.argv[2]
-            print_names(names_filename=names_filename)
-        else:
-            print_names(storage_directory=storage_directory)
-    elif sys.argv[1] == "metrics" or sys.argv[1] == "m":
+
+    elif "m" == sys.argv[1]:
         if not ( len(sys.argv) == 3 or len(sys.argv) == 4 ):
             print(console_instructions)
-        elif len(sys.argv) == 3:
-            metrics_filename = sys.argv[2]
-            print_metrics("scrapes\\" + metrics_filename)
         else:
-            metrics_filename = sys.argv[2]
-            company_id = None
-            company_name = None
-            choice = sys.argv[3]
-            try:
-                company_id = int(choice)
-            except ValueError:
-                company_name = choice
-            print_metrics(
-                "scrapes\\" + metrics_filename,
-                company_id=company_id, company_name=company_name
-            )
+            if len(sys.argv) == 3:
+                company_id = None
+                company_name = None
+            else:
+                choice = sys.argv[3]
+                company_id, company_name = _get_commandline_filters(choice)
+            filename = sys.argv[2]
+            print_metrics(storage_directory +"\\" + filename,
+                          company_id, company_name)
+
+    elif "c" == sys.argv[1]:
+        if not ( len(sys.argv) == 3 or len(sys.argv) == 4 ):
+            print(console_instructions)
+        else:
+            if len(sys.argv) == 3:
+                company_id = None
+                company_name = None
+            else:
+                choice = sys.argv[3]
+                company_id, company_name = _get_commandline_filters(choice)
+            filename = sys.argv[2]
+            print_collection(storage_directory +"\\" + filename,
+                             company_id, company_name)
+
+    elif "f" == sys.argv[1]:
+        if not ( len(sys.argv) == 3 or len(sys.argv) == 4 ):
+            print(console_instructions)
+        else:
+            if len(sys.argv) == 3:
+                company_id = None
+                company_name = None
+            else:
+                choice = sys.argv[3]
+                company_id, company_name = _get_commandline_filters(choice)
+            filename = sys.argv[2]
+            print_filtered(storage_directory +"\\" + filename,
+                           company_id, company_name)
+
+    elif "p" == sys.argv[1]:
+        if len(sys.argv) == 3:
+            filename = sys.argv[2]
+            print_passed_names(storage_directory +"\\" + filename)
+        else:
+            print(console_instructions)
+
     else:
         print(console_instructions)

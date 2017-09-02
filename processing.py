@@ -13,13 +13,19 @@ class RankerException(Exception):
 
 
 class Processor():
-    def __init__(self, metrics):
+    def __init__(self, metrics, fake_data=False):
         # Takes one company metrics as input, and returns a filtered collection.
-        assert isinstance(metrics, dict) and len(metrics) > 10
-
+        assert isinstance(metrics, dict)
+        if not fake_data:
+            assert len(metrics) > 10
         self.metrics = metrics
-        self.company_id = self.metrics["company_id"]
-        self.company_name = self.metrics["company_name"]
+
+        if fake_data:
+            self.company_id = 1
+            self.company_name = "fake_name"
+        else:
+            self.company_id = self.metrics["company_id"]
+            self.company_name = self.metrics["company_name"]
 
         assert self.company_id
         assert isinstance(self.company_id, int)
@@ -37,8 +43,10 @@ class Processor():
         return self.collection
 
     def get_tulostiedot_key(self):
-        if self.metrics["kannattavuus"] is None:
+        kannattavuus = self.metrics["kannattavuus"]
+        if kannattavuus is None or kannattavuus == "FAIL":
             return None
+        assert isinstance(kannattavuus, dict)
 
         # YYYY
         year_str_0 = date.today().strftime("%Y")
@@ -46,7 +54,7 @@ class Processor():
         year_str_2 = str(int(year_str_0) - 2)
 
         possible_keys = []
-        for key in self.metrics["kannattavuus"]:
+        for key in kannattavuus:
             possible_keys.append(key)
 
         for key in sorted(possible_keys, reverse=True):
@@ -57,6 +65,7 @@ class Processor():
             elif key.startswith(year_str_2):
                 return key
 
+        logger.error(kannattavuus)
         logger.error(
             "Found no tulostiedot_key: c_id: {}; c_name: {}" \
             .format(self.company_id, self.company_name) \

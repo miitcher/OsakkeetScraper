@@ -12,6 +12,8 @@ logger = scrape_logger.setup_logger(level)
 
 storage_directory = "scrapes"
 
+names_filename = "test\\names_test_all.tsv"
+metrics_filename = "test\\metrics_test_all.json"
 
 class Test(unittest.TestCase):
 
@@ -47,14 +49,8 @@ class Test(unittest.TestCase):
 
         os.remove(metricsfilename)
 
-    def test_print_names1(self):
-        scrapeKL.print_names(storage_directory=storage_directory)
 
-    def test_print_names2(self):
-        names_filename = "test\\names_test1.tsv"
-        scrapeKL.print_names(names_filename=names_filename)
-
-    def test_print_names3(self):
+    def test_print_names0(self):
         company_names = {
             2048: "talenom",
             1102: "cramo",
@@ -62,31 +58,47 @@ class Test(unittest.TestCase):
             1196: "afarak group",
             9999: "foobar"
         }
-        scrapeKL.print_names(company_names=company_names)
+        scrapeKL._print_names(company_names)
+
+    def test_print_names1(self):
+        scrapeKL.print_all_names(storage_directory=storage_directory)
+
+    def test_print_names2(self):
+        scrapeKL.print_all_names(names_filename=names_filename)
+
 
     def test_print_metrics_working(self):
-        metrics_filename = "test\\metrics_test1.json"
         scrapeKL.print_metrics(metrics_filename, None, "cramo")
 
     def test_print_metrics_failed(self):
-        metrics_filename = "test\\metrics_test1.json"
         scrapeKL.print_metrics(metrics_filename, 1081, None)
 
     def test_print_metrics_bank(self):
-        metrics_filename = "test\\metrics_test1.json"
         scrapeKL.print_metrics(metrics_filename, None, "aktia")
 
+
     def test_print_calculations_working(self):
-        metrics_filename = "test\\metrics_test1.json"
-        scrapeKL.print_calculations(metrics_filename, 1902, None)
+        scrapeKL.print_collection(metrics_filename, 1902, None)
 
     def test_print_calculations_failed(self):
-        metrics_filename = "test\\metrics_test1.json"
-        scrapeKL.print_calculations(metrics_filename, None, "basware")
+        scrapeKL.print_collection(metrics_filename, None, "basware")
 
     def test_print_calculations_bank(self):
-        metrics_filename = "test\\metrics_test1.json"
-        scrapeKL.print_calculations(metrics_filename, None, "aktia")
+        scrapeKL.print_collection(metrics_filename, None, "aktia")
+
+
+    def test_print_filtered_working(self):
+        scrapeKL.print_filtered(metrics_filename, 1902, None)
+
+    def test_print_filtered_failed(self):
+        scrapeKL.print_filtered(metrics_filename, None, "basware")
+
+    def test_print_filtered_bank(self):
+        scrapeKL.print_filtered(metrics_filename, None, "aktia")
+
+
+    def test_print_passed_names(self):
+        scrapeKL.print_passed_names(metrics_filename)
 
 
 if __name__ == '__main__':

@@ -38,6 +38,15 @@ class Test(unittest.TestCase):
             self.assertIsInstance(collection, dict)
             self.assertEqual(len(collection), 16)
 
+    def test_get_tulostiedot_key_smoketest(self):
+        metrics_list = storage.load_metrics(filename_all)
+        for metrics in metrics_list:
+            processor = processing.Processor(metrics)
+            tulostiedot_key = processor.get_tulostiedot_key()
+            if tulostiedot_key is not None:
+                self.assertTrue(date.match(tulostiedot_key))
+            #logger.warn(tulostiedot_key)
+
     def test_get_tulostiedot_key(self):
         i = 0
         for filename in test_filenames:
@@ -45,6 +54,16 @@ class Test(unittest.TestCase):
                 self, filename, test_expected_tulostiedot_key[i]
             )
             i += 1
+
+    def test_get_tulostiedot_key_return_None(self):
+        metrics_list = [
+            {"kannattavuus": None},
+            {"kannattavuus": "FAIL"}
+        ]
+        for metrics in metrics_list:
+            processor = processing.Processor(metrics, fake_data=True)
+            tulostiedot_key = processor.get_tulostiedot_key()
+            self.assertEqual(tulostiedot_key, None)
 
     def test_collect_and_calculate_metrics(self):
         metrics_list = storage.load_metrics(filename_all)
