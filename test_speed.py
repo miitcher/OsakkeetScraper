@@ -13,7 +13,7 @@ logger_speed = scrape_logger.setup_logger(level, name="speed")
 class Test(unittest.TestCase):
     def test_speed(self):
         # smoketest
-        speed.main(1)
+        speed.run_speedtest(1)
 
 
 if __name__ == '__main__':

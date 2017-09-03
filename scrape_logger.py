@@ -16,13 +16,13 @@ def setup_logger(level="INFO", name="root"):
     return logger
 
 def set_logger_level(logger, level):
-    if level == "INFO":
+    if level == "INFO" or level == logging.INFO:
         logger.handlers[0].setFormatter(logging.Formatter(short_f))
         logger.setLevel(logging.INFO)
-    elif level == "DEBUG":
+    elif level == "DEBUG" or level == logging.DEBUG:
         logger.handlers[0].setFormatter(logging.Formatter(long_f))
         logger.setLevel(logging.DEBUG)
-    elif level == "WARNING":
+    elif level == "WARNING" or level == logging.WARNING:
         logger.handlers[0].setFormatter(logging.Formatter(long_f))
         logger.setLevel(logging.WARNING)
     else:

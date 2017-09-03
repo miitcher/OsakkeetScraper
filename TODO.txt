@@ -1,5 +1,3 @@
-Add speed test to scrapeKL.py commandline running.
-
 Make the scrapeKL use the storage.get_latest_metrics_filename().
 
 Work on processing.Ranker class

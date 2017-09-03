@@ -7,6 +7,7 @@ Usage:
   scrapeKL.py filtered [--name=<str> | --id=<int>...] [<file>] [options]
   scrapeKL.py passed [<file>] [options]
   scrapeKL.py list_files [options]
+  scrapeKL.py speed [<times>] [options]
 
 Options:
   -h, --help
@@ -19,6 +20,7 @@ import scraping
 import processing
 import storage
 import scrape_logger
+import speed
 
 logger = logging.getLogger('root')
 
@@ -301,6 +303,28 @@ def main(arguments):
             if f.endswith(".json"):
                 print(f)
 
+    elif arguments["speed"]:
+        times = arguments["<times>"]
+        if times:
+            try:
+                times = int(times)
+            except ValueError:
+                raise ScrapeKLException(
+                    "Times {} is not an integer.".format(times))
+            assert times > 0
+        else:
+            logger.info("Using default: times = 5")
+            times = 5
+
+        """
+        The speed testing needs its own logger, so the print is clean.
+        The speed logger level is gotten from the user input,
+        and the scrape logger, "root", level is set to WARNING.
+        """
+        _speed_logger = scrape_logger.setup_logger(logger.level, "speed")
+        scrape_logger.set_logger_level(logger, "WARNING")
+
+        speed.run_speedtest(times)
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)

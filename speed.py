@@ -12,7 +12,7 @@ storage_directory = "speed"
 speed_filename = "speed_run.log"
 
 
-def main(times):
+def run_speedtest(times):
     assert isinstance(times, int)
     # Storage
     if not os.path.isdir(storage_directory):
@@ -96,11 +96,11 @@ if __name__ == '__main__':
     logger_root = scrape_logger.setup_logger("WARNING")
     logger = scrape_logger.setup_logger(name="speed")
 
-    times = 5
+    times = 5 # default
     if len(sys.argv) == 2:
         try:
             times = int(sys.argv[1])
         except ValueError:
             pass
 
-    main(times)
+    run_speedtest(times)
