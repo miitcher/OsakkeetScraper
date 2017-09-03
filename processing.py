@@ -199,6 +199,17 @@ class Processor():
                 needs_tulostiedot_key["PE"] = None
                 needs_tulostiedot_key["E"]  = None
                 needs_tulostiedot_key["P"]  = None
+        else:
+            needs_tulostiedot_key["ROE_%"]      = None
+            needs_tulostiedot_key["nettotulos"] = None
+
+            needs_tulostiedot_key["omavaraisuusaste_%"] = None
+            needs_tulostiedot_key["gearing_%"]          = None
+
+            needs_tulostiedot_key["PB"] = None
+            needs_tulostiedot_key["PE"] = None
+            needs_tulostiedot_key["E"]  = None
+            needs_tulostiedot_key["P"]  = None
 
         """ Calculate fresh metrics, with current stock price
         osinko_tuotto_%_fresh
@@ -233,11 +244,7 @@ class Processor():
             needs_tulostiedot_key["PB_fresh"] = None
             needs_tulostiedot_key["PE_fresh"] = None
 
-        if needs_tulostiedot_key:
-            collection["needs_tulostiedot_key"] = needs_tulostiedot_key
-        else:
-            collection["needs_tulostiedot_key"] = None
-
+        collection["needs_tulostiedot_key"] = needs_tulostiedot_key
         return collection
 
     def _do_filtering(self, key, threshold_min=None, threshold_max=None):

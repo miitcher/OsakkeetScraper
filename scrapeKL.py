@@ -1,17 +1,16 @@
 """
 Usage:
-  scrapeKL.py scrape [--ids=<int>...] [options]
+  scrapeKL.py scrape [--id=<int>...] [options]
   scrapeKL.py names [<file>] [options]
-  scrapeKL.py metrics [<file>] [--name=<str> | --id=<int>] [options]
-  scrapeKL.py collection [<file>] [--name=<str> | --id=<int>] [options]
-  scrapeKL.py filtered [<file>] [--name=<str> | --id=<int>] [options]
+  scrapeKL.py metrics (--name=<str> | --id=<int>...) [<file>] [options]
+  scrapeKL.py collection (--name=<str> | --id=<int>...) [<file>] [options]
+  scrapeKL.py filtered [--name=<str> | --id=<int>...] [<file>] [options]
   scrapeKL.py passed [<file>] [options]
   scrapeKL.py list_files [options]
 
 Options:
   -h, --help
   --debug
-  -q, --quiet
 """
 from docopt import docopt
 import logging, json, os, time
@@ -22,13 +21,6 @@ import storage
 import scrape_logger
 
 logger = logging.getLogger('root')
-
-
-"""
-When a company is scraped, its raw metrics is stored.
-When a company is loaded, the calculations are done,
-and the company is not stored again.
-"""
 
 
 class ScrapeKLException(Exception):
@@ -141,22 +133,24 @@ def print_all_names(storage_directory=None, names_filename=None):
     logger.info("-"*14 + "\tALL NAMES")
     _print_names(company_names)
 
-def _get_metrics_list(filename, company_id, company_name):
-    # Only one or none of company_id and company_name is allowed.
-    if company_id is not None:
-        assert company_name is None, "Too many filters"
-    if company_name is not None:
-        assert company_id is None, "Too many filters"
-    logger.debug("Filters: id={}; name={}".format(company_id, company_name))
+def _get_metrics_list(filename, c_id_list, c_name):
+    # Only one or none of c_id and c_name is allowed.
+    if c_id_list:
+        assert isinstance(c_id_list, list)
+        assert c_name is None, "Too many filters"
+    if c_name:
+        assert isinstance(c_name, str)
+        assert not c_id_list, "Too many filters"
+    logger.debug("Filters: c_id_list={}; c_name={}".format(c_id_list, c_name))
 
     metrics_list = storage.load_metrics(filename)
-    if company_id is None and company_name is None:
+    if not c_id_list and not c_name:
         return metrics_list
     else:
         retval = []
         for metrics in metrics_list:
-            if ( company_id and company_id == metrics["company_id"] ) \
-            or ( company_name and str(company_name).lower() \
+            if ( c_id_list and metrics["company_id"] in c_id_list) \
+            or ( c_name and str(c_name).lower() \
                                     in str(metrics["company_name"]).lower() ):
                 retval.append(metrics)
         return retval
@@ -178,9 +172,8 @@ def print_passed_names(filename):
     logger.info("-"*14 + "\tPASSED NAMES")
     _print_names(company_names)
 
-def _print_master(header, filename, company_id, company_name, print_func):
-    assert company_id or company_name, "Need some limiter."
-    metrics_list = _get_metrics_list(filename, company_id, company_name)
+def _print_master(header, filename, c_id_list, c_name, print_func):
+    metrics_list = _get_metrics_list(filename, c_id_list, c_name)
     if metrics_list:
         logger.info("\t" + header + "\t{}".format(filename))
         for metrics in metrics_list:
@@ -199,8 +192,8 @@ def _print_master(header, filename, company_id, company_name, print_func):
 def _print_metrics(metrics):
     logger.info(json.dumps(metrics, indent=3))
 
-def print_metrics(filename, company_id, company_name):
-    _print_master("METRICS", filename, company_id, company_name,
+def print_metrics(filename, c_id_list, c_name):
+    _print_master("METRICS", filename, c_id_list, c_name,
                   _print_metrics)
 
 def _print_collection(metrics):
@@ -208,8 +201,8 @@ def _print_collection(metrics):
     collection = processor.process()
     logger.info(json.dumps(collection, indent=3))
 
-def print_collection(filename, company_id, company_name):
-    _print_master("COLLECTION", filename, company_id, company_name,
+def print_collection(filename, c_id_list, c_name):
+    _print_master("COLLECTION", filename, c_id_list, c_name,
                   _print_collection)
 
 def _print_filtered(metrics):
@@ -217,14 +210,13 @@ def _print_filtered(metrics):
     collection = processor.process()
     logger.info(json.dumps(collection["passed_filter"], indent=3))
 
-def print_filtered(filename, company_id, company_name):
-    _print_master("FILTERED", filename, company_id, company_name,
+def print_filtered(filename, c_id_list, c_name):
+    _print_master("FILTERED", filename, c_id_list, c_name,
                   _print_filtered)
 
 def organize_companies(filename):
     # TODO: Done after metrics is scraped properly.
     logger.info("Not implemented")
-
 
 def get_company_names(storage_directory):
     company_names = storage.load_todays_names(storage_directory)
@@ -234,33 +226,11 @@ def get_company_names(storage_directory):
         storage.store_names(storage_directory, company_names)
     return company_names
 
-def _get_commandline_filters(choice):
-    company_id = None
-    company_name = None
-    try:
-        company_id = int(choice)
-    except ValueError:
-        company_name = choice
-    return company_id, company_name
-
-console_instructions = \
-"ScrapeKL  If no metrics file is specified, the latest is used.\n\
- SCRAPE                s [<id>]\n\
- LIST FILES            files\n\
- LIST NAMES            n [<file>]\n\
- SHOW METRICS          m [<file>] [<name> | <id>]\n\
- SHOW COLLECTION       c [<file>] [<name> | <id>]\n\
- SHOW FILTERED         f [<file>] [<name> | <id>]\n\
- LIST PASSED FILTER    p [<file>]"
 
 def main(arguments):
     # Logging
-    if arguments["--debug"] and arguments["--quiet"]:
-        raise ScrapeKLException("Can not have debug and quiet.")
     if arguments["--debug"]:
         level = "DEBUG"
-    elif arguments["--quiet"]:
-        level = "WARNING"
     else:
         level = "INFO"
     logger = scrape_logger.setup_logger(level)
@@ -273,28 +243,29 @@ def main(arguments):
         os.makedirs(storage_directory)
         logger.debug("storage-folder created: [{}]".format(storage_directory))
 
-
     # Shared arguments
     if arguments["<file>"]:
         filename = storage_directory +"\\" + arguments["<file>"]
     else:
         filename = storage.get_latest_metrics_filename(storage_directory)
-    company_name = arguments["--name"]
-    company_id = arguments["--id"]
-    if company_id:
-        try:
-            company_id = int(company_id)
-        except ValueError:
-            raise ScrapeKLException(
-                "Id {} is not an integer.".format(company_id))
-    logger.debug("ID: {}; NAME: {}".format(company_id, company_name))
+    c_name = arguments["--name"]
+    c_id_list_in = arguments["--id"]
+    c_id_list = []
+    if c_id_list_in:
+        for c_id in c_id_list_in:
+            try:
+                c_id_list.append(int(c_id))
+            except ValueError:
+                raise ScrapeKLException(
+                    "Id {} is not an integer.".format(c_id))
+    logger.debug("c_id_list: {}; c_name: {}".format(c_id_list, c_name))
 
     # Function calling
     if arguments["scrape"]:
         company_names = None
-        if arguments["--ids"]:
+        if arguments["--id"]:
             company_names = {}
-            for c_id in arguments["--ids"]:
+            for c_id in arguments["--id"]:
                 try:
                     company_names[int(c_id)] = None
                 except ValueError:
@@ -313,13 +284,13 @@ def main(arguments):
             print_all_names(storage_directory=storage_directory)
 
     elif arguments["metrics"]:
-        print_metrics(filename, company_id, company_name)
+        print_metrics(filename, c_id_list, c_name)
 
     elif arguments["collection"]:
-        print_collection(filename, company_id, company_name)
+        print_collection(filename, c_id_list, c_name)
 
     elif arguments["filtered"]:
-        print_filtered(filename, company_id, company_name)
+        print_filtered(filename, c_id_list, c_name)
 
     elif arguments["passed"]:
         print_passed_names(filename)

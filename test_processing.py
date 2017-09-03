@@ -43,9 +43,9 @@ class Test(unittest.TestCase):
         for metrics in metrics_list:
             processor = processing.Processor(metrics)
             tulostiedot_key = processor.get_tulostiedot_key()
+            #logger.warn(tulostiedot_key)
             if tulostiedot_key is not None:
                 self.assertTrue(date.match(tulostiedot_key))
-            #logger.warn(tulostiedot_key)
 
     def test_get_tulostiedot_key(self):
         i = 0
@@ -116,15 +116,13 @@ def test_collect_and_calculate_metrics_Controll(tester, metrics):
 
     tester.assertEqual(len(collection), 15)
     for key in collection:
+        #logger.error(key)
         if collection[key] is not None:
             if type_dict[key] == date:
                 tester.assertTrue(date.match(collection[key]))
             elif type_dict[key] == dict:
-                if key == "needs_tulostiedot_key" and collection[key]:
-                    if collection[key]["P"]:
-                        tester.assertEqual(len(collection[key]), 11)
-                    else:
-                        tester.assertEqual(len(collection[key]), 8)
+                if key == "needs_tulostiedot_key":
+                    tester.assertEqual(len(collection[key]), 11)
                 for k, v in collection[key].items():
                     if v is not None:
                         tester.assertTrue(

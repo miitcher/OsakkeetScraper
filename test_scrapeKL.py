@@ -71,30 +71,34 @@ class Test(unittest.TestCase):
         scrapeKL.print_metrics(metrics_filename, None, "cramo")
 
     def test_print_metrics_failed(self):
-        scrapeKL.print_metrics(metrics_filename, 1081, None)
+        scrapeKL.print_metrics(metrics_filename, [1081], None)
 
     def test_print_metrics_bank(self):
         scrapeKL.print_metrics(metrics_filename, None, "aktia")
 
 
-    def test_print_calculations_working(self):
-        scrapeKL.print_collection(metrics_filename, 1902, None)
+    def test_print_collection_working(self):
+        scrapeKL.print_collection(metrics_filename, [1902], None)
 
-    def test_print_calculations_failed(self):
+    def test_print_collection_failed(self):
         scrapeKL.print_collection(metrics_filename, None, "basware")
 
-    def test_print_calculations_bank(self):
+    def test_print_collection_bank(self):
         scrapeKL.print_collection(metrics_filename, None, "aktia")
 
 
     def test_print_filtered_working(self):
-        scrapeKL.print_filtered(metrics_filename, 1902, None)
+        scrapeKL.print_filtered(metrics_filename, [1902], None)
 
     def test_print_filtered_failed(self):
         scrapeKL.print_filtered(metrics_filename, None, "basware")
 
     def test_print_filtered_bank(self):
-        scrapeKL.print_filtered(metrics_filename, None, "aktia")
+        scrapeKL.print_filtered(metrics_filename, [1970], None)
+
+
+    def test_print_filtered_all(self):
+        scrapeKL.print_filtered(metrics_filename, None, None)
 
 
     def test_print_passed_names(self):
