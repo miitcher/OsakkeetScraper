@@ -1,4 +1,20 @@
-import logging, json, sys, os, time
+"""
+Usage:
+  scrapeKL.py scrape [--ids=<int>...] [options]
+  scrapeKL.py names [<file>] [options]
+  scrapeKL.py metrics [<file>] [--name=<str> | --id=<int>] [options]
+  scrapeKL.py collection [<file>] [--name=<str> | --id=<int>] [options]
+  scrapeKL.py filtered [<file>] [--name=<str> | --id=<int>] [options]
+  scrapeKL.py passed [<file>] [options]
+  scrapeKL.py list_files [options]
+
+Options:
+  -h, --help
+  --debug
+  -q, --quiet
+"""
+from docopt import docopt
+import logging, json, os, time
 
 import scraping
 import processing
@@ -151,10 +167,14 @@ def print_passed_names(filename):
     for metrics in metrics_list:
         processor = processing.Processor(metrics)
         collection = processor.process()
-        #logger.info(json.dumps(collection["passed_filter"], indent=3))
-        if collection["passed_filter"]["all"]:
-            company_names[collection["company_id"]] = \
-                collection["company_name"]
+        if collection != "FAIL":
+            #logger.info(json.dumps(collection["passed_filter"], indent=3))
+            if collection["passed_filter"]["all"]:
+                company_names[collection["company_id"]] = \
+                    collection["company_name"]
+        else:
+            logger.debug("Failed collection: c_id: {}, c_name:{}".format(
+                metrics["company_id"], metrics["company_name"]))
     logger.info("-"*14 + "\tPASSED NAMES")
     _print_names(company_names)
 
@@ -233,11 +253,19 @@ console_instructions = \
  SHOW FILTERED         f [<file>] [<name> | <id>]\n\
  LIST PASSED FILTER    p [<file>]"
 
-
-if __name__ == '__main__':
-    level = "INFO"
-    #level = "DEBUG"
+def main(arguments):
+    # Logging
+    if arguments["--debug"] and arguments["--quiet"]:
+        raise ScrapeKLException("Can not have debug and quiet.")
+    if arguments["--debug"]:
+        level = "DEBUG"
+    elif arguments["--quiet"]:
+        level = "WARNING"
+    else:
+        level = "INFO"
     logger = scrape_logger.setup_logger(level)
+
+    logger.debug(arguments)
 
     # Storage
     storage_directory = "scrapes"
@@ -245,88 +273,64 @@ if __name__ == '__main__':
         os.makedirs(storage_directory)
         logger.debug("storage-folder created: [{}]".format(storage_directory))
 
-    # Latest filename
-    filename = storage.get_latest_metrics_filename(storage_directory)
-    # TODO: Make logic under use latest filename.
 
+    # Shared arguments
+    if arguments["<file>"]:
+        filename = storage_directory +"\\" + arguments["<file>"]
+    else:
+        filename = storage.get_latest_metrics_filename(storage_directory)
+    company_name = arguments["--name"]
+    company_id = arguments["--id"]
+    if company_id:
+        try:
+            company_id = int(company_id)
+        except ValueError:
+            raise ScrapeKLException(
+                "Id {} is not an integer.".format(company_id))
+    logger.debug("ID: {}; NAME: {}".format(company_id, company_name))
 
-    if len(sys.argv) == 1:
-        print(console_instructions)
-
-    elif "n" == sys.argv[1]:
-        if len(sys.argv) == 3:
-            names_filename = sys.argv[2]
-            print_all_names(names_filename=names_filename)
-        else:
-            print_all_names(storage_directory=storage_directory)
-
-    elif "files" == sys.argv[1]:
-        all_filenames = os.listdir(storage_directory)
-        stored_filenames = []
-        for f in sorted(all_filenames):
-            if f.endswith(".json"):
-                print(f)
-
-    elif "s" == sys.argv[1]:
+    # Function calling
+    if arguments["scrape"]:
         company_names = None
-        if len(sys.argv) > 2:
-            try:
-                company_names = {int(sys.argv[2]): None}
-            except ValueError:
-                logger.info("Invalid id type: ".format(type(sys.argv[2])))
+        if arguments["--ids"]:
+            company_names = {}
+            for c_id in arguments["--ids"]:
+                try:
+                    company_names[int(c_id)] = None
+                except ValueError:
+                    raise ScrapeKLException(
+                        "Id {} is not an integer.".format(c_id))
         logger.debug("company_names to scrape: {}".format(company_names))
         time0 = time.time()
         scrape_companies(storage_directory, company_names)
         print("Scraping took: {:.2f} s".format(time.time() - time0))
 
-    elif "m" == sys.argv[1]:
-        if not ( len(sys.argv) == 3 or len(sys.argv) == 4 ):
-            print(console_instructions)
+    elif arguments["names"]:
+        if arguments["<file>"]:
+            names_filename = arguments["<file>"]
+            print_all_names(names_filename=names_filename)
         else:
-            if len(sys.argv) == 3:
-                company_id = None
-                company_name = None
-            else:
-                choice = sys.argv[3]
-                company_id, company_name = _get_commandline_filters(choice)
-            filename = sys.argv[2]
-            print_metrics(storage_directory +"\\" + filename,
-                          company_id, company_name)
+            print_all_names(storage_directory=storage_directory)
 
-    elif "c" == sys.argv[1]:
-        if not ( len(sys.argv) == 3 or len(sys.argv) == 4 ):
-            print(console_instructions)
-        else:
-            if len(sys.argv) == 3:
-                company_id = None
-                company_name = None
-            else:
-                choice = sys.argv[3]
-                company_id, company_name = _get_commandline_filters(choice)
-            filename = sys.argv[2]
-            print_collection(storage_directory +"\\" + filename,
-                             company_id, company_name)
+    elif arguments["metrics"]:
+        print_metrics(filename, company_id, company_name)
 
-    elif "f" == sys.argv[1]:
-        if not ( len(sys.argv) == 3 or len(sys.argv) == 4 ):
-            print(console_instructions)
-        else:
-            if len(sys.argv) == 3:
-                company_id = None
-                company_name = None
-            else:
-                choice = sys.argv[3]
-                company_id, company_name = _get_commandline_filters(choice)
-            filename = sys.argv[2]
-            print_filtered(storage_directory +"\\" + filename,
-                           company_id, company_name)
+    elif arguments["collection"]:
+        print_collection(filename, company_id, company_name)
 
-    elif "p" == sys.argv[1]:
-        if len(sys.argv) == 3:
-            filename = sys.argv[2]
-            print_passed_names(storage_directory +"\\" + filename)
-        else:
-            print(console_instructions)
+    elif arguments["filtered"]:
+        print_filtered(filename, company_id, company_name)
 
-    else:
-        print(console_instructions)
+    elif arguments["passed"]:
+        print_passed_names(filename)
+
+    elif arguments["list_files"]:
+        all_filenames = os.listdir(storage_directory)
+        for f in sorted(all_filenames):
+            if f.endswith(".json"):
+                print(f)
+
+
+if __name__ == '__main__':
+    arguments = docopt(__doc__)
+    main(arguments)

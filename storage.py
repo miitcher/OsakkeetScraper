@@ -74,9 +74,11 @@ def get_latest_metrics_filename(storage_directory):
     if not potential_filenames:
         return None
 
+    """
     logger.debug("potential filenames:")
     for filename, dt in potential_filenames:
         logger.debug(filename)
+    """
 
     return storage_directory + "\\" + sorted(potential_filenames,
                                              key=lambda tup: tup[1],

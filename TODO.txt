@@ -1,3 +1,5 @@
+Add speed test to scrapeKL.py commandline running.
+
 Make the scrapeKL use the storage.get_latest_metrics_filename().
 
 Work on processing.Ranker class
@@ -12,11 +14,6 @@ Check "kuvaus" before storing it, when scraping.
 
 Should the names file be removed, and the metrics file just be used.
     The same data (id and name) is stored in the metrics file.
-
-Make the command line interface better.
-    Add speed test to scrapeKL.py commandline running.
-    Could skip the gui, maby
-    Could use the thing at work...
 
 Time parts in Scraper to know what is the limiting thing.
 
