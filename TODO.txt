@@ -1,5 +1,3 @@
-Make the scrapeKL use the storage.get_latest_metrics_filename().
-
 Work on processing.Ranker class
     * Go trough old code once and refine.
     * Make unittests for class.
@@ -8,7 +6,7 @@ Check "kuvaus" before storing it, when scraping.
     It kuvaus is like:
         "yhtiosta ei ole saatavilla kuvaustalisatietoa
         yrityksesta kauppalehden yrityshaussa: talenom"
-    Then kuvaus could be None.
+        Then kuvaus could be then None.
 
 Should the names file be removed, and the metrics file just be used.
     The same data (id and name) is stored in the metrics file.
