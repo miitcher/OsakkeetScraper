@@ -73,7 +73,31 @@ class Processor():
         )
         return None
 
+    def from_metrics(self, *keys):
+        # Get item safely from self.metrics.
+        assert len(keys) > 0, "Too few keys."
+        if keys[0] in self.no_metrics:
+            return None
+        retval = self.metrics[keys[0]]
+        c = 0
+        for key in keys:
+            if c > 0:
+                retval = retval[key]
+            else:
+                c += 1
+        return retval
+
     def collect_and_calculate_metrics(self):
+        # Metrics that the scraped company do not have.
+        self.no_metrics = []
+        if self.metrics["failed_metrics"]:
+            self.no_metrics.extend(self.metrics["failed_metrics"])
+        if self.metrics["exp_missing_metrics"]:
+            self.no_metrics.extend(self.metrics["exp_missing_metrics"])
+        if self.metrics["missing_metrics"]:
+            self.no_metrics.extend(self.metrics["missing_metrics"])
+        #logger.debug("no_metrics: {}".format(self.no_metrics))
+
         collection = {}
         needs_tulostiedot_key = {} # Banks do not have these metrics.
         collection["tulostiedot_key"] = self.get_tulostiedot_key()
@@ -90,9 +114,10 @@ class Processor():
             osinko_tuotto_percent[str(year)] = 0
             osinko_euro[str(year)] = 0
 
-        if self.metrics["osingot"]:
-            for top_key in self.metrics["osingot"]:
-                osinko_dict = self.metrics["osingot"][top_key]
+        osingot = self.from_metrics("osingot")
+        if osingot:
+            for top_key in osingot:
+                osinko_dict = osingot[top_key]
                 osinko_year = str(osinko_dict["vuosi"])
                 if osinko_year in osinko_tuotto_percent:
                     if osinko_dict["tuotto_%"]:
@@ -120,16 +145,21 @@ class Processor():
         toimialaluokka
         osakkeet_kpl
         """
-        collection["company_id"]       = self.metrics["company_id"]
-        collection["company_name"]     = self.metrics["company_name"]
-        collection["kurssi"]           = self.metrics["kurssi"]
-        collection["kuvaus"]           = self.metrics["kuvaus"]
-        collection["scrape_date"]      = self.metrics["scrape_date"]
+        collection["company_id"]       = self.from_metrics("company_id")
+        collection["company_name"]     = self.from_metrics("company_name")
+        collection["kurssi"]           = self.from_metrics("kurssi")
+        collection["kuvaus"]           = self.from_metrics("kuvaus")
+        collection["scrape_date"]      = self.from_metrics("scrape_date")
 
-        perustiedot = self.metrics["perustiedot"]
-        collection["toimiala"]         = perustiedot["toimiala"]
-        collection["toimialaluokka"]   = perustiedot["toimialaluokka"]
-        collection["osakkeet_kpl"]     = perustiedot["osakkeet_kpl"]
+        perustiedot = self.from_metrics("perustiedot")
+        if perustiedot:
+            collection["toimiala"]         = perustiedot["toimiala"]
+            collection["toimialaluokka"]   = perustiedot["toimialaluokka"]
+            collection["osakkeet_kpl"]     = perustiedot["osakkeet_kpl"]
+        else:
+            collection["toimiala"]         = None
+            collection["toimialaluokka"]   = None
+            collection["osakkeet_kpl"]     = None
 
         """ Collect usefull metrics, that need the tulostiedot_key
         ROE_%
@@ -142,19 +172,33 @@ class Processor():
         P
         """
         if collection["tulostiedot_key"]:
-            kannattavuus = self.metrics["kannattavuus"][collection["tulostiedot_key"]]
-            needs_tulostiedot_key["ROE_%"]        = kannattavuus["oman_paaoman_tuotto_%"]
-            needs_tulostiedot_key["nettotulos"] = kannattavuus["nettotulos"]
+            kannattavuus = self.from_metrics("kannattavuus", collection["tulostiedot_key"])
+            if kannattavuus:
+                needs_tulostiedot_key["ROE_%"]      = kannattavuus["oman_paaoman_tuotto_%"]
+                needs_tulostiedot_key["nettotulos"] = kannattavuus["nettotulos"]
+            else:
+                needs_tulostiedot_key["ROE_%"]      = None
+                needs_tulostiedot_key["nettotulos"] = None
 
-            vakavaraisuus = self.metrics["vakavaraisuus"][collection["tulostiedot_key"]]
-            needs_tulostiedot_key["omavaraisuusaste_%"] = vakavaraisuus["omavaraisuusaste_%"]
-            needs_tulostiedot_key["gearing_%"]          = vakavaraisuus["nettovelkaantumisaste_%"]
+            vakavaraisuus = self.from_metrics("vakavaraisuus", collection["tulostiedot_key"])
+            if vakavaraisuus:
+                needs_tulostiedot_key["omavaraisuusaste_%"] = vakavaraisuus["omavaraisuusaste_%"]
+                needs_tulostiedot_key["gearing_%"]          = vakavaraisuus["nettovelkaantumisaste_%"]
+            else:
+                needs_tulostiedot_key["omavaraisuusaste_%"] = None
+                needs_tulostiedot_key["gearing_%"]          = None
 
-            sijoittajan_tunnuslukuja = self.metrics["sijoittajan_tunnuslukuja"][collection["tulostiedot_key"]]
-            needs_tulostiedot_key["PB"] = sijoittajan_tunnuslukuja["p/b-luku"]
-            needs_tulostiedot_key["PE"] = sijoittajan_tunnuslukuja["p/e-luku"]
-            needs_tulostiedot_key["E"]  = sijoittajan_tunnuslukuja["tulos_(e)"]
-            needs_tulostiedot_key["P"]  = sijoittajan_tunnuslukuja["markkina-arvo_(p)"]
+            sijoittajan_tunnuslukuja = self.from_metrics("sijoittajan_tunnuslukuja", collection["tulostiedot_key"])
+            if sijoittajan_tunnuslukuja:
+                needs_tulostiedot_key["PB"] = sijoittajan_tunnuslukuja["p/b-luku"]
+                needs_tulostiedot_key["PE"] = sijoittajan_tunnuslukuja["p/e-luku"]
+                needs_tulostiedot_key["E"]  = sijoittajan_tunnuslukuja["tulos_(e)"]
+                needs_tulostiedot_key["P"]  = sijoittajan_tunnuslukuja["markkina-arvo_(p)"]
+            else:
+                needs_tulostiedot_key["PB"] = None
+                needs_tulostiedot_key["PE"] = None
+                needs_tulostiedot_key["E"]  = None
+                needs_tulostiedot_key["P"]  = None
 
         """ Calculate fresh metrics, with current stock price
         osinko_tuotto_%_fresh
@@ -172,8 +216,7 @@ class Processor():
             collection["osakkeet_kpl"]
             * collection["kurssi"] / 1e6, 4
         )
-        if collection["tulostiedot_key"] \
-        and needs_tulostiedot_key["P"]:
+        if collection["tulostiedot_key"] and needs_tulostiedot_key["P"]:
             needs_tulostiedot_key["P_factor_fresh"] = round(
                 collection["P_fresh"] / needs_tulostiedot_key["P"], 4
             )
@@ -185,6 +228,10 @@ class Processor():
                 needs_tulostiedot_key["P_factor_fresh"]
                 * needs_tulostiedot_key["PE"], 2
             )
+        else:
+            needs_tulostiedot_key["P_factor_fresh"] = None
+            needs_tulostiedot_key["PB_fresh"] = None
+            needs_tulostiedot_key["PE_fresh"] = None
 
         if needs_tulostiedot_key:
             collection["needs_tulostiedot_key"] = needs_tulostiedot_key
@@ -197,8 +244,10 @@ class Processor():
         assert self.collection["tulostiedot_key"]
         val = self.collection["needs_tulostiedot_key"][key]
         if val is None:
+            """
             logger.debug("No {}: c_id: {}; c_name: {}" \
                          .format(key, self.company_id, self.company_name))
+            """
             self.passed_filter["skipped_filters"].append(key)
             return
         assert isinstance(val, float), \
@@ -234,8 +283,10 @@ class Processor():
         self.passed_filter["steady_osinko"] = self.collection["steady_osinko"]
 
         if self.collection["tulostiedot_key"] is None:
+            """
             logger.debug("No tulostiedot_key: c_id: {}; c_name: {}" \
                          .format(self.company_id, self.company_name))
+            """
             self.passed_filter["skipped_filters"].extend([
                 "gearing_%", "omavaraisuusaste_%", "ROE_%", "steady_nettotulos"
             ])
