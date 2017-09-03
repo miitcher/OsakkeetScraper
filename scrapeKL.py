@@ -113,7 +113,6 @@ def _print_names(company_names):
             out_str += "\n"
         out_str += format_str.format(c_str)
         i += 1
-    logger.info("\n" + "-"*10 + "\tNAMES")
     logger.info(out_str)
 
 def print_all_names(storage_directory=None, names_filename=None):
@@ -123,6 +122,7 @@ def print_all_names(storage_directory=None, names_filename=None):
     elif names_filename:
         assert storage_directory is None
         company_names = storage.load_names(names_filename)
+    logger.info("-"*14 + "\tALL NAMES")
     _print_names(company_names)
 
 def _get_metrics_list(filename, company_id, company_name):
@@ -155,6 +155,7 @@ def print_passed_names(filename):
         if collection["passed_filter"]["all"]:
             company_names[collection["company_id"]] = \
                 collection["company_name"]
+    logger.info("-"*14 + "\tPASSED NAMES")
     _print_names(company_names)
 
 def _print_master(header, filename, company_id, company_name, print_func):
@@ -169,7 +170,6 @@ def _print_master(header, filename, company_id, company_name, print_func):
             ))
 
             print_func(metrics)
-            #logger.info(json.dumps(metrics, indent=3))
 
             logger.info("-"*14)
         logger.info("\t" + header + "\t{}".format(filename))
@@ -235,8 +235,8 @@ console_instructions = \
 
 
 if __name__ == '__main__':
-    #level = "INFO"
-    level = "DEBUG"
+    level = "INFO"
+    #level = "DEBUG"
     logger = scrape_logger.setup_logger(level)
 
     # Storage

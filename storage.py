@@ -57,8 +57,30 @@ def load_names(names_filename):
     return company_names
 
 def get_latest_metrics_filename(storage_directory):
-    # TODO: Implement
-    return None
+    filenames = os.listdir(storage_directory)
+    potential_filenames = []
+    for filename in filenames:
+        if filename.startswith("metrics_"):
+            date_str = filename.replace("metrics_", "").replace(".json", "")
+            try:
+                dt = datetime.strptime(date_str, datetime_format)
+                potential_filenames.append((filename, dt))
+            except ValueError:
+                logger.debug(
+                    "{} filename did not match expected datetime format." \
+                    .format(filename)
+                )
+
+    if not potential_filenames:
+        return None
+
+    logger.debug("potential filenames:")
+    for filename, dt in potential_filenames:
+        logger.debug(filename)
+
+    return storage_directory + "\\" + sorted(potential_filenames,
+                                             key=lambda tup: tup[1],
+                                             reverse=True)[0][0]
 
 def load_todays_names(storage_directory):
     date_str = date.today().strftime(date_short_format) # YY-MM-DD

@@ -1,5 +1,4 @@
-Implement function: storage.get_latest_metrics_filename()
-    Make the scrapeKL use the latest filename.
+Make the scrapeKL use the storage.get_latest_metrics_filename().
 
 Work on processing.Ranker class
     * Go trough old code once and refine.
